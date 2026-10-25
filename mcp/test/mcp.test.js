@@ -79,7 +79,8 @@ test("create_expense sends an idempotency key and the split", async () => {
   const r = await client.callTool({ name: "ledgerly_create_expense", arguments: args });
   assert.equal(parse(r).id, "e1");
   assert.match(mock.seen[0].headers["idempotency-key"], /^[A-Za-z0-9_-]{8,}/);
-  assert.deepEqual(mock.seen[0].body.split, args.split);
+  assert.deepEqual(mock.seen[0].body.split, { type: "equal", participants: ["victor", "marta"] });
+  assert.equal(mock.seen[0].body.paidBy, "victor");
   await client.callTool({ name: "ledgerly_create_expense", arguments: { ...args, idempotency_key: "retry-key-0001" } });
   assert.equal(mock.seen[1].headers["idempotency-key"], "retry-key-0001");
   mock.close();
@@ -136,7 +137,7 @@ test("rejects a Stellar secret key in every text-like field", async () => {
 });
 
 test("surfaces API policy errors without leaking the token", async () => {
-  const mock = await mockApi({ "POST /v1/groups/g1/settlements": { status: 403, body: { code: "policy_daily_cap", message: "daily cap exceeded" } } });
+  const mock = await mockApi({ "POST /v1/groups/g1/settlements": { status: 403, body: { error: { code: "policy_daily_cap", message: "daily cap exceeded" } } } });
   const client = await connect(createApi({ baseUrl: mock.url, token: TOKEN }));
   const r = await client.callTool({ name: "ledgerly_propose_settlement", arguments: { group_id: "g1", to: "marta", amount: "25" } });
   assert.equal(r.isError, true);

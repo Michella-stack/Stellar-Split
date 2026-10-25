@@ -34,8 +34,9 @@ export function createApi({ baseUrl, token, fetchImpl = globalThis.fetch, timeou
       ok: false,
       status: res.status,
       error: {
-        code: String(data?.code ?? `http_${res.status}`).slice(0, 64),
-        message: String(data?.message ?? res.statusText ?? "request failed").slice(0, 300),
+        // The API answers { error: { code, message } }; the bare form is kept for older mocks.
+        code: String(data?.error?.code ?? data?.code ?? `http_${res.status}`).slice(0, 64),
+        message: String(data?.error?.message ?? data?.message ?? res.statusText ?? "request failed").slice(0, 300),
       },
     };
   }

@@ -3,13 +3,14 @@ import { Amount } from '../../components/Amount.jsx';
 import { ButtonLink } from '../../components/Button.jsx';
 import { Card } from '../../components/Card.jsx';
 import { memberName } from '../../lib/format.js';
-import { estimate } from '../../lib/rates.js';
+import { useEstimate } from '../../hooks/useRates.js';
 
 /**
  * The accent card with my position in a group: who I owe (with Settle up) or who owes me.
  * @param {{ detail: any, homeCurrency: string | null }} props detail is GroupDetail from the API
  */
 export function BalanceCard({ detail, homeCurrency }) {
+  const estimate = useEstimate();
   const { myPosition, members, me, group } = detail;
   const byId = new Map(members.map((m) => [m.id, m]));
   const [first, ...rest] = myPosition.owes;

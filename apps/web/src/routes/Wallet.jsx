@@ -11,10 +11,12 @@ import { TopBar } from '../components/TopBar.jsx';
 import { fundWithFriendbot, loadBalances } from '../client/stellar.js';
 import { USDC_FAUCET_URL } from '../config/env.js';
 import { useCopy } from '../hooks/useCopy.js';
+import { useRates } from '../hooks/useRates.js';
 import { useTheme } from '../hooks/useTheme.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { DEMO } from '../lib/demoMode.js';
-import { shortAddress } from '../lib/format.js';
+import { formatDate, shortAddress } from '../lib/format.js';
+import { RATES_ATTRIBUTION_URL } from '../lib/rates.js';
 import { ACCENTS } from '../lib/theme.js';
 
 const ACCENT_NAMES = { lime: 'Lime', cyan: 'Cyan', orange: 'Orange', violet: 'Violet' };
@@ -24,6 +26,7 @@ export default function Wallet() {
   const navigate = useNavigate();
   const copy = useCopy();
   const { theme, toggleTheme, accent, setAccent } = useTheme();
+  const rates = useRates();
   const [balances, setBalances] = useState(/** @type {any} */ (null));
   const [loadError, setLoadError] = useState(false);
   const [funding, setFunding] = useState(false);
@@ -106,6 +109,23 @@ export default function Wallet() {
           </a>
         </section>
         )}
+
+        <section aria-labelledby="rates-title" className="flex flex-col gap-2">
+          <h2 id="rates-title" className="text-lg font-semibold">
+            Exchange rates
+          </h2>
+          <p className="text-muted">
+            {rates.source === 'live' && rates.updatedAt
+              ? `Estimates in your home currency use daily rates from ${formatDate(rates.updatedAt)}. They are only a guide: the payment is always in USDC.`
+              : 'Estimates in your home currency use fixed sample rates, because live rates could not be loaded. They are only a guide: the payment is always in USDC.'}
+          </p>
+          {rates.source === 'live' && (
+            <a href={RATES_ATTRIBUTION_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium underline underline-offset-4">
+              Rates by Exchange Rate API <IconExternal size={14} />
+              <span className="sr-only">(opens in a new tab)</span>
+            </a>
+          )}
+        </section>
 
         <section aria-labelledby="look-title" className="flex flex-col gap-4">
           <h2 id="look-title" className="text-lg font-semibold">

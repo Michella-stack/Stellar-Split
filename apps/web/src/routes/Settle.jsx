@@ -19,7 +19,7 @@ import { useToast } from '../hooks/useToast.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { formatUsd, shortAddress } from '../lib/format.js';
 import { USDC_FAUCET_URL } from '../config/env.js';
-import { estimate } from '../lib/rates.js';
+import { useEstimate } from '../hooks/useRates.js';
 
 export default function Settle() {
   const { id, memberId } = useParams();
@@ -86,6 +86,7 @@ function SettleFlow({ detail, memberId }) {
   const amountError = !check.ok
     ? { INVALID_FORMAT: 'Enter an amount like 12.50.', TOO_MANY_DECIMALS: 'Use at most 7 decimal places.', NOT_POSITIVE: 'The amount must be more than zero.', EXCEEDS_LIMIT: `You only owe ${debt ? formatUsd(debt) : ''}.` }[check.code]
     : null;
+  const estimate = useEstimate();
   const myCurrency = wallet.profile?.homeCurrency;
   const leavesYou = check.ok && myCurrency ? estimate(amount, myCurrency) : null;
   const theyGet = check.ok && recipient?.homeCurrency ? estimate(amount, recipient.homeCurrency) : null;

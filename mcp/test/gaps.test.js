@@ -409,21 +409,25 @@ test("bounds: ids accept 1 to 64 characters of [A-Za-z0-9_-]", async () => {
   mock.close();
 });
 
-test("pinned: duplicate participants and a payer outside the split are ACCEPTED today", async () => {
-  // CURRENT behaviour, pinned on purpose and not necessarily desirable: the MCP server does not
-  // validate group membership or uniqueness; the API is the authority (docs/AGENT-INTERFACE.md).
-  // If the server starts rejecting these, update this test together with the docs.
+test("duplicate participants or shares are rejected before the API is called", async () => {
+  // The API refuses them too ("participants must be distinct members of the group"); refusing them in the
+  // schema gives the agent a clear error without a round trip.
   const { mock, accepted } = await boundsClient();
-  assert.equal(await accepted(expense({ split: { rule: "equal", participants: ["m0", "m0", "m0"] } })), true);
-  assert.deepEqual(mock.seen.at(-1).body.split.participants, ["m0", "m0", "m0"]);
-
-  assert.equal(await accepted(expense({ payer: "outsider", split: { rule: "equal", participants: ["m0", "m1"] } })), true);
-  assert.equal(mock.seen.at(-1).body.paidBy, "outsider");
-
+  const before = mock.seen.length;
+  assert.equal(await accepted(expense({ split: { rule: "equal", participants: ["m0", "m0", "m0"] } })), false);
   assert.equal(
     await accepted(expense({ amount: "10", split: { rule: "exact", shares: [{ member: "m0", amount: "4" }, { member: "m0", amount: "6" }] } })),
-    true,
+    false,
   );
+  assert.equal(mock.seen.length, before, "nothing reached the API");
+  mock.close();
+});
+
+test("a payer outside the split is still accepted (someone pays for the others)", async () => {
+  // Same rule as the API and the web app, for example an agent paying the electricity bill for the flat.
+  const { mock, accepted } = await boundsClient();
+  assert.equal(await accepted(expense({ payer: "outsider", split: { rule: "equal", participants: ["m0", "m1"] } })), true);
+  assert.equal(mock.seen.at(-1).body.paidBy, "outsider");
   mock.close();
 });
 

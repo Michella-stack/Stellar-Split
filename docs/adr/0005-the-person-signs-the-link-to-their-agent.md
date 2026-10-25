@@ -1,6 +1,6 @@
 # 0005. The person signs the link to their agent
 
-- **Status:** Accepted, 2026-10-25. Decided by Victor Estival. The signing method is not verified yet. Not yet reviewed by the rest of the team.
+- **Status:** Accepted, 2026-10-25. Decided by Victor Estival. Real-browser signing is not verified yet. Not yet reviewed by the rest of the team.
 - **Related:** ADR 0001, 0004, `docs/DELEGATED-PAYMENTS.md`, `apps/web/src/wallets/freighter/README.md`.
 
 ## Context
@@ -15,14 +15,18 @@ ADR 0004 lets the chain verifier accept an agent's address as the payer for a pe
 4. Unlinking is done by the owner from the web app, with the same session and address checks. It is immediate and cancels any open intent that is only `reserved`.
 5. Pausing or revoking is the one change an owner can make straight from the browser (row level security allows only `status` to `paused` or `revoked`).
 
-## How the signature is made (to verify)
+## How the signature is made
 
-Two ways exist and neither has been tested with the team's Freighter version:
+The web application already signs a sign-in challenge with a **SEP-53 signed message** through Freighter's message signing (`apps/web/src/wallets/freighter/adapter.js`, `signMessage`). The adapter refuses any text that is not the exact sign-in format, so a page cannot get arbitrary text signed.
 
-1. a message signature, if the reviewed Freighter release supports signing arbitrary messages; or
-2. a challenge transaction that is **never submitted**, in the style of SEP-10, signed with the existing transaction signing call.
+Decision: the link uses the same mechanism, with a second message kind (`link-agent`) in a fixed format that the adapter also checks before asking Freighter. The API creates the challenge and verifies the signature.
 
-Option 2 only needs functions the architecture already assumes, so it is the fallback. The choice must be verified against the pinned Freighter package before code is written, as the Freighter adapter README already requires.
+Still to verify:
+
+- the adapter's tests mock Freighter, so signing has not been seen working in a real browser with a real wallet;
+- the fixed message format for `link-agent`, which must name the agent's address, the owner's address, the application's origin, the network, a nonce and an expiry.
+
+Fallback if message signing proves unreliable: a challenge transaction that is never submitted, in the style of SEP-10, signed with the existing transaction signing call.
 
 ## Consequences
 

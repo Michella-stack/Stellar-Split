@@ -12,5 +12,5 @@ Name records `NNNN-short-title.md` and include: status, context, decision, conse
 | [0002 Shared agents for the demo](0002-shared-agents-for-the-demo.md) | Accepted, demo owner not named |
 | [0003 One open settlement intent per debt](0003-one-open-settlement-intent-per-debt.md) | Accepted |
 | [0004 The agent pays on behalf and the API records it](0004-agent-pays-on-behalf-and-the-api-records-it.md) | Accepted, stretch path |
-| [0005 The person signs the link to their agent](0005-the-person-signs-the-link-to-their-agent.md) | Accepted, signing method to verify |
+| [0005 The person signs the link to their agent](0005-the-person-signs-the-link-to-their-agent.md) | Accepted, real-browser signing to verify |
 | [0006 On-chain delegated payment is the roadmap](0006-on-chain-delegated-payment-roadmap.md) | Accepted as roadmap, not scheduled |

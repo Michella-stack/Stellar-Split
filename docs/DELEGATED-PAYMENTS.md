@@ -113,7 +113,7 @@ Open means `reserved`, `signed` or `submitted`. The database allows one open int
 | A different team member asks the shared agent to pay | The agent applies the asker's rights. Only the owner's debts can be paid (ADR 0001, 0002). |
 | Someone links their own address to another person's account | The link needs a signature from the person's wallet, and the database refuses an active agent without it (ADR 0005). |
 | Agent key stolen | Loss is limited to the float (50 USDC at most). The owner revokes the agent, and the API stops recording its payments. |
-| Recorder key stolen | The attacker can write false settlement records but cannot move funds. The contract can be paused and the recorder rotated. This is the main secret to protect (ADR 0004). |
+| Recorder key stolen | The attacker can write false settlement records but cannot move funds. The contract can be paused, but today the recorder cannot be rotated (threat model T-21 and T-22), so the only recovery is a new deployment. This is the main secret to protect (ADR 0004). |
 | Browser reads other people's intents | Row level security allows only a person's own rows. The browser cannot write intents or read credential hashes. |
 | A secret key is typed into the chat | The MCP rejects anything shaped like a Stellar secret key in any field. |
 
@@ -158,7 +158,7 @@ The database cases above already exist. The rest needs the API and the MCP serve
 | Name the person who owns the shared demo agents (ADR 0002) | Team |
 | Verify how Freighter signs the link: message or challenge transaction (ADR 0005) | Whoever builds the wallet adapter |
 | Confirm that the verifier may accept an agent as payer (ADR 0004). The PRD text assumes payer and debtor are the same address | API owner |
-| Recorder key custody and rotation runbook | Contract and API owners |
+| Recorder key: rotation function, separate admin and recorder keys, custody runbook, reconciler (threat model T-21, T-22) | Contract and API owners |
 | Reconciliation job for `signed` intents | API owner |
 | Where the SQL goes: `database/migrations/` is listed as scaffolding in ARCHITECTURE | Team |
 | The deployed contract's group 1 uses native XLM. New groups need the Testnet USDC token | Contract owner |

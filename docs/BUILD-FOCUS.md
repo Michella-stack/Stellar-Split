@@ -16,7 +16,8 @@ Split shared costs, such as rent sent home by family, and settle them in USDC on
 2. **Expenses.** Equal and exact-amount splits. The server rejects splits that do not sum to the total. Expenses are append-only. (FR-10 to FR-12)
 3. **Balances.** Per-member net position, checked against a hand calculation for 3 members and 5 expenses in a test. (FR-20)
 4. **One real Testnet settlement.** A debtor pays a creditor in Testnet USDC. The transaction hash is shown and links to a Testnet explorer. This is the required on-chain evidence. (FR-22, FR-25)
-5. **Agent settlement through x402 (stretch).** One agent pays a settlement over x402 on `stellar:testnet`, within a spend cap. Only start this once items 1 to 4 work. (FR-32, FR-33)
+5. **Agents read and record through MCP.** Hermes and OpenClaw read balances and record expenses from Telegram through the MCP server. No money moves. (Stories #15 and #18)
+6. **Agent settlement through x402 (stretch).** One agent pays a settlement over x402 on `stellar:testnet`, within a spend cap. Only start this once items 1 to 5 work. (FR-32, FR-33)
 
 Decision: settle with a plain USDC transfer plus an off-chain ledger first. The Soroban group contract in `contracts/group` is written; switching the human settlement to its `settle` function comes once the plain transfer works.
 
@@ -32,7 +33,7 @@ Stack decision: JavaScript (ES modules, JSDoc) for the web app and API, a Vite +
 
 ## Deferred to future work
 
-Signed releases and SLSA provenance, Scorecard targets, fuzzing and formal verification, multisig admin and timelock, Hermes agent test plan, approvals and velocity checks, OAuth and webhooks, mainnet, fiat on-ramps and bank integrations (non-goal NG1 in the PRD).
+Signed releases and SLSA provenance, Scorecard targets, fuzzing and formal verification, multisig admin and timelock, the full Hermes and OpenClaw test plans, approvals and velocity checks, OAuth and webhooks, mainnet, fiat on-ramps and bank integrations (non-goal NG1 in the PRD).
 
 ## What we still need to confirm
 

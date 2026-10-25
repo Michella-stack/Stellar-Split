@@ -1,7 +1,7 @@
 # 0004. The agent pays on behalf of its owner and the API records it (option A)
 
 - **Status:** Accepted, 2026-10-25, for the agent settlement stretch path. Decided by Victor Estival. Not yet reviewed by the rest of the team.
-- **Related:** ADR 0001, 0003, 0005, 0006, `contracts/README.md` (`record_x402_settlement`), `docs/DELEGATED-PAYMENTS.md`.
+- **Related:** ADR 0001, 0003, 0005, 0006, `contracts/README.md` (`record_x402_settlement`), `docs/security/threat-model.md` (T-21, T-22), `docs/DELEGATED-PAYMENTS.md`.
 
 ## Context
 
@@ -22,7 +22,7 @@ Agent settlement through x402 is a stretch goal. The required demo is a human pa
 
 - Fast to build and independent of contract work owned by someone else.
 - The on-chain record shows the debtor as `from`, while the token transfer visible on the explorer comes from the agent's address. This must be explained in the receipt and the demo.
-- **The recorder key is a high-value secret.** It cannot move funds, but whoever holds it can write settlement records that rebalance the groups. Mitigations: the API records only transfers it has verified on chain, a repeated hash is rejected by the contract, the contract can be paused, and the key can be rotated by the contract admin. A rotation runbook is still to be written (`docs/runbooks/`).
+- **The recorder key is a high-value secret.** It cannot move funds, but whoever holds it can write settlement records that rebalance the groups (threat model T-21). Today the deployed contract's admin and recorder are the same account and the contract has no function to rotate either (T-22). Mitigations that exist or are planned: the API records only transfers it has verified on chain, a repeated hash is rejected by the contract, the contract can be paused with `set_paused`, the key never leaves the server, and the reconciliation job of T-21 (issue #21, not built) re-checks every recorded hash. If the key is lost or leaked on testnet, the recovery is a new contract deployment. A rotation function and separate admin and recorder keys are contract work for the contract owner. A runbook is still to be written (`docs/runbooks/`).
 - The spending cap is a policy of the API plus the agent's small float. It is not enforced on chain until ADR 0006.
 - A compromised agent can still waste its own float on a legitimate-looking debt payment. The loss is bounded by the float, and it never pays a debt that is not its owner's.
 

@@ -1,0 +1,93 @@
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
+import { getGroup, listExpenses } from '../client/api.js';
+import { Button } from '../components/Button.jsx';
+import { EmptyState } from '../components/EmptyState.jsx';
+import { IconButton } from '../components/IconButton.jsx';
+import { IconPlus, IconReceipt, IconShare } from '../components/icons.jsx';
+import { LoadError, Loading } from '../components/LoadState.jsx';
+import { TopBar } from '../components/TopBar.jsx';
+import { BalanceCard } from '../features/balances/BalanceCard.jsx';
+import { BalanceList } from '../features/balances/BalanceList.jsx';
+import { AddExpenseSheet } from '../features/expenses/AddExpenseSheet.jsx';
+import { ExpenseRow } from '../features/expenses/ExpenseRow.jsx';
+import { MembersRow } from '../features/groups/MembersRow.jsx';
+import { useApi } from '../hooks/useApi.js';
+import { useWallet } from '../hooks/useWallet.js';
+
+const LATEST = 3;
+
+export default function Group() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { profile } = useWallet();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const group = useApi(() => getGroup(id), `group:${id}`);
+  const expenses = useApi(() => listExpenses(id), `expenses:${id}`);
+  const detail = group.data;
+
+  return (
+    <>
+      <TopBar
+        backTo="/groups"
+        backLabel="Back to groups"
+        title={detail?.group.name}
+        action={
+          <IconButton label="Invite people" onClick={() => navigate(`/groups/${id}/invite`)}>
+            <IconShare size={20} />
+          </IconButton>
+        }
+      />
+      {group.loading && <Loading label="Loading group" />}
+      {group.error && <LoadError title="Could not load this group" error={group.error} onRetry={group.reload} />}
+      {detail && (
+        <div className="flex flex-col gap-6 pb-28">
+          <h1 className="sr-only">{detail.group.name}</h1>
+          <MembersRow members={detail.members} meId={detail.me} />
+          <BalanceCard detail={detail} homeCurrency={profile?.homeCurrency ?? null} />
+
+          <section aria-labelledby="balances-title" className="flex flex-col gap-1">
+            <h2 id="balances-title" className="text-lg font-semibold">
+              Everyone’s balance
+            </h2>
+            <BalanceList detail={detail} />
+          </section>
+
+          <section aria-labelledby="expenses-title" className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <h2 id="expenses-title" className="text-lg font-semibold">
+                Latest expenses
+              </h2>
+              <Link to={`/groups/${id}/activity`} className="inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">
+                All activity
+              </Link>
+            </div>
+            {expenses.loading && <Loading label="Loading expenses" />}
+            {expenses.error && <LoadError title="Could not load expenses" error={expenses.error} onRetry={expenses.reload} />}
+            {expenses.data &&
+              (expenses.data.expenses.length === 0 ? (
+                <EmptyState icon={<IconReceipt />} title="No expenses yet">
+                  Add the first one: rent, groceries, a dinner out.
+                </EmptyState>
+              ) : (
+                <ul>
+                  {expenses.data.expenses.slice(0, LATEST).map((e) => (
+                    <li key={e.id}>
+                      <ExpenseRow expense={e} members={detail.members} meId={detail.me} />
+                    </li>
+                  ))}
+                </ul>
+              ))}
+          </section>
+
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-[480px] justify-end px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            <Button variant="primary" icon={<IconPlus size={20} />} onClick={() => setSheetOpen(true)} className="pointer-events-auto shadow-lg">
+              Add expense
+            </Button>
+          </div>
+          <AddExpenseSheet open={sheetOpen} onClose={() => setSheetOpen(false)} groupId={id} />
+        </div>
+      )}
+    </>
+  );
+}

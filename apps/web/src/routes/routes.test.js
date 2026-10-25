@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import { matchRoutes } from 'react-router';
+import { routes } from './index.jsx';
+
+const paths = [
+  '/', '/connect', '/verify', '/onboarding', '/wallet', '/groups', '/groups/new', '/groups/g1',
+  '/groups/g1/invite', '/groups/g1/expenses/new', '/groups/g1/expenses/scan', '/groups/g1/activity',
+  '/groups/g1/settle/m2', '/join/abc', '/assist', '/assist/intro', '/assist/setup', '/assist/chat',
+];
+
+describe('routes', () => {
+  it.each(paths)('matches %s', (path) => {
+    expect(matchRoutes(routes, path)).not.toBeNull();
+  });
+
+  it('keeps /groups/new from matching as a group id', () => {
+    const match = matchRoutes(routes, '/groups/new');
+    expect(match.at(-1).route.path).toBe('groups/new');
+  });
+
+  it('puts every app screen behind the wallet guard', () => {
+    for (const path of ['/groups', '/wallet', '/assist', '/groups/g1/settle/m2', '/join/abc']) {
+      const guard = matchRoutes(routes, path).find((m) => m.route.element?.type?.name === 'RequireWallet');
+      expect(guard, path).toBeDefined();
+      expect(guard.route.element.props.needs ?? 'profile').toBe('profile');
+    }
+  });
+});
+
+describe('dev-only routes', () => {
+  it('serves /ui only in development', () => {
+    const hasUi = routes.some((r) => r.path === '/ui');
+    expect(hasUi).toBe(import.meta.env.DEV);
+  });
+});

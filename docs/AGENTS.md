@@ -82,7 +82,7 @@ A misspelled username is not a mention, so the bot stays silent. Tap the bot in 
 
 - Bot tokens, the OpenClaw gateway token, the Hermes dashboard credentials and the model provider login live only in `.env` files and data volumes on the server.
 - None of them are in this repository.
-- No agent container can reach a Stellar key. Each agent has its own funded Testnet account, and its key stays on the host outside the containers (`docs/AGENT-WALLETS.md`). Payments will go through the Ledgerly MCP server (issue #14), which keeps the signing key in its own container, away from the agent and its model (PRD FR-38).
+- The agent containers hold no Stellar keys. Each agent has a funded testnet wallet whose key stays on the server outside the containers (see [AGENT-WALLETS.md](AGENT-WALLETS.md)). Payments will go through the Ledgerly MCP server (issue #14), which keeps the signing key in its own container, away from the agent and its model (PRD FR-38).
 
 ## Web dashboards
 
@@ -104,4 +104,4 @@ Run these on the server:
 
 - Both bots answer the Active team members in "Stellar Agents" when @mentioned.
 - The Ledgerly MCP server (#14) is not connected yet, so neither agent can read balances or settle.
-- The Phase 1a tests are HA-1, HA-3, HA-4, HA-6 for Hermes and OC-1, OC-4, OC-6 for OpenClaw (PRD section 7.3).
+- The Phase 1a tests are HA-1, HA-3, HA-6 for Hermes and OC-1, OC-3, OC-6 for OpenClaw. Agent settlement (HA-4, OC-4) is the stretch goal (PRD section 7.3).

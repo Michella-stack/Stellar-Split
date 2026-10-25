@@ -239,7 +239,7 @@ The future paying flow remains isolated from the required human flow:
 
 The facilitator API key is server-side only. Failure of the facilitator must not affect human expense and balance features.
 
-`ledgerly_settle`, agent key custody and x402 signing are not built. The proposed signer remains inside one MCP process per agent and outside the agent container/model context. See `docs/AGENT-INTERFACE.md` and `docs/AGENT-WALLETS.md`.
+`ledgerly_settle`, agent key custody and x402 signing are not built. How a person and their agent pay the same debt, with a lock against double payment, is designed in `docs/DELEGATED-PAYMENTS.md` (ADRs 0001 to 0006). The proposed signer remains inside one MCP process per agent and outside the agent container/model context. See `docs/AGENT-INTERFACE.md` and `docs/AGENT-WALLETS.md`.
 
 ### 4.8 Hosted agent runtimes
 
@@ -255,7 +255,7 @@ Current integration status:
 
 - both agents answer active team members on Telegram;
 - neither agent is connected to `mcp/` yet;
-- neither agent holds a Stellar key;
+- no agent container can reach a Stellar key, but each agent has a funded Testnet account whose key stays on the host outside the containers (`docs/AGENT-WALLETS.md`);
 - selected Phase 1a cases are HA-1, HA-3, HA-4, HA-6 and OC-1, OC-4, OC-6; and
 - payment tests cannot pass until the API, MCP connection, isolated signer, and `ledgerly_settle` x402 path exist.
 

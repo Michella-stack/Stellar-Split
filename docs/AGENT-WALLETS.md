@@ -1,6 +1,6 @@
 # Agent wallets and `ledgerly_settle` (proposal)
 
-Status: proposal for Phase 1a, nothing here is built. It follows PRD section 7 and guardrails 7.4 (FR-30 to FR-38). Stellar testnet only. Anything marked **UNVERIFIED** is an assumption that must be checked before building. No signing code exists, and the API of `@x402/stellar` has not been checked here.
+Status: proposal, nothing here is built. Agent settlement is a stretch goal in `docs/BUILD-FOCUS.md` and `docs/ARCHITECTURE.md`, and stories 14 and 15 are Phase 2. How a person and their agent pay the same debt, and how a double payment is prevented, is in `docs/DELEGATED-PAYMENTS.md` and `docs/adr/`. It follows PRD section 7 and guardrails 7.4 (FR-30 to FR-38). Stellar testnet only. Anything marked **UNVERIFIED** is an assumption that must be checked before building. No signing code exists, and the API of `@x402/stellar` has not been checked here.
 
 ## Current state
 

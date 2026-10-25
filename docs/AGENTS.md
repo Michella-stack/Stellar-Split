@@ -82,7 +82,7 @@ A misspelled username is not a mention, so the bot stays silent. Tap the bot in 
 
 - Bot tokens, the OpenClaw gateway token, the Hermes dashboard credentials and the model provider login live only in `.env` files and data volumes on the server.
 - None of them are in this repository.
-- The agents hold no Stellar keys. Payments will go through the Ledgerly MCP server (issue #14), which keeps the signing key in its own container, away from the agent and its model (PRD FR-38).
+- No agent container can reach a Stellar key. Each agent has its own funded Testnet account, and its key stays on the host outside the containers (`docs/AGENT-WALLETS.md`). Payments will go through the Ledgerly MCP server (issue #14), which keeps the signing key in its own container, away from the agent and its model (PRD FR-38).
 
 ## Web dashboards
 

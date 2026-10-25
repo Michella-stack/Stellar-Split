@@ -13,7 +13,7 @@ import { shortAddress } from '../../lib/format.js';
 /**
  * Success screen after a confirmed Testnet payment.
  * @param {{ amount: string, recipientName: string, recipientAddress: string, groupId: string, groupName: string, txHash: string,
- *   fullyPaid: boolean, record: { status: 'saving' | 'saved' | 'failed', retry: () => void } }} props
+ *   fullyPaid: boolean, record: { status: 'saving' | 'saved' | 'failed' | 'review', retry: () => void } }} props
  */
 export function PaidCard({ amount, recipientName, recipientAddress, groupId, groupName, txHash, fullyPaid, record }) {
   const copy = useCopy();
@@ -92,6 +92,12 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
         <p role="status" className="text-sm text-muted">
           {record.status === 'saving' && 'Saving to the group…'}
           {record.status === 'saved' && 'Saved to the group.'}
+          {record.status === 'review' && (
+            <span className="text-owe">
+              Paid on Stellar. The group’s balance changed while you were paying, so the team will match this payment by hand. Keep
+              the transaction link.
+            </span>
+          )}
           {record.status === 'failed' && (
             <span className="text-owe">
               Paid on Stellar, but not saved to the group yet.{' '}

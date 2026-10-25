@@ -22,7 +22,10 @@ const PROBLEMS = {
   WRONG_NETWORK: { title: 'Switch Freighter to Testnet', body: 'Open Freighter, choose “Test Net” at the top, then review the payment again.' },
   ACCOUNT_CHANGED: { title: 'Your Freighter account changed', body: 'Switch back to the account you signed in with, or sign in again, then review the payment.' },
   LOCKED: { title: 'Freighter is locked', body: 'Unlock Freighter, then review the payment again.' },
-  INTENT_MISMATCH: { title: 'Payment details didn’t match', body: 'The payment to sign was not the one you reviewed, so we stopped. Review it again.' },
+  INTENT_MISMATCH: { title: 'Payment details didn’t match', body: 'The payment to sign was not the one you reviewed, so we stopped. Nothing was sent. Review it again.' },
+  INTENT_IN_PROGRESS: { title: 'Another payment is in progress', body: 'You or this person already have a payment waiting in this group. Wait a minute for it to finish or expire, then try again.' },
+  OVERPAY: { title: 'That’s more than you owe', body: 'The group’s balances changed. Go back to the group to see what you owe now.' },
+  UPSTREAM_UNAVAILABLE: { title: 'Stellar Split is busy', body: 'We could not reach Stellar or our database just now. Nothing was sent. Try again in a moment.' },
   NOT_INSTALLED: { title: 'Freighter is not available', body: 'Open this page in the browser where Freighter is installed.' },
   UNKNOWN: { title: 'Something went wrong', body: 'Nothing was sent as far as we know. Review the payment and try again.' },
 };

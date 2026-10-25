@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { toStroops, validateAmount } from '@shared/money.js';
-import { getGroup, recordSettlement } from '../client/api.js';
+import { cancelSettlementIntent, createSettlementIntent, getGroup, recordSettlement } from '../client/api.js';
 import { buildUsdcPayment, buildUsdcTrustline, checkPayment, loadBalances, submitSigned, usdcAsset } from '../client/stellar.js';
 import { Amount } from '../components/Amount.jsx';
 import { Button, ButtonLink } from '../components/Button.jsx';
@@ -59,7 +59,8 @@ function SettleFlow({ detail, memberId }) {
   const [editing, setEditing] = useState(false);
   const [problem, setProblem] = useState(/** @type {{ code: string, txHash?: string } | null} */ (null));
   const [paid, setPaid] = useState(/** @type {{ hash: string, amount: string } | null} */ (null));
-  const [record, setRecord] = useState(/** @type {'saving' | 'saved' | 'failed'} */ ('saving'));
+  const [record, setRecord] = useState(/** @type {'saving' | 'saved' | 'failed' | 'review'} */ ('saving'));
+  const [paidIntent, setPaidIntent] = useState(/** @type {string | null} */ (null));
   const [addingTrustline, setAddingTrustline] = useState(false);
   const [notice, setNotice] = useState(/** @type {string | null} */ (null));
   const reviewedEpoch = useRef(wallet.epoch);
@@ -93,14 +94,20 @@ function SettleFlow({ detail, memberId }) {
     setStep('problem');
   }
 
-  async function saveRecord(hash, paidAmount) {
+  async function saveRecord(hash, intentId) {
     setRecord('saving');
     try {
-      await recordSettlement(group.id, { to: recipient.id, amount: paidAmount, txHash: hash });
+      await recordSettlement(group.id, { intentId, txHash: hash });
       setRecord('saved');
-    } catch {
-      setRecord('failed');
+    } catch (error) {
+      // NEEDS_REVIEW: paid on Stellar, but the debt changed or the reservation lapsed. The API keeps the hash.
+      setRecord(error?.code === 'NEEDS_REVIEW' ? 'review' : 'failed');
     }
+  }
+
+  /** Frees the reservation when nothing was sent, so the creditor is not blocked for 10 minutes. */
+  function release(intentId) {
+    if (intentId) cancelSettlementIntent(group.id, intentId).catch(() => {});
   }
 
   async function confirm() {
@@ -108,11 +115,18 @@ function SettleFlow({ detail, memberId }) {
     setNotice(null);
     const from = wallet.address;
     const intentEpoch = wallet.epoch;
-    const payment = { from, to: recipient.address, amount };
+    let intentId = null;
+    let submitted = false;
     try {
       setStep('checking');
-      await checkPayment(payment);
-      const { xdr } = await buildUsdcPayment(payment);
+      await checkPayment({ from, to: recipient.address, amount });
+      // Step 1: reserve the payment with the API. It returns the reference (memo) the payment must carry.
+      const { intent } = await createSettlementIntent(group.id, { to: recipient.id, amount });
+      intentId = intent.id;
+      if (intent.payTo !== recipient.address || toStroops(intent.amount) !== toStroops(amount)) {
+        throw Object.assign(new Error('The reservation does not match what you reviewed'), { code: 'INTENT_MISMATCH' });
+      }
+      const { xdr } = await buildUsdcPayment({ from, to: intent.payTo, amount: intent.amount, memoHash: intent.memo.value, notAfter: intent.expiresAt });
       setStep('signing');
       const asset = usdcAsset();
       const { signedXdr } = await wallet.sign(xdr, {
@@ -122,15 +136,27 @@ function SettleFlow({ detail, memberId }) {
         amount,
         assetCode: asset.getCode(),
         assetIssuer: asset.getIssuer(),
+        memoHash: intent.memo.value,
+        notAfter: intent.expiresAt,
       });
-      if (reviewedEpoch.current !== intentEpoch) return; // wallet changed while Freighter was open
+      if (reviewedEpoch.current !== intentEpoch) {
+        release(intentId); // wallet changed while Freighter was open
+        return;
+      }
       setStep('submitting');
+      submitted = true;
       const result = await submitSigned(signedXdr);
       setPaid({ hash: result.hash, amount });
       setBalanceVersion((v) => v + 1);
       setStep('paid');
-      saveRecord(result.hash, amount);
+      // Step 2: record it. The API checks the memo and time bounds on Horizon before accepting it.
+      setPaidIntent(intentId);
+      saveRecord(result.hash, intentId);
     } catch (error) {
+      // Before submission nothing moved, so the reservation can go. After a submission whose outcome is
+      // unknown (timeout, lost connection) it stays: the payment may still land and match it.
+      const outcomeUnknown = submitted && (error?.code === 'TIMEOUT' || error?.code === 'NETWORK');
+      if (!outcomeUnknown) release(intentId);
       fail(error);
     }
   }
@@ -174,7 +200,7 @@ function SettleFlow({ detail, memberId }) {
           groupName={group.name}
           txHash={paid.hash}
           fullyPaid={debt !== null && toStroops(paid.amount) === toStroops(debt)}
-          record={{ status: record, retry: () => saveRecord(paid.hash, paid.amount) }}
+          record={{ status: record, retry: () => saveRecord(paid.hash, paidIntent) }}
         />
       </>
     );

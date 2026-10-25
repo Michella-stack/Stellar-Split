@@ -63,7 +63,8 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
 
   const pendingChallenges = new Set();
   const idempotent = new Map();
-  const intents = [];
+  // Kept in the saved state, like the API's table, so a reservation survives a reload and is shared by tabs.
+  const intents = (state.intents ??= []);
 
   /** Mock only: the signed-in wallet takes the place of "you" in the fixtures, so the demo data is yours. */
   function becomeMe(address) {
@@ -301,9 +302,13 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
         from,
         to,
         amount: dec(check.stroops),
+        asset: USDC,
+        network: 'stellar:testnet',
+        payFrom: group.members.find((m) => m.id === from).address,
         payTo: recipient.address,
         memo: { type: 'hash', value: memo },
         status: 'reserved',
+        reservedAt: now().toISOString(),
         expiresAt: new Date(now().getTime() + 10 * 60_000).toISOString(),
       };
       intents.push(intent);
@@ -312,8 +317,8 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
 
     async cancelSettlementIntent(groupId, intentId) {
       const intent = intents.find((i) => i.id === intentId && i.groupId === groupId);
-      if (!intent) return fail('NOT_FOUND', 'Intent not found', 404);
-      if (intent.status !== 'reserved') return fail('INTENT_NOT_OPEN', 'This intent is no longer reserved', 409);
+      if (!intent) return fail('INTENT_NOT_FOUND', 'Settlement intent not found', 404);
+      if (intent.status !== 'reserved') return fail('INTENT_NOT_OPEN', `This settlement intent is ${intent.status}`, 409);
       intent.status = 'cancelled';
       return reply({ intent });
     },
@@ -323,11 +328,14 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
       if (!group) return fail('NOT_FOUND', 'Group not found', 404);
       const intent = intents.find((i) => i.id === intentId && i.groupId === groupId);
       if (!intent) return fail('INTENT_NOT_FOUND', 'Settlement intent not found', 404);
-      if (!/^[0-9a-f]{64}$/.test(txHash ?? '')) return fail('VALIDATION', 'Invalid transaction hash', 400, { field: 'txHash' });
-      if (group.settlements.some((s) => s.txHash === txHash)) return fail('DUPLICATE_TX', 'This transaction is already recorded', 409);
-      if (intent.status !== 'reserved') return fail('NEEDS_REVIEW', 'The payment no longer matches an open intent', 409);
+      if (!['reserved', 'expired', 'cancelled'].includes(intent.status)) return fail('INTENT_NOT_OPEN', `This settlement intent is ${intent.status}`, 409);
+      const hash = String(txHash ?? '').toLowerCase();
+      if (!/^[0-9a-f]{64}$/.test(hash)) return fail('VALIDATION', 'Invalid transaction hash', 400, { field: 'txHash' });
+      if (group.settlements.some((s) => s.txHash === hash)) return fail('DUPLICATE_TX', 'This transaction is already recorded', 409);
+      // The money has moved: a cancelled intent keeps the payment for review, as the API does.
+      if (intent.status === 'cancelled') return fail('NEEDS_REVIEW', 'The payment arrived but no longer matches an open debt. It is kept for review.', 409, { txHash: hash });
       // The real API also checks on Horizon that the transaction carries the intent's memo and time bounds.
-      const settlement = { id: newId('s'), groupId, from: intent.from, to: intent.to, amount: intent.amount, txHash, intentId, createdAt: now().toISOString() };
+      const settlement = { id: newId('s'), groupId, from: intent.from, to: intent.to, amount: intent.amount, txHash: hash, intentId, createdAt: now().toISOString() };
       group.settlements.push(settlement);
       intent.status = 'settled';
       return reply({ settlement });

@@ -107,7 +107,9 @@ function SettleFlow({ detail, memberId }) {
 
   /** Frees the reservation when nothing was sent, so the creditor is not blocked for 10 minutes. */
   function release(intentId) {
-    if (intentId) cancelSettlementIntent(group.id, intentId).catch(() => {});
+    if (!intentId) return;
+    // One retry: a cancel lost to a network blip would otherwise block both people for the full 10 minutes.
+    cancelSettlementIntent(group.id, intentId).catch(() => cancelSettlementIntent(group.id, intentId).catch(() => {}));
   }
 
   async function confirm() {
@@ -117,11 +119,14 @@ function SettleFlow({ detail, memberId }) {
     const intentEpoch = wallet.epoch;
     let intentId = null;
     let submitted = false;
+    let reserving = false;
     try {
       setStep('checking');
       await checkPayment({ from, to: recipient.address, amount });
       // Step 1: reserve the payment with the API. It returns the reference (memo) the payment must carry.
+      reserving = true;
       const { intent } = await createSettlementIntent(group.id, { to: recipient.id, amount });
+      reserving = false;
       intentId = intent.id;
       if (intent.payTo !== recipient.address || toStroops(intent.amount) !== toStroops(amount)) {
         throw Object.assign(new Error('The reservation does not match what you reviewed'), { code: 'INTENT_MISMATCH' });
@@ -157,7 +162,9 @@ function SettleFlow({ detail, memberId }) {
       // unknown (timeout, lost connection) it stays: the payment may still land and match it.
       const outcomeUnknown = submitted && (error?.code === 'TIMEOUT' || error?.code === 'NETWORK');
       if (!outcomeUnknown) release(intentId);
-      fail(error);
+      // The reservation may exist, but its id never arrived, so it cannot be cancelled: it expires by itself.
+      const lostReply = reserving && (error?.code === 'TIMEOUT' || error?.code === 'NETWORK');
+      fail(lostReply ? { code: 'RESERVATION_UNCONFIRMED' } : error);
     }
   }
 

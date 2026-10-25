@@ -23,9 +23,13 @@ async function sha256Hex(text) {
  * @param {{ delayMs?: number, now?: () => Date, storage?: Storage | null, addresses?: Record<string, string | undefined> }} [options]
  *   storage: when given (localStorage in the app), mock data is shared by every tab and survives a reload.
  *   addresses: member id → real Testnet address, so a demo payment can reach a funded account.
+ *   storageKey: where the state is kept in `storage`. demo: demo mode, where nothing is sent to Stellar. Payments are
+ *   marked `demo: true` so the screens never link them to an explorer.
  */
-export function createMockApi({ delayMs = 300, now = () => new Date(), storage = null, addresses = {} } = {}) {
+export function createMockApi({ delayMs = 300, now = () => new Date(), storage = null, addresses = {}, storageKey = STORAGE_KEY, demo = false } = {}) {
   const state = load() ?? initialState();
+  // Demo mode starts with a finished profile, so the tour does not begin with a form.
+  if (demo && !state.me.displayName) Object.assign(state.me, { displayName: 'Alex', homeCurrency: 'EUR' });
   for (const [memberId, address] of Object.entries(addresses)) {
     if (!address || !isValidStellarAddress(address)) continue;
     for (const group of state.groups) {
@@ -38,7 +42,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
 
   function load() {
     try {
-      const saved = storage?.getItem(STORAGE_KEY);
+      const saved = storage?.getItem(storageKey);
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -47,7 +51,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
 
   function save() {
     try {
-      storage?.setItem(STORAGE_KEY, JSON.stringify(state));
+      storage?.setItem(storageKey, JSON.stringify(state));
     } catch {
       // Storage full or blocked: the mock keeps working in memory.
     }
@@ -327,7 +331,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
       if (group.settlements.some((s) => s.txHash === txHash)) return fail('DUPLICATE_TX', 'This transaction is already recorded', 409);
       if (intent.status !== 'reserved') return fail('NEEDS_REVIEW', 'The payment no longer matches an open intent', 409);
       // The real API also checks on Horizon that the transaction carries the intent's memo and time bounds.
-      const settlement = { id: newId('s'), groupId, from: intent.from, to: intent.to, amount: intent.amount, txHash, intentId, createdAt: now().toISOString() };
+      const settlement = { id: newId('s'), groupId, from: intent.from, to: intent.to, amount: intent.amount, txHash, intentId, createdAt: now().toISOString(), ...(demo ? { demo: true } : {}) };
       group.settlements.push(settlement);
       intent.status = 'settled';
       return reply({ settlement });

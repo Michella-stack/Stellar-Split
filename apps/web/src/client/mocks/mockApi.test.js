@@ -234,3 +234,29 @@ describe('members and idempotency (same behaviour as the API)', () => {
     expect((await api.listExpenses('casa-alfama')).expenses.filter((e) => e.description === 'Taxi')).toHaveLength(1);
   });
 });
+
+describe('demo mode (sample data, nothing sent to Stellar)', () => {
+  it('starts with a finished profile, so the tour does not open with a form', async () => {
+    const demo = createMockApi({ delayMs: 0, demo: true });
+    expect(await demo.getMe()).toMatchObject({ displayName: 'Alex', homeCurrency: 'EUR' });
+    expect((await api.getMe()).displayName).toBeNull();
+  });
+
+  it('marks settlements as demo, so no screen links them to an explorer', async () => {
+    const demo = createMockApi({ delayMs: 0, demo: true });
+    const { intent } = await demo.createSettlementIntent('casa-alfama', { to: 'm-mateo', amount: '100' });
+    const { settlement } = await demo.recordSettlement('casa-alfama', { intentId: intent.id, txHash: 'e'.repeat(64) });
+    expect(settlement.demo).toBe(true);
+    const normal = createMockApi({ delayMs: 0 });
+    const reserved = await normal.createSettlementIntent('casa-alfama', { to: 'm-mateo', amount: '100' });
+    expect((await normal.recordSettlement('casa-alfama', { intentId: reserved.intent.id, txHash: 'f'.repeat(64) })).settlement.demo).toBeUndefined();
+  });
+
+  it('keeps its state under its own storage key', async () => {
+    const store = new Map();
+    const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+    const demo = createMockApi({ delayMs: 0, demo: true, storage, storageKey: 'demo-key' });
+    await demo.updateMe({ displayName: 'Sam' });
+    expect([...store.keys()]).toEqual(['demo-key']);
+  });
+});

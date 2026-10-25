@@ -1,5 +1,5 @@
 #![no_std]
-//! Non-custodial group ledger for Ledgerly.
+//! Non-custodial group ledger for Stellar-Split.
 //! Sign convention: positive net balance = is owed money, negative = owes.
 
 use soroban_sdk::{

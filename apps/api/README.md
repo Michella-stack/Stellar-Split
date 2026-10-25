@@ -10,7 +10,7 @@ node --env-file=.env src/main.js
 npm test                        # node --test, uses an in-memory store and a fake Horizon
 ```
 
-Storage is Supabase when `SUPABASE_URL` is set. Run [`database/migrations/001_ledger.sql`](../../database/migrations/001_ledger.sql) and then [`002_settlement_intents.sql`](../../database/migrations/002_settlement_intents.sql) once in the Supabase SQL editor. Both can be run again safely. SQL tests for 002 are in [`database/tests/`](../../database/tests/). Without Supabase, `ALLOW_MEMORY_STORE=true` keeps everything in memory, which is lost on restart.
+Storage is Supabase when `SUPABASE_URL` is set. Run [`database/migrations/001_ledger.sql`](../../database/migrations/001_ledger.sql) and then [`002_settlement_intents.sql`](../../database/migrations/002_settlement_intents.sql) once in the Supabase SQL editor. Both can be run again safely. SQL tests for 002 are in [`database/tests/`](../../database/tests/). Without Supabase, `ALLOW_MEMORY_STORE=true` keeps everything in memory, which is lost on restart. Production refuses it: the API does not start when `ALLOW_MEMORY_STORE=true` and `VERCEL_ENV=production`.
 
 ## Sign-in
 

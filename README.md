@@ -133,6 +133,7 @@ Threat model and policies: [`docs/security`](docs/security/README.md).
 - [Security: threat model and policies](docs/security/README.md)
 - [Testing status](docs/TESTING.md)
 - [Deployment on Vercel](docs/DEPLOYMENT.md)
+- [Wallets: Freighter now, more later (roadmap)](docs/WALLETS.md)
 - [Group contract](contracts/README.md)
 - [Security policy](SECURITY.md)
 - [Supply chain checks](supply-chain/README.md)

@@ -1,10 +1,15 @@
 // Ledger storage. Same interface in memory (tests, local dev) and on Supabase (PostgREST over fetch).
-// insertExpense returns the existing row on a repeated (groupId, idempotencyKey); insertSettlement throws DUPLICATE_TX.
+// insertExpense returns the existing row on a repeated (groupId, idempotencyKey). insertIntent throws INTENT_IN_PROGRESS
+// when the debtor or the creditor already has a reserved intent in the group. recordSettlement writes the settlement and
+// closes its intent together, and throws DUPLICATE_TX or INTENT_NOT_OPEN.
 
-const duplicateTx = () => Object.assign(new Error('Settlement already recorded'), { code: 'DUPLICATE_TX' });
+const coded = (code, message) => Object.assign(new Error(message), { code });
+const duplicateTx = () => coded('DUPLICATE_TX', 'Settlement already recorded');
+const inProgress = () => coded('INTENT_IN_PROGRESS', 'Another settlement is in progress for this debtor or creditor');
+const notOpen = () => coded('INTENT_NOT_OPEN', 'The settlement intent is not open');
 
 export function createMemoryRepository() {
-  const t = { users: [], groups: [], members: [], invites: [], expenses: [], settlements: [] };
+  const t = { users: [], groups: [], members: [], invites: [], expenses: [], settlements: [], intents: [] };
   const nonces = new Set();
   const byGroup = (table, groupId) => t[table].filter((r) => r.groupId === groupId);
   const copy = (r) => (r ? structuredClone(r) : null);
@@ -33,12 +38,33 @@ export function createMemoryRepository() {
       return copy(e);
     },
     listExpenses: async (groupId) => byGroup('expenses', groupId).map(copy),
-    insertSettlement: async (s) => {
-      if (t.settlements.some((x) => x.txHash === s.txHash)) throw duplicateTx();
-      t.settlements.push(structuredClone(s));
+    listSettlements: async (groupId) => byGroup('settlements', groupId).map(copy),
+    insertIntent: async (i) => {
+      const open = byGroup('intents', i.groupId).filter((x) => x.status === 'reserved');
+      if (open.some((x) => x.from === i.from || x.to === i.to)) throw inProgress();
+      t.intents.push(structuredClone({ ...i, status: 'reserved', txHash: null, closedAt: null }));
+      return copy(t.intents.at(-1));
+    },
+    getIntent: async (id) => copy(t.intents.find((i) => i.id === id)),
+    expireIntents: async (groupId, now) => {
+      for (const i of byGroup('intents', groupId)) {
+        if (i.status === 'reserved' && i.expiresAt < now) Object.assign(i, { status: 'expired', closedAt: now });
+      }
+    },
+    updateIntent: async (id, patch) => {
+      const i = t.intents.find((x) => x.id === id);
+      Object.assign(i, patch);
+      return copy(i);
+    },
+    recordSettlement: async ({ intentId, id, txHash, createdAt }) => {
+      const i = t.intents.find((x) => x.id === intentId);
+      if (!i || !['reserved', 'expired'].includes(i.status)) throw notOpen();
+      if (t.settlements.some((x) => x.txHash === txHash)) throw duplicateTx();
+      const s = { id, groupId: i.groupId, from: i.from, to: i.to, amount: i.amount, txHash, createdAt, intentId };
+      t.settlements.push(s);
+      Object.assign(i, { status: 'settled', txHash, closedAt: createdAt });
       return copy(s);
     },
-    listSettlements: async (groupId) => byGroup('settlements', groupId).map(copy),
   };
 }
 
@@ -106,14 +132,30 @@ export function createSupabaseRepository({ url, serviceKey, fetchImpl = globalTh
       }
     },
     listExpenses: (groupId) => select('expenses', `group_id=${eq(groupId)}&order=created_at`),
-    insertSettlement: async (s) => {
+    listSettlements: (groupId) => select('settlements', `group_id=${eq(groupId)}&order=created_at`),
+    insertIntent: async (i) => {
       try {
-        return await insert('settlements', s);
+        return await insert('settlement_intents', i);
       } catch (err) {
-        if (err.pgCode === '23505') throw duplicateTx();
+        if (err.pgCode === '23505' && /one_open_intent/.test(err.message)) throw inProgress();
         throw err;
       }
     },
-    listSettlements: (groupId) => select('settlements', `group_id=${eq(groupId)}&order=created_at`),
+    getIntent: (id) => one('settlement_intents', `id=${eq(id)}`),
+    expireIntents: (groupId, now) =>
+      req('PATCH', `/settlement_intents?group_id=${eq(groupId)}&status=eq.reserved&expires_at=lt.${encodeURIComponent(now)}`, { status: 'expired' }, 'return=minimal'),
+    updateIntent: async (id, patch) =>
+      mapKeys((await req('PATCH', `/settlement_intents?id=${eq(id)}`, mapKeys(patch, snake), 'return=representation'))?.[0], camel),
+    // One Postgres transaction (database/migrations/002_settlement_intents.sql).
+    recordSettlement: async ({ intentId, id, txHash, createdAt }) => {
+      try {
+        const row = await req('POST', '/rpc/record_settlement', { p_intent_id: intentId, p_settlement_id: id, p_tx_hash: txHash, p_created_at: createdAt });
+        return mapKeys(row, camel);
+      } catch (err) {
+        if (err.pgCode === '23505') throw duplicateTx();
+        if (/INTENT_NOT_(OPEN|FOUND)/.test(err.message)) throw notOpen();
+        throw err;
+      }
+    },
   };
 }

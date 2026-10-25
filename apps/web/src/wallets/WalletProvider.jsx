@@ -3,21 +3,9 @@ import * as api from '../client/api.js';
 import * as freighter from './freighter/adapter.js';
 import { WalletError } from './freighter/errors.js';
 import { WalletContext } from './wallet-context.js';
+import { SESSION_KEY, sessionStore } from './sessionStore.js';
 
 const errorCode = (error) => (error instanceof WalletError ? error.code : 'UNKNOWN');
-
-// The session survives a reload in the same tab (sessionStorage) and is dropped when the tab closes,
-// the account changes or the person disconnects. It never holds keys, only the API session token.
-const SESSION_KEY = 'stellar-split.session';
-
-function readSavedSession() {
-  try {
-    const saved = JSON.parse(window.sessionStorage.getItem(SESSION_KEY) ?? 'null');
-    return saved && Date.parse(saved.expiresAt) > Date.now() ? saved : null;
-  } catch {
-    return null;
-  }
-}
 
 // Set when the person presses Disconnect, so the app does not silently reconnect on the next visit
 // (Freighter keeps the site allowed). Cleared by the next explicit Connect.
@@ -40,18 +28,10 @@ function wasDisconnected() {
   }
 }
 
-function writeSavedSession(session) {
-  try {
-    if (session) window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    else window.sessionStorage.removeItem(SESSION_KEY);
-  } catch {
-    // Storage blocked: the session lasts until reload.
-  }
-}
 
 /**
  * Holds the connected Freighter account, its network, the API session and the profile.
- * The session is kept in sessionStorage for the current tab, so a reload does not ask for a new signature.
+ * The API session is kept in localStorage (sessionStore.js), so every tab shares one sign-in until it expires.
  * @param {{ children: import('react').ReactNode }} props
  */
 export function WalletProvider({ children }) {
@@ -75,7 +55,7 @@ export function WalletProvider({ children }) {
   }, []);
 
   const forgetSession = useCallback(() => {
-    writeSavedSession(null);
+    sessionStore.write(null);
     api.setSessionToken(null);
     setSession(null);
     setProfile(null);
@@ -94,8 +74,8 @@ export function WalletProvider({ children }) {
         if (cancelled) return;
         setAddress(existing);
         setNetwork(net);
-        const saved = readSavedSession();
-        if (saved?.address === existing) {
+        const saved = sessionStore.read(existing);
+        if (saved) {
           api.setSessionToken(saved.token);
           try {
             const me = await api.getMe();
@@ -103,7 +83,7 @@ export function WalletProvider({ children }) {
             setSession(saved);
             setProfile(me);
           } catch {
-            writeSavedSession(null);
+            sessionStore.write(null);
             api.setSessionToken(null);
           }
         }
@@ -132,6 +112,20 @@ export function WalletProvider({ children }) {
       }
     });
   }, [status, forgetSession, setAddress, setNetwork]);
+
+  // Another tab disconnected or signed in with a different account: follow it here too.
+  useEffect(() => {
+    function onStorage(event) {
+      if (event.key !== SESSION_KEY || !addressRef.current) return;
+      if (!sessionStore.read(addressRef.current)) {
+        api.setSessionToken(null);
+        setSession(null);
+        setProfile(null);
+      }
+    }
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const connect = useCallback(async () => {
     setError(null);
@@ -176,7 +170,7 @@ export function WalletProvider({ children }) {
       const { signature } = await freighter.signMessage(challenge, { kind: 'sign-in', signer: current });
       const { session: next } = await api.verifyChallenge({ address: current, challenge, signature });
       api.setSessionToken(next.token);
-      writeSavedSession(next);
+      sessionStore.write(next);
       setSession(next);
       setProfile(await api.getMe());
       return true;

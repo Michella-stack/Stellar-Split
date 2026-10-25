@@ -58,8 +58,8 @@ Add `mcp/Dockerfile`: Node base image pinned by digest, `npm ci --omit=dev`, non
 
 ### 2. Tokens (agent host, then Vercel)
 
-1. For each agent, generate `LEDGERLY_TOKEN` and `MCP_AUTH_TOKEN` with `openssl rand -base64 32`. Write them straight into the MCP container's `.env` (mode 600). Do not print them in a terminal that is logged or in chat.
-2. Compute the SHA-256 of each `LEDGERLY_TOKEN` with `printf %s "$TOKEN" | sha256sum | cut -d' ' -f1`. `sha256sum` prints `hash  -`; keep only the first field. A trailing newline changes the hash.
+1. For each agent, run `scripts/agent-mcp/new-agent-token.sh <mcp-env-file> <agent-env-file> <agent address>`. It writes `LEDGERLY_TOKEN` and `MCP_AUTH_TOKEN` straight into the MCP container's env file (mode 600) and `MCP_AUTH_TOKEN` alone into a second file to append to the agent's own `.env`. It never prints a secret and refuses to overwrite a file. Do not print the files in a terminal that is logged or in chat.
+2. The script prints one line per agent, `hash=GADDRESS` (121 characters): that is the entry for `AGENT_TOKENS`. The hash is over the token without a trailing newline.
 3. **Owner, in the Vercel dashboard (Production):** set `AGENT_TOKENS` to `hashHermes=GADDRESSHERMES,hashOpenClaw=GADDRESSOPENCLAW` with the public agent addresses from the operator notes. Type or paste the value once, then compare its length (each entry is 64 + 1 + 56 = 121 characters, so two entries and a comma make 243). A stray space once broke the deployment.
 4. Before this, parse the full new value with `parseAgentTokens` from `apps/api/src/auth/index.js` in a throwaway local script, or set it in Preview first. **A value that does not parse takes the whole API down, web app included**: `loadConfig` throws and every `/v1` route answers 500. Keep the old value of `AGENT_TOKENS` at hand.
 5. Redeploy Production so the function reads the new value, check `GET /v1/health` is 200, and check a web sign-in still works. To undo, restore the old value (or remove the variable) and redeploy.
@@ -75,7 +75,7 @@ The web app cannot add an agent: its add-by-address form never sends `kind`, so 
 ### 4. Run the MCP container for Hermes (agent host)
 
 1. Back up first: copy `docker-compose.yml`, `data/config.yaml` and `.env` of Hermes with a timestamp suffix, as was done on 2026-10-25.
-2. Create the network and the MCP compose project beside the agent's (`~/stellar-agents/mcp-hermes/`).
+2. Create the network and the MCP compose project beside the agent's (`~/stellar-agents/mcp-hermes/`), starting from `mcp/compose.example.yml`.
 3. Set `LEDGERLY_API_URL` to the public URL, `MCP_TRANSPORT=http`, `MCP_HTTP_HOST=0.0.0.0`, the port, and both tokens.
 4. Probe from a throwaway container on the internal network (the MCP image has no `curl`). Send a `tools/list` JSON-RPC POST to `/mcp` with the Bearer token and the header `Accept: application/json, text/event-stream`; without that header the SDK answers 406, and the reply comes back as server-sent events. Expect the four tools. Without the token expect 401. `mcp/test/gaps.test.js` shows a working request.
 

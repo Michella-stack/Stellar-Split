@@ -1,0 +1,32 @@
+# Example Compose project for ONE agent's MCP server. See docs/adr/0009 and docs/AGENT-MCP-ROLLOUT.md.
+#
+# On the agent host, one project per agent, for example ~/stellar-agents/mcp-hermes/:
+#   cp compose.example.yml docker-compose.yml
+#   (create .env with scripts/agent-mcp/new-agent-token.sh)
+#   docker network create --internal mcp-hermes        # once; the agent's compose project joins it too
+#   AGENT=hermes MCP_IMAGE=ledgerly-mcp:<commit> docker compose up -d
+#
+# Never publish a port: the server listens on 0.0.0.0 inside the container and relies on that.
+services:
+  ledgerly-mcp:
+    image: ${MCP_IMAGE:?set MCP_IMAGE to the image built from mcp/Dockerfile}
+    container_name: ledgerly-mcp-${AGENT:?set AGENT to hermes or openclaw}
+    env_file: .env
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    networks:
+      - agent-internal # shared with this agent only
+      - default # outbound, to reach the API
+
+networks:
+  agent-internal:
+    external: true
+    name: mcp-${AGENT:?set AGENT to hermes or openclaw}

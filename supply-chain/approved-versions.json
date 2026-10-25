@@ -1,4 +1,109 @@
 {
   "_format": "Each entry: {\"ecosystem\": \"npm\" or \"crates.io\", \"name\": \"pkg\", \"version\": \"x.y.z\", \"approved\": \"YYYY-MM-DD\", \"by\": \"@github-user\", \"next_review\": \"YYYY-MM-DD\"}. The guard fails a PR that sets a version older than the approved one.",
-  "packages": []
+  "packages": [
+    {
+      "ecosystem": "npm",
+      "name": "@eslint/js",
+      "version": "10.0.1",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "@tailwindcss/vite",
+      "version": "4.3.3",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "@vitejs/plugin-react",
+      "version": "6.1.2",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "eslint",
+      "version": "10.13.0",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "eslint-plugin-react-hooks",
+      "version": "7.1.1",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "eslint-plugin-react-refresh",
+      "version": "0.5.7",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "globals",
+      "version": "17.13.0",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "react",
+      "version": "19.3.1",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "react-dom",
+      "version": "19.3.1",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "react-router",
+      "version": "8.4.0",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "tailwindcss",
+      "version": "4.3.3",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "vite",
+      "version": "8.3.4",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "vitest",
+      "version": "5.0.5",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    }
+  ]
 }

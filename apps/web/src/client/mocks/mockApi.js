@@ -15,7 +15,7 @@ const STORAGE_KEY = 'stellar-split.mock-state';
 
 /**
  * @param {{ delayMs?: number, now?: () => Date, storage?: Storage | null, addresses?: Record<string, string | undefined> }} [options]
- *   storage: when given (sessionStorage in the app), mock data survives a page reload in the same tab.
+ *   storage: when given (localStorage in the app), mock data is shared by every tab and survives a reload.
  *   addresses: member id → real Testnet address, so a demo payment can reach a funded account.
  */
 export function createMockApi({ delayMs = 300, now = () => new Date(), storage = null, addresses = {} } = {}) {

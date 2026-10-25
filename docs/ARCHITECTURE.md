@@ -1,15 +1,15 @@
-# Stellar Split architecture (working name)
+# Stellar-Split architecture
 
 > **Status:** Early stage, in active development · **Network:** Stellar Testnet only
 
-This document translates the updated README from the `readme-update` branch into an implementation architecture for the HackMeridian build. It intentionally prioritizes the smallest complete demonstration: create a group, record expenses, calculate balances, and settle one real Testnet USDC payment through Freighter.
+This document translates the current `main` README and merged repository documentation into an implementation architecture for the HackMeridian build. It intentionally prioritizes the smallest complete demonstration: create a group, record expenses, calculate balances, and settle one real Testnet USDC payment through Freighter.
 
-For product requirements, judging criteria, deferred work, and the submission checklist, refer to the corresponding documents under `docs/`, especially `docs/BUILD-FOCUS.md`.
+For product requirements, judging criteria, deferred work, agent operations, and the submission checklist, refer to the corresponding documents under `docs/`, especially `docs/BUILD-FOCUS.md`, `docs/PRD.md`, and `docs/AGENTS.md`. Where the long-term PRD is broader than the hackathon cut, `docs/BUILD-FOCUS.md` controls implementation priority.
 
 ## 1. Architecture principles
 
 1. **Testnet only.** Every wallet, server, asset, contract, RPC, Horizon, explorer, and x402 operation must be configured for Stellar Testnet. Unknown or non-testnet configuration fails closed.
-2. **Non-custodial.** User secret keys remain inside Freighter. Stellar Split never asks for, receives, stores, or logs a secret key.
+2. **Non-custodial.** User secret keys remain inside Freighter. Stellar-Split never asks for, receives, stores, or logs a secret key.
 3. **Direct settlement.** USDC moves from the member who owes money to the member who is owed. The application never holds user funds.
 4. **Ledger plus payment.** Expenses create deterministic balances; successful Stellar payments reduce those balances and retain the transaction hash as evidence.
 5. **Hackathon focus.** Human group, expense, balance, and settlement flows come before agent infrastructure.
@@ -26,27 +26,40 @@ For product requirements, judging criteria, deferred work, and the submission ch
 | Record an expense | Required | Support equal and exact splits with server-side validation. |
 | Show balances | Required | Show what each member owes or is owed. |
 | Settle in Testnet USDC | Required | Transfer USDC directly to the creditor and display the Stellar transaction hash. |
-| Soroban group contract | Implemented in repository | Rust contract code records expenses and settlements without holding a token balance. Public contract ID and demo asset configuration remain to be confirmed. |
-| Agent settlement through x402 | Stretch | Settle within a server-enforced spend cap through the Stellar `exact` scheme and a facilitator. |
+| Plain Testnet USDC settlement | Required first path | Freighter signs a direct payment, the API verifies it on Stellar and Supabase records the completed settlement. |
+| Soroban group contract | Implemented and deployed; integration follows | Contract code and Testnet deployment are confirmed. Human `settle` integration follows after the plain-transfer demo works. |
+| MCP read/create/propose tools | Implemented, not connected to agents | `mcp/` exposes non-paying tools for groups, balances, expenses, settlement proposals and approvals, but the hosted agents cannot call it yet. |
+| Hermes and OpenClaw runtimes | Running, integration pending | Both Telegram agents run in separate pinned containers on the private agent host. Selected Phase 1a tests cover both agents, while payment remains a hackathon stretch goal. |
+| Agent settlement through x402 | Stretch, not built | Add signer-backed `ledgerly_settle` within server-enforced limits after the human flow works. |
 | Mainnet | Out of scope | The application must refuse to operate on public network. |
-| Production platform features | Deferred | MCP, approvals, webhooks, OAuth, indexing infrastructure, and other long-term product features are not hackathon requirements unless `BUILD-FOCUS.md` promotes them. |
+| Production platform features | Deferred | Paying MCP tools, full approval delivery, webhooks, OAuth, indexing infrastructure, and other long-term product features are not hackathon requirements unless `BUILD-FOCUS.md` promotes them. |
 
 ## 3. System context
 
 ```mermaid
 flowchart LR
-    User[Group member] --> Web[React + Tailwind web app]
+    User[Group member] --> Web[Vite + React + Tailwind SPA]
     User -- signs --> Wallet[Freighter wallet]
-    Web --> API[JavaScript API: groups, expenses, balances]
+    Web --> API[Node.js API]
+    API --> DB[(Supabase PostgreSQL ledger)]
     Wallet -- signed USDC payment --> Stellar[Stellar Testnet]
-    API --> Contract[Soroban group contract: expenses and settlements]
-    Contract --> Stellar
-    Agent[Agent: stretch goal] -. pays over x402 .-> API
+    Web -- transaction hash --> API
+    API -- verify payment --> Stellar
+
+    Contract[Soroban group contract] -. integrate settle after plain transfer .-> Stellar
+
+    Team[Allowlisted team members] --> Telegram[Private Telegram groups]
+    Telegram --> Hermes[Hermes Agent container]
+    Telegram --> OpenClaw[OpenClaw container]
+    Hermes -. not connected yet .-> MCP[Phase 1 MCP server]
+    OpenClaw -. not connected yet .-> MCP
+    MCP --> API
+    MCP -. future signed x402 payment .-> API
     API -. verify and settle .-> Facilitator[x402 facilitator]
     Facilitator -. submit payment .-> Stellar
 ```
 
-Solid lines represent the required human-demo architecture described by the updated README. Dashed lines represent the x402 stretch path. React and Tailwind are project technology decisions layered onto the README's web-app boundary.
+Solid lines represent implemented boundaries, currently running agent access, or the required plain-transfer human demo. Dashed lines represent integrations that are not connected yet: contract settlement, agent-to-MCP access, and signer-backed x402 payment.
 
 ## 4. Runtime components
 
@@ -66,11 +79,10 @@ The web application provides the human interface for:
 
 The web application uses:
 
-- modern JavaScript with ES modules;
-- React function components and hooks;
-- Tailwind CSS for styling;
-- server-rendering when supported by the selected framework; and
-- minimal browser-only code outside wallet and interactive flows.
+- Vite and modern JavaScript with ES modules and JSDoc;
+- a React single-page application with function components and hooks;
+- Tailwind CSS for styling; and
+- client-side routing with browser-only wallet integration.
 
 React components must not contain split arithmetic, balance derivation, network constants, or direct Freighter API calls.
 
@@ -88,8 +100,8 @@ apps/web/src/
 ├── hooks/                   # React hooks for UI integrations
 ├── wallets/
 │   └── freighter/           # The only Freighter integration boundary
-├── client/                  # Browser entry and hydration
-├── server/                  # SSR, API client, sessions, and headers
+├── client/                  # Vite browser entry
+├── api/                     # HTTP client for the Node.js API
 └── styles/                  # Tailwind entry point and design tokens
 ```
 
@@ -103,7 +115,7 @@ Freighter is the wallet used for the testnet demo. The adapter owns all extensio
 - request permission to read the selected public address;
 - read and normalize the active Stellar network;
 - reject signing unless the active network is Testnet;
-- request Soroban transaction or authorization-entry signing;
+- sign the plain USDC transfer required by the first demo and, later, Soroban contract transactions;
 - normalize rejection, lock, account-change, and network-change errors; and
 - invalidate a pending settlement when its account, network, or intent changes.
 
@@ -154,7 +166,7 @@ apps/api/src/
 └── observability/           # Safe structured logging
 ```
 
-The README does not prescribe a database. Persistence must remain behind repository interfaces so the hackathon can use the simplest reliable option without coupling domain rules to it.
+Supabase PostgreSQL is the selected off-chain ledger. The API owns privileged database access and keeps persistence behind repository interfaces. Browser code must not receive a Supabase service-role credential; any direct browser access requires narrowly scoped row-level security policies.
 
 ### 4.4 Shared domain modules
 
@@ -191,7 +203,14 @@ Browser-safe transaction construction must be separated from server-only RPC or 
 
 **Location:** `contracts/group`
 
-The group contract is implemented in Rust with `soroban-sdk` under `contracts/`. In line with the updated README, the public integration values are not considered confirmed until the README's architecture table is populated with the group contract ID, Testnet USDC asset, and example transaction.
+The group contract is implemented in Rust with `soroban-sdk` and deployed on Stellar Testnet:
+
+- contract ID: `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`;
+- deployment transaction: `56a42289418586c90efec1a09ce36e70a152988067e2c7268fc9b2ec095fbe6a`;
+- WASM hash: `ca6ba904c5759a963a3b08611a8d4519aa6a8e75670dacab873ace8fe27463e4`; and
+- admin/recorder: `GCOURV2JXCIXK3CHXMJ4HBOPS5TMWGLL4AVKTO6A44DYYDJE2FA5I4N4`.
+
+Group 1 is only a native-XLM smoke test. The Testnet USDC asset and demo settlement transaction are still pending. The required human demo therefore uses a plain USDC transfer first; contract `settle` integration follows.
 
 The contract is non-custodial:
 
@@ -201,13 +220,15 @@ The contract is non-custodial:
 - duplicate settlement records are rejected; and
 - contract and asset IDs are explicit Testnet configuration.
 
-The implemented interface is documented in `contracts/README.md`. The web and API must build against that interface rather than an assumed method shape. Repository code may contain deployment evidence, but the hackathon architecture must not present an ID or asset as the public demo configuration until the updated README confirms it.
+The implemented interface and deployment evidence are documented in `contracts/README.md`. The web and API must build against that interface rather than an assumed method shape.
 
-### 4.7 x402 agent stretch path
+### 4.7 Agent interface and x402 stretch path
 
-**Location:** `packages/x402` and the relevant API route
+**Locations:** `mcp/`, `agents/`, future API settlement route and x402 adapter
 
-The agent flow is isolated from the required human flow:
+The phase-1 MCP server is implemented in `mcp/`. It exposes `ledgerly_list_groups`, `ledgerly_get_balances`, `ledgerly_create_expense`, `ledgerly_propose_settlement` and `ledgerly_get_approval`. It has no signer and cannot move money. Hermes and OpenClaw persona files live in `agents/`; personas shape behavior but are not security controls.
+
+The future paying flow remains isolated from the required human flow:
 
 1. An agent requests a settlement intent from the API.
 2. The API validates group membership, debt, recipient, amount, and spend cap.
@@ -218,7 +239,25 @@ The agent flow is isolated from the required human flow:
 
 The facilitator API key is server-side only. Failure of the facilitator must not affect human expense and balance features.
 
-A full MCP server, approval system, and general agent platform are deferred unless explicitly promoted into hackathon scope.
+`ledgerly_settle`, agent key custody and x402 signing are not built. The proposed signer remains inside one MCP process per agent and outside the agent container/model context. See `docs/AGENT-INTERFACE.md` and `docs/AGENT-WALLETS.md`.
+
+### 4.8 Hosted agent runtimes
+
+**Repository configuration:** `agents/` · **Operational documentation:** `docs/AGENTS.md`
+
+Hermes Agent and OpenClaw are already running on one private Ubuntu 24.04 LTS home server, each in a separate Docker Compose project. Their images are pinned by digest, their dashboard ports are bound only to the internal k3s bridge, and server administration is restricted to the owner's Tailscale network.
+
+Users reach the agents through private Telegram groups. The gateway validates each sender's numeric Telegram ID before the model sees the message, group use requires an explicit bot mention, and private chats are owner-only. Bot tokens, gateway credentials, dashboard credentials, model-provider login, and Telegram IDs stay on the host and are not committed to this repository.
+
+The dashboards are exposed through a Cloudflare tunnel behind Authentik and are limited to the owner and Authentik administrators. This administrative path is separate from the future Ledgerly MCP path.
+
+Current integration status:
+
+- both agents answer active team members on Telegram;
+- neither agent is connected to `mcp/` yet;
+- neither agent holds a Stellar key;
+- selected Phase 1a cases are HA-1, HA-3, HA-4, HA-6 and OC-1, OC-4, OC-6; and
+- payment tests cannot pass until the API, MCP connection, isolated signer, and `ledgerly_settle` x402 path exist.
 
 ## 5. Core domain model
 
@@ -293,8 +332,8 @@ sequenceDiagram
     User->>Web: Confirm
     Web->>Adapter: Sign reviewed intent
     Adapter->>Wallet: Recheck account and Testnet network
-    Wallet-->>Adapter: Signed transaction or authorization
-    Adapter-->>Web: Signed result
+    Wallet-->>Adapter: Signed USDC payment transaction
+    Adapter-->>Web: Signed transaction
     Web->>Stellar: Submit signed transaction
     Stellar-->>Web: Transaction hash
     Web->>API: Report intent ID and transaction hash
@@ -304,32 +343,36 @@ sequenceDiagram
     API-->>Web: Verified receipt and explorer URL
 ```
 
-The web builds the transaction for the implemented contract's `settle(group, from, to, amount)` method, Freighter authorizes it, and the resulting transaction hash is verified before the UI marks settlement complete.
+For the required first demo, the web builds a plain Testnet USDC payment from the debtor directly to the creditor. Freighter signs it, and the API verifies the resulting transaction against the settlement intent before Supabase records it as complete. Calling the contract's `settle(group, from, to, amount)` method is the next integration step after this plain-transfer path works.
 
 ## 8. Data ownership
 
 | Data | Authority |
 |---|---|
-| Group and member metadata | API persistence layer |
-| Expense records | API persistence layer |
-| Derived balances | Deterministically calculated from expenses and completed settlements |
+| Group and member metadata | Supabase PostgreSQL, accessed through the API |
+| Expense records | Supabase PostgreSQL; append-only application records |
+| Derived balances | Deterministically calculated from Supabase expenses and verified completed settlements |
+| Settlement intents and verified transaction hashes | Supabase PostgreSQL, written by the API |
 | Wallet account and signatures | Freighter; secret material never enters the application |
 | Payment finality | Stellar Testnet |
-| Settlement receipt | Verified Stellar transaction plus API association to an intent |
-| Group membership, expense hashes, balances and settlement records | Soroban group contract; public Testnet integration details pending confirmation |
-| Agent spend cap, when enabled | API policy state |
+| Contract groups, expense hashes, balances, and settlement records | Deployed Soroban contract once contract integration is enabled; not the authority for the initial plain-transfer demo |
+| MCP persona and identity guidance | Files under `agents/`; behavioral context only, never an authorization or policy boundary |
+| Agent spend cap, when enabled | API policy state enforced independently of the agent and persona files |
 
 ## 9. Configuration
 
-The root `.env.example` documents names and safe Testnet defaults only. Contract, asset and facilitator values remain blank until the public demo integration is confirmed.
+The root `.env.example` documents variable names and safe Testnet defaults. The deployed group contract details are confirmed, while the Testnet USDC identity, Supabase project values, facilitator, and demo transaction still require environment-specific configuration.
 
 | Variable | Runtime | Purpose |
 |---|---|---|
 | `STELLAR_NETWORK` | Shared/public | Must equal `testnet`. |
 | `HORIZON_URL` | Server or public when required | Approved Stellar Testnet Horizon endpoint. |
 | `SOROBAN_RPC_URL` | Server or public when required | Approved Stellar Testnet RPC endpoint. |
-| `USDC_ASSET_CODE` / `USDC_ISSUER` or token contract ID | Shared/public | Exact Testnet USDC identity used by the demo. |
-| `GROUP_CONTRACT_ID` | Shared/public | Confirmed Testnet group contract ID; required before the public demo and intentionally not asserted here while the updated README says `To be added`. |
+| `USDC_ASSET_CODE` / `USDC_ISSUER` or token contract ID | Shared/public | Exact Testnet USDC identity used by the demo; still to be confirmed. |
+| `GROUP_CONTRACT_ID` | Shared/public | Deployed Testnet contract: `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`. |
+| `SUPABASE_URL` | Server; public only if RLS permits | Selected Supabase project endpoint. |
+| `SUPABASE_ANON_KEY` | Browser only if RLS permits | Public client credential; not a replacement for authorization rules. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server secret | Privileged database credential; never exposed to browser code. |
 | `X402_FACILITATOR_URL` | Server, stretch | Testnet-capable facilitator endpoint. |
 | `X402_FACILITATOR_API_KEY` | Server secret, stretch | Facilitator credential; never exposed to browser code. |
 
@@ -337,16 +380,19 @@ Configuration validation must reject public-network passphrases, endpoints, asse
 
 ## 10. Testing strategy
 
-| Layer | Focus |
+| Layer | Status and focus |
 |---|---|
-| Domain unit tests | Equal and exact splits, seven-decimal limits, zero-sum balances, partial settlement, overpayment rejection, and idempotency. |
-| React component tests | Group and expense forms, balance views, settlement review, loading, error, and receipt states. |
-| Freighter adapter tests | Missing extension, locked wallet, rejection, wrong network, account change, network change, stale intent, and successful signature. |
-| API integration tests | Group/expense persistence, balance derivation, settlement intent validation, and transaction-hash replay. |
-| Stellar integration tests | Transaction building and verification against deterministic fixtures or Testnet. |
-| End-to-end test | Connect Freighter, record expenses, settle Testnet USDC, and display a resolvable transaction hash. |
-| x402 stretch test | Enforce the spend cap, settle through the facilitator, and verify the resulting Testnet transfer. |
-| Contract tests | Authorization, direct transfer, no retained funds, duplicate prevention, and amount boundaries when contract integration is active. |
+| MCP tests | Implemented: 14 tests cover tools, credentials, idempotency, validation, policy errors, approvals, network failures, and startup validation. Remaining gaps are tracked in `docs/TESTING.md`. The real agents are not connected yet. |
+| Supply-chain checks | Implemented: version-guard tests and GitHub Actions SHA-pinning checks. |
+| Contract tests | Implemented, with known regression-coverage gaps documented in `docs/TESTING.md`; covers core authorization, settlement, duplicate, balance, and boundary behavior. |
+| Domain unit tests | Planned for the web/API work: equal and exact splits, seven-decimal limits, zero-sum balances, partial settlement, overpayment rejection, and idempotency. |
+| React component tests | Planned: group and expense forms, balance views, settlement review, loading, error, and receipt states. |
+| Freighter adapter tests | Planned: missing extension, locked wallet, rejection, wrong network, account change, network change, stale intent, and successful signature. |
+| API and Supabase integration tests | Planned: group/expense persistence, balance derivation, settlement-intent validation, authorization, and transaction-hash replay. |
+| Stellar integration tests | Planned: plain-USDC transaction building and server-side verification against deterministic fixtures or Testnet. Contract invocation tests follow. |
+| End-to-end test | Planned required demo: connect Freighter, record expenses, settle Testnet USDC, and display a resolvable transaction hash. |
+| Agent integration tests | Selected Phase 1a targets are HA-1, HA-3, HA-4, HA-6 and OC-1, OC-4, OC-6. Telegram access is operational, but MCP reads and payment cases remain blocked on the missing connection and API. |
+| x402 stretch test | Deferred until signer-backed settlement exists: enforce the spend cap, settle through the facilitator, and verify the resulting Testnet transfer. |
 
 Network-dependent tests are opt-in and Testnet-only. No test command may default to public network.
 
@@ -357,40 +403,43 @@ Network-dependent tests are opt-in and Testnet-only. No test command may default
 - Browser input and transaction hashes are untrusted by the API.
 - The API validates authorization, amounts, splits, balances, recipients, and settlement evidence.
 - The facilitator is not trusted as final evidence; x402 results are independently verified on Stellar Testnet.
+- Agent files under `agents/` and model instructions are not security controls. Authentication, authorization, spend caps, counterparties, and approvals must be enforced by the API and payment signer.
+- Telegram access is separately restricted by private groups, sender-ID allowlists, required mentions, and owner-only direct messages. These controls restrict who reaches the model but do not authorize ledger or payment actions.
+- Agent containers hold no Stellar keys. Their operational secrets remain in host-side `.env` files and mounted data volumes outside this repository.
+- Agent dashboards are private administrative surfaces behind a Cloudflare tunnel and Authentik; they are not public application endpoints.
+- The current MCP server has no signer and cannot move funds. A future signer must remain outside the model context and refuse any challenge that differs from the approved intent.
 - Logs exclude secrets, complete signed payloads, authentication tokens, and facilitator credentials.
 - Local secrets live in ignored `.env` files or an equivalent secret store.
 - The application presents no mainnet option and fails closed on network mismatch.
 
 ## 12. Repository map
 
-The hackathon-focused ownership map is:
+The repository contains both implemented code and placeholders for the application still being built:
 
 ```text
 .
 ├── apps/
-│   ├── web/                          # React, Tailwind, and Freighter UI
-│   └── api/                          # Groups, expenses, balances, settlements
-├── packages/
-│   ├── shared/                       # Domain rules and runtime schemas
-│   ├── stellar/                      # Testnet transaction and verification helpers
-│   └── x402/                         # Isolated agent stretch integration
+│   ├── web/                          # Planned Vite + React + Tailwind + Freighter SPA
+│   ├── api/                          # Planned Node.js API and Supabase boundary
+│   └── workers/                      # Deferred chain/indexing/webhook scaffolding
+├── mcp/                              # Implemented phase-1 non-paying MCP tools and tests
+├── agents/
+│   ├── hermes/                       # Hermes behavioral identity
+│   └── openclaw/                     # OpenClaw behavioral identity
 ├── contracts/
-│   └── group/                        # Implemented Soroban contract; demo integration pending
-├── tests/
-│   ├── integration/
-│   ├── e2e/
-│   │   └── freighter/
-│   └── fixtures/
-│       └── freighter/
-├── docs/
-│   ├── ARCHITECTURE.md
-│   └── BUILD-FOCUS.md
-├── scripts/                          # Build, validation, and deployment utilities
-├── supply-chain/                     # Dependency and release controls
+│   └── group/                        # Implemented and deployed Soroban group contract
+├── packages/
+│   ├── shared/                       # Planned shared domain rules and schemas
+│   ├── stellar/                      # Planned Testnet transaction/verification helpers
+│   └── x402/                         # Planned isolated x402 payment adapter
+├── tests/                            # Planned application integration and end-to-end tests
+├── docs/                             # Architecture, build focus, agent, and testing docs
+├── scripts/                          # Existing build, validation, and Testnet deployment utilities
+├── supply-chain/                     # Implemented dependency and repository checks
 └── .github/                          # CI and dependency automation
 ```
 
-Existing directories for long-term workers, MCP, policy, webhooks, or database infrastructure should be treated as deferred scaffolding unless the current `BUILD-FOCUS.md` explicitly includes them.
+`mcp-server/`, `database/`, `deploy/`, and `openapi/` are older or future scaffolding and are not current runtime components. `apps/workers/` is explicitly deferred scaffolding. Do not build new integrations against these directories unless the team deliberately promotes and reconciles them. Long-term workers, webhooks, OAuth, and production indexing remain deferred.
 
 ## 13. Demo acceptance path
 
@@ -408,16 +457,25 @@ The architecture is successful when the team can demonstrate this uninterrupted 
 10. Show the successful transaction hash and testnet explorer link.
 11. If the stretch goal is ready, show an agent settlement through x402 that remains inside its spend cap.
 
-## 14. Decisions that must match the repository
+## 14. Confirmed and remaining decisions
 
-Before implementation documentation is considered final, verify and record:
+Confirmed by the current README and repository:
 
-1. the selected React build/server-rendering framework;
-2. exact reviewed React, Tailwind, Freighter, and Stellar package versions;
-3. the persistence mechanism used by the API;
-4. the official Testnet USDC identifier;
-5. the confirmed Testnet group contract ID and USDC asset used by the demo;
-6. whether the browser or API submits signed human transactions;
-7. the testnet explorer URL format;
-8. the facilitator selected for the x402 stretch flow; and
-9. the live demo URL and verified transaction evidence.
+1. the frontend is a Vite + React single-page application styled with Tailwind CSS;
+2. the API uses Node.js and JavaScript with ES modules and JSDoc;
+3. Supabase PostgreSQL is the off-chain ledger;
+4. Freighter signs human transactions on Stellar Testnet;
+5. the first required settlement is a plain USDC transfer, with contract `settle` integration afterward; and
+6. the deployed Testnet group contract ID is `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`;
+7. approved web versions are React and React DOM `19.3.1`, React Router `8.4.0`, Vite `8.3.4`, Tailwind CSS and `@tailwindcss/vite` `4.3.3`, and Vitest `5.0.5`; and
+8. Hermes and OpenClaw run in separate pinned containers with restricted Telegram access, but are not connected to the MCP server.
+
+Still to verify and record before the public demo:
+
+1. exact reviewed Freighter, Stellar SDK, and Supabase package versions;
+2. the official Testnet USDC identifier and funded demo accounts with trustlines;
+3. whether the browser or API submits the signed human transaction;
+4. the Testnet explorer URL format used by the UI;
+5. the facilitator selected for the x402 stretch flow and whether the required browser authorization signing is supported;
+6. the live demo URL; and
+7. the verified Testnet USDC transaction hash used as evidence.

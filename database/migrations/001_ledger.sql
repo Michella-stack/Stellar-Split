@@ -65,6 +65,13 @@ create table if not exists settlements (
 );
 create index if not exists settlements_group on settlements (group_id, created_at);
 
+-- Burned sign-in challenges (single use). Rows past expires_at can be deleted at any time.
+create table if not exists used_nonces (
+  nonce       text primary key,
+  expires_at  timestamptz not null
+);
+
+alter table used_nonces enable row level security;
 alter table users enable row level security;
 alter table groups enable row level security;
 alter table members enable row level security;

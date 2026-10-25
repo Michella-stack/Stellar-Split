@@ -39,7 +39,7 @@ let server;
 before(async () => {
   const repo = createMemoryRepository();
   const stellar = createStellar({ horizonUrl: 'https://horizon.test', usdcIssuer: USDC_ISSUER, fetchImpl: fakeHorizon });
-  const auth = createAuth({ agentTokens: parseAgentTokens(`${sha256(agentToken).toString('hex')}=${agent.address}`) });
+  const auth = createAuth({ secret: 'test-secret-at-least-32-characters-long', repo, agentTokens: parseAgentTokens(`${sha256(agentToken).toString('hex')}=${agent.address}`) });
   server = createApp({ auth, ledger: createLedger({ repo, stellar, appUrl: 'https://app.test' }), log: () => {} });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${server.address().port}`;
@@ -74,16 +74,24 @@ test('health is public, everything else needs a session', async () => {
   assert.equal(r.body.error.code, 'UNAUTHORIZED');
 });
 
-test('sign-in rejects a wrong signature, a reused challenge and a bad address', async () => {
+test('sign-in rejects a wrong signature, a replay, an edited challenge, a forged session and a bad address', async () => {
   const { body: c } = await call('POST', '/v1/auth/challenge', { body: { address: alice.address } });
   const forged = await call('POST', '/v1/auth/verify', { body: { address: alice.address, challenge: c.challenge, signature: bob.signMessage(c.challenge) } });
   assert.equal(forged.status, 401);
-  const reused = await call('POST', '/v1/auth/verify', { body: { address: alice.address, challenge: c.challenge, signature: alice.signMessage(c.challenge) } });
-  assert.equal(reused.status, 401, 'a challenge is single use, even after a failed attempt');
+  const good = { address: alice.address, challenge: c.challenge, signature: alice.signMessage(c.challenge) };
+  assert.equal((await call('POST', '/v1/auth/verify', { body: good })).status, 200);
+  assert.equal((await call('POST', '/v1/auth/verify', { body: good })).status, 401, 'a signed challenge cannot be replayed');
   const bad = await call('POST', '/v1/auth/challenge', { body: { address: `${alice.address.slice(0, -1)}A` } });
   assert.equal(bad.status, 400);
   assert.equal(bad.body.error.code, 'INVALID_ADDRESS');
+  const { body: c2 } = await call('POST', '/v1/auth/challenge', { body: { address: alice.address } });
+  const forgedChallenge = c2.challenge.replace(/Expires: .*/, 'Expires: 2099-01-01T00:00:00.000Z');
+  assert.equal((await call('POST', '/v1/auth/verify', { body: { address: alice.address, challenge: forgedChallenge, signature: alice.signMessage(forgedChallenge) } })).status, 401, 'an edited challenge fails its MAC');
   for (const [name, w] of Object.entries({ alice, bob, carol })) tokens[name] = await signIn(w);
+  const [body, tag] = tokens.carol.split('.');
+  const asAlice = Buffer.from(JSON.stringify({ a: alice.address, e: Date.now() + 3600_000 })).toString('base64url');
+  assert.equal((await call('GET', '/v1/me', { token: `${asAlice}.${tag}` })).status, 401, 'a session cannot be re-pointed at another address');
+  assert.equal((await call('GET', '/v1/me', { token: `${body}.${tag}` })).body.address, carol.address);
 });
 
 test('create a group and add members by address', async () => {

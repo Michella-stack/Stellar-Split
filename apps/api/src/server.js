@@ -1,4 +1,4 @@
-// HTTP server on node:http. No framework, no runtime dependencies.
+// HTTP handler on node:http. No framework, no runtime dependencies.
 
 import { createServer } from 'node:http';
 import { containsSecretKey } from '../../../packages/shared/src/index.js';
@@ -26,10 +26,10 @@ function readBody(req) {
 /**
  * @param {{ auth: object, ledger: object, allowedOrigins?: string[], log?: (line: object) => void }} deps
  */
-export function createApp({ auth, ledger, allowedOrigins = [], log = (l) => console.log(JSON.stringify(l)) }) {
+export function createHandler({ auth, ledger, allowedOrigins = [], log = (l) => console.log(JSON.stringify(l)) }) {
   const table = routes({ auth, ledger });
 
-  return createServer(async (req, res) => {
+  return async (req, res) => {
     const started = Date.now();
     const url = new URL(req.url, 'http://local');
     const origin = req.headers.origin;
@@ -78,5 +78,8 @@ export function createApp({ auth, ledger, allowedOrigins = [], log = (l) => cons
       const upstream = err?.code === 'HORIZON_UNAVAILABLE' || err?.name === 'TimeoutError';
       send(upstream ? 502 : 500, { error: { code: upstream ? 'UPSTREAM_UNAVAILABLE' : 'INTERNAL', message: upstream ? 'Stellar or the database did not answer' : 'Unexpected error' } });
     }
-  });
+  };
 }
+
+/** Long-running server (local development, containers). Serverless platforms use createHandler directly. */
+export const createApp = (deps) => createServer(createHandler(deps));

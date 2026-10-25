@@ -21,7 +21,7 @@ export function routes({ auth, ledger }) {
       return ok(c);
     }],
     ['POST', /^\/v1\/auth\/verify$/, async ({ body }) => {
-      const session = auth.verify(body?.address, body?.challenge, body?.signature);
+      const session = await auth.verify(body?.address, body?.challenge, body?.signature);
       if (!session) throw new ApiError(401, 'UNAUTHORIZED', 'Signature, address or challenge is not valid');
       return ok({ session });
     }],

@@ -5,10 +5,12 @@ const duplicateTx = () => Object.assign(new Error('Settlement already recorded')
 
 export function createMemoryRepository() {
   const t = { users: [], groups: [], members: [], invites: [], expenses: [], settlements: [] };
+  const nonces = new Set();
   const byGroup = (table, groupId) => t[table].filter((r) => r.groupId === groupId);
   const copy = (r) => (r ? structuredClone(r) : null);
 
   return {
+    useNonce: async (nonce) => !nonces.has(nonce) && Boolean(nonces.add(nonce)),
     getUser: async (address) => copy(t.users.find((u) => u.address === address)),
     saveUser: async (user) => {
       t.users = t.users.filter((u) => u.address !== user.address).concat(structuredClone(user));
@@ -70,6 +72,15 @@ export function createSupabaseRepository({ url, serviceKey, fetchImpl = globalTh
     mapKeys((await req('POST', `/${table}`, mapKeys(row, snake), prefer))?.[0], camel);
 
   return {
+    useNonce: async (nonce, expiresAt) => {
+      try {
+        await insert('used_nonces', { nonce, expiresAt }, 'return=minimal');
+        return true;
+      } catch (err) {
+        if (err.pgCode === '23505') return false;
+        throw err;
+      }
+    },
     getUser: (address) => one('users', `address=${eq(address)}`),
     saveUser: (user) => insert('users', user, 'return=representation,resolution=merge-duplicates'),
     insertGroup: (g) => insert('groups', g),

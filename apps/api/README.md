@@ -17,9 +17,13 @@ Storage is Supabase when `SUPABASE_URL` is set. Run [`database/migrations/001_le
 1. `POST /v1/auth/challenge` `{ address }` returns `{ challenge, expiresAt }`, a text message valid for 5 minutes.
 2. The wallet signs it with SEP-53 (Freighter `signMessage`): ed25519 over `sha256("Stellar Signed Message:\n" + challenge)`.
 3. `POST /v1/auth/verify` `{ address, challenge, signature }` (signature in base64 or hex) returns `{ session: { token, address, expiresAt } }`.
-4. Send `Authorization: Bearer <token>`. Sessions last 12 hours and live in memory.
+4. Send `Authorization: Bearer <token>`. Sessions last 12 hours. Sessions and challenges are HMAC-signed with `SESSION_SECRET`, so the API keeps no session state and runs on serverless functions. A challenge works once: its nonce is burned in the `used_nonces` table.
 
 Agents use a token issued by the operator. The API stores only its SHA-256 in `AGENT_TOKENS`, mapped to the agent's Stellar address. Create one with `openssl rand -base64 32`, hash it with `printf %s "$TOKEN" | sha256sum`, and give the token to that agent's MCP server.
+
+## Deploy (Vercel)
+
+`vercel.json` serves the web app from `dist/` and sends `/v1/*` to the function in `api/index.mjs`, so the web app and the API share one origin and need no CORS. `scripts/vercel-build.sh` builds `apps/web` when it exists. Set `SESSION_SECRET`, `USDC_ISSUER`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `APP_URL` as project environment variables (secrets as sensitive). Serverless instances do not share memory, so production needs Supabase.
 
 ## Endpoints
 

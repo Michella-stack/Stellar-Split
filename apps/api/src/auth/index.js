@@ -1,6 +1,6 @@
-// Sign-in with a Stellar wallet (SEP-53 signed message) and bearer sessions. Agents use pre-issued tokens.
+// Sign-in with a Stellar wallet (SEP-53 signed message) and HMAC-signed bearer sessions. Agents use pre-issued tokens.
 
-import { createHash, createPublicKey, randomBytes, timingSafeEqual, verify } from 'node:crypto';
+import { createHash, createHmac, createPublicKey, randomBytes, timingSafeEqual, verify } from 'node:crypto';
 
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 const ACCOUNT_VERSION = 6 << 3; // 'G' addresses
@@ -78,46 +78,56 @@ export function verifySignedMessage(address, message, signature) {
 }
 
 /**
- * In-memory challenges and sessions. A restart signs everyone out, which is acceptable for the testnet build.
- * @param {{ sessionTtlMs?: number, challengeTtlMs?: number, agentTokens?: Map<string, string>, now?: () => number }} options
+ * Stateless challenges and sessions signed with HMAC, so the API runs on serverless functions.
+ * A challenge is single use: its nonce is burned in the repository (repo.useNonce) on the first verify.
+ * @param {{ secret: string, repo: { useNonce: (nonce: string, expiresAt: string) => Promise<boolean> },
+ *   sessionTtlMs?: number, challengeTtlMs?: number, agentTokens?: Map<string, string>, now?: () => number }} options
  *   agentTokens maps sha256(token) hex to the agent's G address
  */
-export function createAuth({ sessionTtlMs = 12 * 3600_000, challengeTtlMs = 5 * 60_000, agentTokens = new Map(), now = Date.now } = {}) {
-  const challenges = new Map(); // nonce -> { address, message, expires }
-  const sessions = new Map(); // sha256(token) hex -> { address, expires }
+export function createAuth({ secret, repo, sessionTtlMs = 12 * 3600_000, challengeTtlMs = 5 * 60_000, agentTokens = new Map(), now = Date.now }) {
+  if (typeof secret !== 'string' || secret.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters');
+  const mac = (text) => createHmac('sha256', secret).update(text).digest('base64url');
+  const same = (a, b) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  const message = (address, nonce, expires) =>
+    `Stellar-Split sign-in\nAddress: ${address}\nNonce: ${nonce}\nExpires: ${new Date(expires).toISOString()}`;
 
   return {
     challenge(address) {
       if (!decodeAddress(address)) return null;
-      const nonce = randomBytes(16).toString('hex');
       const expires = now() + challengeTtlMs;
-      const message = `Stellar-Split sign-in\nAddress: ${address}\nNonce: ${nonce}\nExpires: ${new Date(expires).toISOString()}`;
-      challenges.set(nonce, { address, message, expires });
-      return { challenge: message, expiresAt: new Date(expires).toISOString() };
+      const id = randomBytes(16).toString('base64url');
+      const nonce = `${id}.${expires}.${mac(`challenge|${address}|${id}|${expires}`)}`;
+      return { challenge: message(address, nonce, expires), expiresAt: new Date(expires).toISOString() };
     },
 
-    verify(address, challenge, signature) {
-      const nonce = /\nNonce: ([0-9a-f]{32})\n/.exec(String(challenge))?.[1];
-      const entry = nonce && challenges.get(nonce);
-      if (!entry || entry.address !== address || entry.message !== challenge || entry.expires < now()) return null;
-      challenges.delete(nonce); // single use, even when the signature is wrong
-      if (!verifySignedMessage(address, challenge, signature)) return null;
-      const token = randomBytes(32).toString('base64url');
-      const expires = now() + sessionTtlMs;
-      sessions.set(sha256(token).toString('hex'), { address, expires });
-      return { token, address, expiresAt: new Date(expires).toISOString() };
+    async verify(address, challenge, signature) {
+      const m = /^Stellar-Split sign-in\nAddress: (G[A-Z2-7]{55})\nNonce: ([\w-]{22})\.(\d{13})\.([\w-]{43})\nExpires: /.exec(String(challenge));
+      if (!m || m[1] !== address) return null;
+      const [, , id, exp, tag] = m;
+      const expires = Number(exp);
+      if (!same(tag, mac(`challenge|${address}|${id}|${expires}`)) || challenge !== message(address, `${id}.${exp}.${tag}`, expires)) return null;
+      if (expires < now() || !verifySignedMessage(address, challenge, signature)) return null;
+      if (!(await repo.useNonce(id, new Date(expires).toISOString()))) return null; // replay
+      const sessionExpires = now() + sessionTtlMs;
+      const body = Buffer.from(JSON.stringify({ a: address, e: sessionExpires })).toString('base64url');
+      return { token: `${body}.${mac(`session|${body}`)}`, address, expiresAt: new Date(sessionExpires).toISOString() };
     },
 
     /** @returns {{ kind: 'human' | 'agent', address: string } | null} */
     principal(authorization) {
       const token = /^Bearer (\S+)$/.exec(authorization ?? '')?.[1];
       if (!token) return null;
-      const hash = sha256(token).toString('hex');
-      const session = sessions.get(hash);
-      if (session) {
-        if (session.expires >= now()) return { kind: 'human', address: session.address };
-        sessions.delete(hash);
+      const [body, tag, extra] = token.split('.');
+      if (body && tag && extra === undefined && same(tag, mac(`session|${body}`))) {
+        try {
+          const { a, e } = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+          if (e >= now() && decodeAddress(a)) return { kind: 'human', address: a };
+        } catch {
+          return null;
+        }
+        return null;
       }
+      const hash = sha256(token).toString('hex');
       for (const [stored, address] of agentTokens) {
         if (timingSafeEqual(Buffer.from(stored, 'hex'), Buffer.from(hash, 'hex'))) return { kind: 'agent', address };
       }

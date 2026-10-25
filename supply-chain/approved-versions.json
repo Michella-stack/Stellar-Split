@@ -75,6 +75,14 @@
     },
     {
       "ecosystem": "npm",
+      "name": "qrcode-generator",
+      "version": "2.0.4",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
       "name": "react",
       "version": "19.3.1",
       "approved": "2026-10-25",

@@ -21,3 +21,41 @@ revoke all on agent_links from anon, authenticated;
 
 alter table settlement_intents
   add column if not exists payer_address text check (payer_address ~ '^G[A-Z2-7]{55}$');
+
+
+-- The payer is part of the intent terms: redefine the 002 guard so payer_address is immutable too.
+create or replace function settlement_intents_guard() returns trigger
+  language plpgsql
+  set search_path = public
+as $$
+begin
+  if tg_op = 'DELETE' then
+    raise exception 'settlement intents are never deleted';
+  end if;
+  if tg_op = 'INSERT' then
+    if new.status <> 'reserved' then raise exception 'a new intent must start as reserved'; end if;
+    return new;
+  end if;
+  if (new.group_id, new."from", new."to", new.amount, new.memo_hash, new.reserved_at, new.expires_at, new.payer_address)
+     is distinct from
+     (old.group_id, old."from", old."to", old.amount, old.memo_hash, old.reserved_at, old.expires_at, old.payer_address) then
+    raise exception 'intent terms are immutable';
+  end if;
+  if old.tx_hash is not null and new.tx_hash is distinct from old.tx_hash then
+    raise exception 'tx_hash cannot change once set';
+  end if;
+  if new.status <> old.status then
+    if not (
+         (old.status = 'reserved'     and new.status in ('settled', 'cancelled', 'expired', 'needs_review'))
+      or (old.status = 'expired'      and new.status in ('settled', 'needs_review'))
+      or (old.status = 'cancelled'    and new.status = 'needs_review')
+      or (old.status = 'needs_review' and new.status in ('settled', 'failed'))
+    ) then
+      raise exception 'illegal transition % -> %', old.status, new.status;
+    end if;
+    if new.status <> 'reserved' and new.closed_at is null then new.closed_at := now(); end if;
+  end if;
+  return new;
+end;
+$$;
+

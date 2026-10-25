@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { useT } from '../hooks/useT.js';
 import { cx } from '../lib/cx.js';
 import { IconButton } from './IconButton.jsx';
 import { IconMinus, IconPlus } from './icons.jsx';
@@ -10,6 +11,7 @@ import { IconMinus, IconPlus } from './icons.jsx';
  */
 export function Stepper({ label, value, onChange, min = 0, max = Infinity, step = 1, format = String, description, className }) {
   const id = useId();
+  const { t } = useT();
   const shown = format(value);
   return (
     <div role="group" aria-labelledby={`${id}-label`} className={cx('flex min-h-14 items-center justify-between gap-4', className)}>
@@ -20,13 +22,13 @@ export function Stepper({ label, value, onChange, min = 0, max = Infinity, step 
         {description && <span className="text-sm text-muted">{description}</span>}
       </span>
       <span className="flex items-center gap-2">
-        <IconButton label={`Decrease ${label}`} disabled={value - step < min} onClick={() => onChange(value - step)}>
+        <IconButton label={t('common.decrease', { label })} disabled={value - step < min} onClick={() => onChange(value - step)}>
           <IconMinus size={20} />
         </IconButton>
         <output aria-live="polite" className="min-w-14 text-center font-mono text-lg font-semibold tabular-nums">
           {shown}
         </output>
-        <IconButton label={`Increase ${label}`} disabled={value + step > max} onClick={() => onChange(value + step)}>
+        <IconButton label={t('common.increase', { label })} disabled={value + step > max} onClick={() => onChange(value + step)}>
           <IconPlus size={20} />
         </IconButton>
       </span>

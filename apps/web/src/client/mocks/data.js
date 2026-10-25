@@ -93,7 +93,7 @@ export function initialState() {
         agentId: 'assist',
         groupId: 'casa-alfama',
         status: 'pending',
-        description: 'Pay your internet share to Mateo',
+        description: 'Pay your internet share to Mateo', code: 'pay_share', bill: 'internet',
         to: 'm-mateo',
         amount: '7.50',
         createdAt: '2026-10-25T08:05:00Z',
@@ -101,10 +101,10 @@ export function initialState() {
       },
     ],
     agentActivity: [
-      { id: 'aa-1', kind: 'expense', status: 'done', description: 'Added Electricity to Casa Alfama', amount: '48.00', groupId: 'casa-alfama', createdAt: '2026-10-12T08:30:00Z' },
-      { id: 'aa-2', kind: 'payment', status: 'done', description: 'Paid water share to Jake', amount: '12.00', to: 'm-jake', groupId: 'casa-alfama', createdAt: '2026-10-25T07:40:00Z' },
-      { id: 'aa-3', kind: 'blocked', status: 'blocked', description: 'Payment to an unknown address', amount: '20.00', reason: "Address isn't in your group", groupId: 'casa-alfama', createdAt: '2026-10-25T07:55:00Z' },
-      { id: 'aa-4', kind: 'approval', status: 'pending', description: 'Pay your internet share to Mateo', amount: '7.50', to: 'm-mateo', approvalId: 'ap-internet', groupId: 'casa-alfama', createdAt: '2026-10-25T08:05:00Z' },
+      { id: 'aa-1', kind: 'expense', status: 'done', description: 'Added Electricity to Casa Alfama', code: 'expense_added', bill: 'electricity', amount: '48.00', groupId: 'casa-alfama', createdAt: '2026-10-12T08:30:00Z' },
+      { id: 'aa-2', kind: 'payment', status: 'done', description: 'Paid water share to Jake', code: 'payment_made', bill: 'water', amount: '12.00', to: 'm-jake', groupId: 'casa-alfama', createdAt: '2026-10-25T07:40:00Z' },
+      { id: 'aa-3', kind: 'blocked', status: 'blocked', description: 'Payment to an unknown address', code: 'payment_blocked', amount: '20.00', reason: "Address isn't in your group", reasonCode: 'not_in_group', groupId: 'casa-alfama', createdAt: '2026-10-25T07:55:00Z' },
+      { id: 'aa-4', kind: 'approval', status: 'pending', description: 'Pay your internet share to Mateo', code: 'pay_share', bill: 'internet', amount: '7.50', to: 'm-mateo', approvalId: 'ap-internet', groupId: 'casa-alfama', createdAt: '2026-10-25T08:05:00Z' },
     ],
   };
 }

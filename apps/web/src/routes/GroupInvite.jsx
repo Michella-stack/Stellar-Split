@@ -12,19 +12,21 @@ import { TopBar } from '../components/TopBar.jsx';
 import { addressError } from '../features/groups/address.js';
 import { useApi } from '../hooks/useApi.js';
 import { useCopy } from '../hooks/useCopy.js';
+import { useT } from '../hooks/useT.js';
 import { useToast } from '../hooks/useToast.js';
 
 export default function GroupInvite() {
   const { id } = useParams();
   const copy = useCopy();
   const toast = useToast();
+  const { t } = useT();
   const group = useApi(() => getGroup(id), `group:${id}`);
   const link = useApi(() => createInvite(id), `invite:${id}`);
   const [address, setAddress] = useState('');
   const [name, setName] = useState('');
   const [adding, setAdding] = useState(false);
   const error = addressError(address);
-  const nameError = containsSecretKey(name) ? 'This looks like a secret key. Never share it.' : null;
+  const nameError = containsSecretKey(name) ? t('secret.warningShort') : null;
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   async function addByAddress(event) {
@@ -33,12 +35,12 @@ export default function GroupInvite() {
     setAdding(true);
     try {
       const { member } = await addMember(id, { address: address.trim(), ...(name.trim() ? { displayName: name.trim() } : {}) });
-      toast(`${member.displayName} added to the group`, { tone: 'success' });
+      toast(t('invite.added', { name: member.displayName }), { tone: 'success' });
       setAddress('');
       setName('');
       group.reload();
     } catch (e) {
-      toast(e?.code === 'ALREADY_MEMBER' ? 'That address is already in the group.' : 'Could not add that address. Try again.', { tone: 'error' });
+      toast(e?.code === 'ALREADY_MEMBER' ? t('invite.alreadyMember') : t('invite.addError'), { tone: 'error' });
     } finally {
       setAdding(false);
     }
@@ -46,31 +48,31 @@ export default function GroupInvite() {
 
   return (
     <>
-      <TopBar backTo={`/groups/${id}`} title="Invite" />
+      <TopBar backTo={`/groups/${id}`} title={t('invite.title')} />
       <div className="flex flex-col gap-8 pb-8">
-        <h1 className="font-display-wide text-4xl">Invite people{group.data ? ` to ${group.data.group.name}` : ''}</h1>
+        <h1 className="font-display-wide text-4xl">{group.data ? t('invite.headingTo', { group: group.data.group.name }) : t('invite.heading')}</h1>
 
         <section aria-labelledby="link-title" className="flex flex-col gap-3">
           <h2 id="link-title" className="text-lg font-semibold">
-            Share a link
+            {t('invite.shareLink')}
           </h2>
-          {link.loading && <Loading label="Creating invite link" />}
-          {link.error && <LoadError title="Could not create a link" error={link.error} onRetry={link.reload} />}
+          {link.loading && <Loading label={t('invite.creating')} />}
+          {link.error && <LoadError title={t('invite.linkError')} error={link.error} onRetry={link.reload} />}
           {link.data && (
             <Card className="flex flex-col gap-4">
-              <QrCode value={link.data.inviteUrl} label="QR code with the invite link" className="mx-auto w-48 max-w-full" />
+              <QrCode value={link.data.inviteUrl} label={t('invite.qrLabel')} className="mx-auto w-48 max-w-full" />
               <p className="font-mono text-sm break-all">{link.data.inviteUrl}</p>
               <div className="flex flex-wrap gap-2">
-                <Button variant="secondary" icon={<IconCopy size={20} />} onClick={() => copy(link.data.inviteUrl, 'Invite link')}>
-                  Copy link
+                <Button variant="secondary" icon={<IconCopy size={20} />} onClick={() => copy(link.data.inviteUrl, 'copied.inviteLink')}>
+                  {t('invite.copyLink')}
                 </Button>
                 {canShare && (
                   <Button
                     variant="secondary"
                     icon={<IconShare size={20} />}
-                    onClick={() => navigator.share({ title: 'Join my group on Stellar Split', url: link.data.inviteUrl }).catch(() => {})}
+                    onClick={() => navigator.share({ title: t('invite.shareTitle'), url: link.data.inviteUrl }).catch(() => {})}
                   >
-                    Share
+                    {t('invite.share')}
                   </Button>
                 )}
               </div>
@@ -80,10 +82,10 @@ export default function GroupInvite() {
 
         <form onSubmit={addByAddress} noValidate className="flex flex-col gap-3" aria-labelledby="address-title">
           <h2 id="address-title" className="text-lg font-semibold">
-            Or add by Stellar address
+            {t('invite.addByAddress')}
           </h2>
           <TextField
-            label="Their public address"
+            label={t('invite.address')}
             placeholder="G…"
             autoComplete="off"
             spellCheck={false}
@@ -91,16 +93,16 @@ export default function GroupInvite() {
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             error={error}
-            hint="Ask them to copy it from Freighter. Never paste a secret key."
+            hint={t('invite.addressHint')}
           />
-          <TextField label="Their name" optional maxLength={60} value={name} onChange={(e) => setName(e.target.value)} error={nameError} />
+          <TextField label={t('invite.theirName')} optional maxLength={60} value={name} onChange={(e) => setName(e.target.value)} error={nameError} />
           <Button type="submit" variant="outline" loading={adding} disabled={!address.trim() || Boolean(error) || Boolean(nameError)}>
-            Add to group
+            {t('invite.add')}
           </Button>
         </form>
 
         <ButtonLink to={`/groups/${id}`} block>
-          Done
+          {t('invite.done')}
         </ButtonLink>
       </div>
     </>

@@ -1,6 +1,7 @@
 import { Amount } from '../../components/Amount.jsx';
 import { ListRow } from '../../components/ListRow.jsx';
 import { IconReceipt, IconRobot } from '../../components/icons.jsx';
+import { useT } from '../../hooks/useT.js';
 import { formatDate, formatUsd, memberName } from '../../lib/format.js';
 
 /**
@@ -8,6 +9,7 @@ import { formatDate, formatUsd, memberName } from '../../lib/format.js';
  * @param {{ expense: any, members: any[], meId: string }} props
  */
 export function ExpenseRow({ expense, members, meId }) {
+  const { t } = useT();
   const payer = members.find((m) => m.id === expense.paidBy);
   const myShare = expense.shares?.find((s) => s.memberId === meId)?.amount;
   return (
@@ -18,15 +20,19 @@ export function ExpenseRow({ expense, members, meId }) {
         </span>
       }
       title={expense.description}
-      subtitle={`${memberName(payer, meId)} paid ${formatUsd(expense.amount)} · ${formatDate(expense.createdAt)}`}
+      subtitle={
+        payer?.id === meId
+          ? t('expense.row.paidYou', { amount: formatUsd(expense.amount), date: formatDate(expense.createdAt) })
+          : t('expense.row.paidOther', { name: memberName(payer, meId), amount: formatUsd(expense.amount), date: formatDate(expense.createdAt) })
+      }
       trailing={
         myShare ? (
           <span className="flex flex-col items-end">
-            <span className="text-sm text-muted">your share</span>
+            <span className="text-sm text-muted">{t('expense.row.yourShare')}</span>
             <Amount value={myShare} size="sm" />
           </span>
         ) : (
-          <span className="text-sm text-muted">not in split</span>
+          <span className="text-sm text-muted">{t('expense.row.notInSplit')}</span>
         )
       }
     />

@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { useT } from '../hooks/useT.js';
 import { cx } from '../lib/cx.js';
 
 /**
@@ -7,6 +8,7 @@ import { cx } from '../lib/cx.js';
  *   optional?: boolean, inputClassName?: string }} props
  */
 export function TextField({ label, hint, error, optional = false, className, inputClassName, id: idProp, ...rest }) {
+  const { t } = useT();
   const autoId = useId();
   const id = idProp ?? autoId;
   const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
@@ -14,7 +16,7 @@ export function TextField({ label, hint, error, optional = false, className, inp
     <div className={cx('flex flex-col gap-2', className)}>
       <label htmlFor={id} className="text-sm font-medium">
         {label}
-        {optional && <span className="font-normal text-muted"> (optional)</span>}
+        {optional && <span className="font-normal text-muted"> {t('common.optional')}</span>}
       </label>
       <input
         id={id}

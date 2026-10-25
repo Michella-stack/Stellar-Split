@@ -16,6 +16,7 @@ import { PaidCard } from '../features/settlement/PaidCard.jsx';
 import { PaymentProblem } from '../features/settlement/PaymentProblem.jsx';
 import { queueAfter } from '../features/settlement/queue.js';
 import { useApi } from '../hooks/useApi.js';
+import { useT } from '../hooks/useT.js';
 import { DEMO } from '../lib/demoMode.js';
 import { useToast } from '../hooks/useToast.js';
 import { useWallet } from '../hooks/useWallet.js';
@@ -24,6 +25,7 @@ import { USDC_FAUCET_URL } from '../config/env.js';
 import { useEstimate } from '../hooks/useRates.js';
 
 export default function Settle() {
+  const { t } = useT();
   const { id, memberId } = useParams();
   const location = useLocation();
   // Reloaded for every payment, so a "Settle all" queue always shows what is owed now.
@@ -32,14 +34,14 @@ export default function Settle() {
     <>
       {group.loading && (
         <>
-          <TopBar backTo={`/groups/${id}`} title="Settle up" />
-          <Loading label="Loading payment" />
+          <TopBar backTo={`/groups/${id}`} title={t('settle.title')} />
+          <Loading label={t('settle.loading')} />
         </>
       )}
       {group.error && (
         <>
-          <TopBar backTo={`/groups/${id}`} title="Settle up" />
-          <LoadError title="Could not load this group" error={group.error} onRetry={group.reload} />
+          <TopBar backTo={`/groups/${id}`} title={t('settle.title')} />
+          <LoadError title={t('group.loadError')} error={group.error} onRetry={group.reload} />
         </>
       )}
       {group.data && <SettleFlow detail={group.data} memberId={memberId} queue={location.state?.queue} />}
@@ -53,6 +55,7 @@ export default function Settle() {
  * @param {{ detail: any, memberId: string }} props
  */
 function SettleFlow({ detail, memberId, queue }) {
+  const { t } = useT();
   const wallet = useWallet();
   const toast = useToast();
   const { group, members, me, myPosition } = detail;
@@ -83,12 +86,17 @@ function SettleFlow({ detail, memberId, queue }) {
     // Reacting to an external wallet change is what this effect is for.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setStep('review');
-    setNotice('Your Freighter account or network changed. Check the details and confirm again.');
-  }, [wallet.epoch, step]);
+    setNotice(t('settle.walletChanged'));
+  }, [wallet.epoch, step, t]);
 
   const check = validateAmount(amount, debt ? { max: toStroops(debt) } : {});
   const amountError = !check.ok
-    ? { INVALID_FORMAT: 'Enter an amount like 12.50.', TOO_MANY_DECIMALS: 'Use at most 7 decimal places.', NOT_POSITIVE: 'The amount must be more than zero.', EXCEEDS_LIMIT: `You only owe ${debt ? formatUsd(debt) : ''}.` }[check.code]
+    ? {
+        INVALID_FORMAT: t('expense.errFormat'),
+        TOO_MANY_DECIMALS: t('expense.errDecimals'),
+        NOT_POSITIVE: t('expense.errPositive'),
+        EXCEEDS_LIMIT: t('settle.errExceeds', { debt: debt ? formatUsd(debt) : '' }),
+      }[check.code]
     : null;
   const estimate = useEstimate();
   const myCurrency = wallet.profile?.homeCurrency;
@@ -203,7 +211,7 @@ function SettleFlow({ detail, memberId, queue }) {
       const asset = usdcAsset();
       const { signedXdr } = await wallet.sign(xdr, { kind: 'trustline', signer: wallet.address, assetCode: asset.getCode(), assetIssuer: asset.getIssuer() });
       await submitSigned(signedXdr);
-      toast('USDC trustline added. Get testnet USDC from the faucet, then pay.', { tone: 'success' });
+      toast(t('settle.trustlineAdded'), { tone: 'success' });
       setBalanceVersion((v) => v + 1);
       setProblem(null);
       setStep('review');
@@ -217,8 +225,8 @@ function SettleFlow({ detail, memberId, queue }) {
   if (!recipient) {
     return (
       <>
-        <TopBar backTo={`/groups/${group.id}`} title="Settle up" />
-        <LoadError title="This person is not in the group" error={{ code: 'NOT_FOUND' }} />
+        <TopBar backTo={`/groups/${group.id}`} title={t('settle.title')} />
+        <LoadError title={t('settle.notMember')} error={{ code: 'NOT_FOUND' }} />
       </>
     );
   }
@@ -252,7 +260,7 @@ function SettleFlow({ detail, memberId, queue }) {
   if (step === 'problem' && problem) {
     return (
       <>
-        <TopBar backTo={`/groups/${group.id}`} title="Payment problem" />
+        <TopBar backTo={`/groups/${group.id}`} title={t('settle.problemTitle')} />
         <PaymentProblem
           code={problem.code}
           txHash={problem.txHash}
@@ -271,12 +279,12 @@ function SettleFlow({ detail, memberId, queue }) {
   if (!debt) {
     return (
       <>
-        <TopBar backTo={`/groups/${group.id}`} title="Settle up" />
+        <TopBar backTo={`/groups/${group.id}`} title={t('settle.title')} />
         <Card tone="accent" className="my-6 flex flex-col gap-3">
-          <h1 className="font-display-wide text-3xl">Nothing to pay</h1>
-          <p>You don’t owe {recipient.displayName} anything in {group.name} right now.</p>
+          <h1 className="font-display-wide text-3xl">{t('settle.nothingTitle')}</h1>
+          <p>{t('settle.nothingBody', { name: recipient.displayName, group: group.name })}</p>
           <ButtonLink to={`/groups/${group.id}`} variant="onAccent">
-            Back to group
+            {t('settle.backToGroup')}
           </ButtonLink>
         </Card>
       </>
@@ -286,17 +294,17 @@ function SettleFlow({ detail, memberId, queue }) {
   const busy = step === 'checking' || step === 'signing' || step === 'submitting';
   const available = availability(balances.data, check.ok ? amount : null, debt);
   const busyLabel = {
-    checking: 'Checking balances…',
-    signing: DEMO ? 'Confirming (demo)…' : 'Confirm in Freighter…',
-    submitting: DEMO ? 'Sending (demo)…' : 'Sending to Stellar…',
+    checking: t('settle.checking'),
+    signing: DEMO ? t('settle.confirmingDemo') : t('settle.confirmingFreighter'),
+    submitting: DEMO ? t('settle.sendingDemo') : t('settle.sendingStellar'),
   }[step];
   const myMember = members.find((m) => m.id === me);
 
   return (
     <>
-      <TopBar backTo={`/groups/${group.id}`} title="Review payment" />
+      <TopBar backTo={`/groups/${group.id}`} title={t('settle.reviewTitle')} />
       <div className="flex flex-col gap-6 pt-2 pb-8">
-        <h1 className="sr-only">Review your payment to {recipient.displayName}</h1>
+        <h1 className="sr-only">{t('settle.srHeading', { name: recipient.displayName })}</h1>
         {notice && (
           <p role="alert" className="rounded-2xl border-2 border-owe px-4 py-3 font-medium">
             {notice}
@@ -309,11 +317,11 @@ function SettleFlow({ detail, memberId, queue }) {
           <MemberAvatar member={recipient} size="lg" />
         </div>
         <p className="text-center text-lg">
-          You → <span className="font-semibold">{recipient.displayName}</span>
+          {t('settle.youTo', { name: recipient.displayName })}
         </p>
 
         {editing ? (
-          <AmountInput value={amount} onChange={setAmount} error={amountError} label={`Amount to pay (you owe ${formatUsd(debt)})`} />
+          <AmountInput value={amount} onChange={setAmount} error={amountError} label={t('settle.amountLabel', { debt: formatUsd(debt) })} />
         ) : (
           <div className="flex flex-col items-center gap-1 text-center">
             <Amount value={amount} size="xl" />
@@ -332,45 +340,47 @@ function SettleFlow({ detail, memberId, queue }) {
         />
 
         <ul className="flex flex-col gap-1 text-center">
-          {leavesYou && <li>Leaves you ≈ {leavesYou} <span className="text-muted">estimate</span></li>}
+          {leavesYou && (
+            <li>
+              {t('settle.leavesYou', { amount: leavesYou })} <span className="text-muted">{t('common.estimate')}</span>
+            </li>
+          )}
           {theyGet && (
             <li>
-              {recipient.displayName} can cash out ≈ {theyGet} <span className="text-muted">estimate</span>
+              {t('settle.cashOut', { name: recipient.displayName, amount: theyGet })} <span className="text-muted">{t('common.estimate')}</span>
             </li>
           )}
         </ul>
 
-        <Card as="section" aria-label="Payment details">
+        <Card as="section" aria-label={t('settle.details')}>
           <dl className="flex flex-col divide-y divide-line">
-            <Row term="To">
+            <Row term={t('settle.to')}>
               <span className="flex flex-col items-end">
                 <span className="font-semibold">{recipient.displayName}</span>
                 <AddressLink address={recipient.address} className="text-sm text-muted" />
               </span>
             </Row>
-            <Row term="Group">{group.name}</Row>
-            <Row term="Asset">
+            <Row term={t('settle.group')}>{group.name}</Row>
+            <Row term={t('settle.asset')}>
               <span className="font-mono">USDC</span>
             </Row>
-            <Row term="Network">Stellar Testnet</Row>
-            <Row term="Fee">Less than $0.01</Row>
+            <Row term={t('settle.network')}>{t('common.stellarTestnet')}</Row>
+            <Row term={t('settle.fee')}>{t('settle.feeValue')}</Row>
           </dl>
         </Card>
 
         <div className="flex flex-col gap-3" aria-live="polite">
           <Button block loading={busy} disabled={!check.ok || busy || available.blocking} onClick={confirm}>
-            {busy ? busyLabel : DEMO ? 'Confirm payment (demo)' : 'Confirm in Freighter'}
+            {busy ? busyLabel : DEMO ? t('settle.confirmDemo') : t('settle.confirmFreighter')}
           </Button>
           {!editing && (
             <Button block variant="outline" disabled={busy} onClick={() => setEditing(true)}>
-              Pay a different amount
+              {t('settle.differentAmount')}
             </Button>
           )}
         </div>
         <p className="text-center text-sm text-muted">
-          {DEMO
-            ? `Demo: this payment is simulated and nothing is sent to Stellar. In the real app, Freighter shows these same details before you approve and the money goes straight to ${recipient.displayName}.`
-            : `Freighter will show these same details before you approve. Money goes straight to ${recipient.displayName}; Stellar Split never holds it.`}
+          {DEMO ? t('settle.footerDemo', { name: recipient.displayName }) : t('settle.footerReal', { name: recipient.displayName })}
         </p>
       </div>
     </>
@@ -396,20 +406,21 @@ function availability(balances, amount, debt) {
 
 /** @param {{ state: any, recipientName: string, onPayWhatIHave: (amount: string) => void, onRetry: () => void }} props */
 function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
+  const { t } = useT();
   const box = 'rounded-2xl px-4 py-3 text-center';
   if (state.kind === 'loading') {
     return (
       <p role="status" className={`${box} bg-surface text-muted`}>
-        Checking your balance…
+        {t('avail.checking')}
       </p>
     );
   }
   if (state.kind === 'error') {
     return (
       <p className={`${box} bg-surface`}>
-        Could not read your balance.{' '}
+        {t('avail.error')}{' '}
         <button type="button" onClick={onRetry} className="min-h-11 font-semibold underline">
-          Try again
+          {t('common.tryAgain')}
         </button>
       </p>
     );
@@ -417,18 +428,17 @@ function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
   if (state.kind === 'not-funded') {
     return (
       <p role="alert" className={`${box} border-2 border-owe`}>
-        Your wallet isn’t on Testnet yet. Fund it from the{' '}
+        {t('avail.notFunded')}{' '}
         <Link to="/wallet" className="font-semibold underline">
-          Wallet screen
+          {t('avail.openWallet')}
         </Link>
-        .
       </p>
     );
   }
   if (state.kind === 'no-trustline') {
     return (
       <p className={`${box} bg-surface`}>
-        <span className="font-semibold">Available: no USDC yet.</span> Your wallet needs a USDC trustline; you can add it when you confirm.
+        <span className="font-semibold">{t('avail.noTrustlineBold')}</span> {t('avail.noTrustlineBody')}
       </p>
     );
   }
@@ -436,16 +446,16 @@ function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
     return (
       <div role="alert" className={`${box} flex flex-col items-center gap-2 border-2 border-owe`}>
         <p>
-          <span className="font-semibold">Not enough USDC.</span> You have {formatUsd(state.usdc)} available.
+          <span className="font-semibold">{t('avail.shortBold')}</span> {t('avail.shortBody', { amount: formatUsd(state.usdc) })}
         </p>
         {toStroops(state.max) > 0n ? (
           <Button variant="secondary" onClick={() => onPayWhatIHave(state.max)}>
-            Pay {formatUsd(state.max)} to {recipientName} instead
+            {t('avail.payInstead', { amount: formatUsd(state.max), name: recipientName })}
           </Button>
         ) : (
           <a href={USDC_FAUCET_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 font-semibold underline">
-            Get testnet USDC <IconExternal size={16} />
-            <span className="sr-only">(opens in a new tab)</span>
+            {t('walletScreen.getUsdc')} <IconExternal size={16} />
+            <span className="sr-only">{t('common.opensNewTab')}</span>
           </a>
         )}
       </div>
@@ -454,7 +464,7 @@ function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
   if (state.kind === 'ok') {
     return (
       <p className={`${box} bg-surface`}>
-        Available: <span className="font-semibold tabular-nums">{formatUsd(state.usdc)}</span> <span className="font-mono text-sm text-muted">USDC</span>
+        {t('avail.available')} <span className="font-semibold tabular-nums">{formatUsd(state.usdc)}</span> <span className="font-mono text-sm text-muted">USDC</span>
       </p>
     );
   }

@@ -3,11 +3,13 @@ import { Outlet, useLocation } from 'react-router';
 import { BottomNav } from '../components/BottomNav.jsx';
 import { DemoBanner } from '../components/DemoBanner.jsx';
 import { Loading } from '../components/LoadState.jsx';
+import { useT } from '../hooks/useT.js';
 
 // Top-level sections show the bottom navigation; flows inside them (forms, settle up) do not.
 const NAV_PATHS = new Set(['/groups', '/assist', '/wallet']);
 
 export default function AppLayout() {
+  const { t } = useT();
   const { pathname } = useLocation();
   const mainRef = useRef(/** @type {HTMLElement | null} */ (null));
   const firstRender = useRef(true);
@@ -28,7 +30,7 @@ export default function AppLayout() {
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-3 focus:text-on-primary"
       >
-        Skip to content
+        {t('common.skipToContent')}
       </a>
       <DemoBanner />
       <main id="main" ref={mainRef} tabIndex={-1} className="flex flex-1 flex-col focus:outline-none">

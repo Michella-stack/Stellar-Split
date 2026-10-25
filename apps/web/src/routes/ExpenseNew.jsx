@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { validateAmount } from '@shared/money.js';
+import { containsSecretKey } from '@shared/validation.js';
 import { createExpense, getGroup } from '../client/api.js';
 import { Amount } from '../components/Amount.jsx';
 import { Button } from '../components/Button.jsx';
@@ -15,24 +16,26 @@ import { MemberAvatar } from '../features/balances/MemberAvatar.jsx';
 import { AmountInput } from '../features/expenses/AmountInput.jsx';
 import { cleanAmountInput, descriptionError as describeProblem, equalPreview, exactStatus } from '../features/expenses/splitPreview.js';
 import { useApi } from '../hooks/useApi.js';
+import { useT } from '../hooks/useT.js';
 import { useToast } from '../hooks/useToast.js';
 import { formatUsd, memberName } from '../lib/format.js';
 import { useEstimate } from '../hooks/useRates.js';
 
 const AMOUNT_ERRORS = {
-  INVALID_FORMAT: 'Enter an amount like 12.50.',
-  TOO_MANY_DECIMALS: 'Use at most 7 decimal places.',
-  NOT_POSITIVE: 'The amount must be more than zero.',
+  INVALID_FORMAT: 'expense.errFormat',
+  TOO_MANY_DECIMALS: 'expense.errDecimals',
+  NOT_POSITIVE: 'expense.errPositive',
 };
 
 export default function ExpenseNew() {
+  const { t } = useT();
   const { id } = useParams();
   const group = useApi(() => getGroup(id), `group:${id}`);
   return (
     <>
-      <TopBar backTo={`/groups/${id}`} title="Add expense" />
-      {group.loading && <Loading label="Loading group" />}
-      {group.error && <LoadError title="Could not load this group" error={group.error} onRetry={group.reload} />}
+      <TopBar backTo={`/groups/${id}`} title={t('expense.title')} />
+      {group.loading && <Loading label={t('group.loading')} />}
+      {group.error && <LoadError title={t('group.loadError')} error={group.error} onRetry={group.reload} />}
       {group.data && <ExpenseForm detail={group.data} />}
     </>
   );
@@ -40,6 +43,7 @@ export default function ExpenseNew() {
 
 /** @param {{ detail: any }} props */
 function ExpenseForm({ detail }) {
+  const { t } = useT();
   const estimate = useEstimate();
   const navigate = useNavigate();
   const toast = useToast();
@@ -60,8 +64,10 @@ function ExpenseForm({ detail }) {
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const amountCheck = validateAmount(amount);
-  const amountError = touched && !amountCheck.ok ? AMOUNT_ERRORS[amountCheck.code] : null;
-  const descriptionError = describeProblem(description, touched);
+  const amountError = touched && !amountCheck.ok ? t(AMOUNT_ERRORS[amountCheck.code]) : null;
+  // The helper decides when to complain; the words come from the translations.
+  const problem = describeProblem(description, touched);
+  const descriptionError = !problem ? null : containsSecretKey(description) ? t('secret.warningShort') : t('expense.descriptionRequired');
   const ordered = members.map((m) => m.id).filter((mid) => participants.includes(mid));
   const equal = equalPreview(amount, ordered, paidBy);
   const exactCheck = exactStatus(amount, exact);
@@ -85,11 +91,11 @@ function ExpenseForm({ detail }) {
         : { type: 'exact', shares: exactCheck.shares.map((s) => ({ memberId: s.memberId, amount: s.amount })) };
     try {
       await createExpense(group.id, { description: description.trim(), amount, paidBy, split, source: prefill?.source ?? 'manual' }, { idempotencyKey });
-      toast(`${description.trim()} added`, { tone: 'success' });
+      toast(t('expense.added', { description: description.trim() }), { tone: 'success' });
       navigate(`/groups/${group.id}`, { replace: true });
     } catch (e) {
       setServerError(
-        e?.code === 'SPLIT_MISMATCH' ? 'The shares do not add up to the amount.' : 'Could not save the expense. Check your connection and try again.',
+        e?.code === 'SPLIT_MISMATCH' ? t('expense.errMismatch') : t('expense.errSave'),
       );
       setSaving(false);
     }
@@ -97,17 +103,17 @@ function ExpenseForm({ detail }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6 pt-2 pb-8">
-      <h1 className="sr-only">Add an expense to {group.name}</h1>
+      <h1 className="sr-only">{t('expense.srHeading', { group: group.name })}</h1>
       {prefill?.source === 'scan' && (
         <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm">
-          Filled in from your receipt. Check the details before saving.
+          {t('expense.fromReceipt')}
           {prefill.hint ? ` ${prefill.hint}` : ''}
         </p>
       )}
       <AmountInput value={amount} onChange={setAmount} error={amountError} />
       <TextField
-        label="What was it for?"
-        placeholder="Groceries"
+        label={t('expense.what')}
+        placeholder={t('expense.whatPlaceholder')}
         maxLength={80}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
@@ -115,7 +121,7 @@ function ExpenseForm({ detail }) {
       />
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-medium">Paid by</legend>
+        <legend className="mb-2 text-sm font-medium">{t('expense.paidBy')}</legend>
         <div className="flex flex-wrap gap-2">
           {members.map((m) => (
             <Chip key={m.id} selected={paidBy === m.id} onClick={() => setPaidBy(m.id)} icon={<MemberAvatar member={m} size="sm" />}>
@@ -126,19 +132,19 @@ function ExpenseForm({ detail }) {
       </fieldset>
 
       <Segmented
-        label="Split"
+        label={t('expense.split')}
         value={splitType}
         onChange={setSplitType}
         options={[
-          { value: 'equal', label: 'Equally' },
-          { value: 'exact', label: 'Exact amounts' },
+          { value: 'equal', label: t('expense.equally') },
+          { value: 'exact', label: t('expense.exact') },
         ]}
       />
 
       {splitType === 'equal' ? (
         <div className="flex flex-col gap-3">
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-sm font-medium">Split between</legend>
+            <legend className="mb-2 text-sm font-medium">{t('expense.splitBetween')}</legend>
             <div className="flex flex-wrap gap-2">
               {members.map((m) => (
                 <Chip key={m.id} selected={participants.includes(m.id)} onClick={() => toggleParticipant(m.id)}>
@@ -149,7 +155,7 @@ function ExpenseForm({ detail }) {
           </fieldset>
           {participants.length === 0 && (
             <p role="alert" className="text-sm font-medium text-owe">
-              Choose at least one person.
+              {t('expense.chooseOne')}
             </p>
           )}
           {equal && (
@@ -179,7 +185,7 @@ function ExpenseForm({ detail }) {
                   <MemberAvatar member={m} size="sm" />
                   <span>
                     {memberName(m, me)}
-                    <span className="sr-only"> share in USDC</span>
+                    <span className="sr-only"> {t('expense.shareSr')}</span>
                   </span>
                 </span>
                 <span className="flex items-center gap-1 rounded-input border-2 border-line bg-bg px-3 focus-within:border-text">
@@ -202,14 +208,14 @@ function ExpenseForm({ detail }) {
         </div>
       )}
 
-      <p className="text-sm text-muted">Details stay private. Only a fingerprint goes on-chain.</p>
+      <p className="text-sm text-muted">{t('expense.private')}</p>
       {serverError && (
         <p role="alert" className="font-medium text-owe">
           {serverError}
         </p>
       )}
       <Button type="submit" block loading={saving} disabled={touched && !canSave}>
-        Save expense
+        {t('expense.save')}
       </Button>
     </form>
   );
@@ -217,14 +223,16 @@ function ExpenseForm({ detail }) {
 
 /** @param {{ status: ReturnType<typeof exactStatus>, amount: string }} props */
 function ExactSummary({ status, amount }) {
+  const { t } = useT();
   const total = validateAmount(amount).ok ? formatUsd(amount) : null;
+  const params = { total, sum: formatUsd(status.sum), difference: formatUsd(status.difference) };
   const text = {
-    'no-amount': 'Enter the total amount first.',
-    'bad-share': 'A share has too many decimal places (7 at most).',
-    empty: `Assign ${total} between people.`,
-    under: `Adds up to ${formatUsd(status.sum)} of ${total}. ${formatUsd(status.difference)} left to assign.`,
-    over: `Adds up to ${formatUsd(status.sum)} of ${total}. ${formatUsd(status.difference)} too much.`,
-    ok: `Adds up to ${total}. Ready to save.`,
+    'no-amount': t('expense.sum.noAmount'),
+    'bad-share': t('expense.sum.badShare'),
+    empty: t('expense.sum.empty', params),
+    under: t('expense.sum.under', params),
+    over: t('expense.sum.over', params),
+    ok: t('expense.sum.ok', params),
   }[status.state];
   return (
     <p aria-live="polite" className={status.state === 'ok' ? 'flex items-center gap-2 font-semibold text-owed' : 'font-medium text-owe'}>

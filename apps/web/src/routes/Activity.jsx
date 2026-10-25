@@ -9,9 +9,11 @@ import { TopBar } from '../components/TopBar.jsx';
 import { EXPLORER_TX_URL } from '../config/env.js';
 import { ExpenseRow } from '../features/expenses/ExpenseRow.jsx';
 import { useApi } from '../hooks/useApi.js';
+import { useT } from '../hooks/useT.js';
 import { formatDate, memberName, shortAddress } from '../lib/format.js';
 
 export default function Activity() {
+  const { t } = useT();
   const { id } = useParams();
   const group = useApi(() => getGroup(id), `group:${id}`);
   const activity = useApi(() => listActivity(id), `activity:${id}`);
@@ -24,15 +26,15 @@ export default function Activity() {
 
   return (
     <>
-      <TopBar backTo={`/groups/${id}`} title={group.data?.group.name ?? 'Activity'} />
+      <TopBar backTo={`/groups/${id}`} title={group.data?.group.name ?? t('activity.title')} />
       <div className="flex flex-col gap-4 pb-8">
-        <h1 className="font-display-wide text-4xl">Activity</h1>
-        {loading && !error && <Loading label="Loading activity" />}
-        {error && <LoadError title="Could not load activity" error={error} onRetry={reload} />}
+        <h1 className="font-display-wide text-4xl">{t('activity.title')}</h1>
+        {loading && !error && <Loading label={t('activity.loading')} />}
+        {error && <LoadError title={t('activity.loadError')} error={error} onRetry={reload} />}
         {group.data && activity.data && (
           activity.data.items.length === 0 ? (
-            <EmptyState icon={<IconInbox />} title="Nothing yet">
-              Expenses and payments in this group will show up here.
+            <EmptyState icon={<IconInbox />} title={t('activity.emptyTitle')}>
+              {t('activity.emptyBody')}
             </EmptyState>
           ) : (
             <ul className="flex flex-col">
@@ -55,6 +57,7 @@ export default function Activity() {
 
 /** @param {{ item: any, detail: any }} props */
 function SettlementRow({ item, detail }) {
+  const { t } = useT();
   const byId = new Map(detail.members.map((m) => [m.id, m]));
   const from = memberName(byId.get(item.from), detail.me);
   const to = memberName(byId.get(item.to), detail.me);
@@ -65,12 +68,16 @@ function SettlementRow({ item, detail }) {
           <IconCheck size={20} />
         </span>
       }
-      title={`${from} paid ${to === 'You' ? 'you' : to}`}
+      title={
+        item.from === detail.me
+          ? t('activity.paidTo', { to })
+          : item.to === detail.me
+            ? t('activity.paidYou', { from })
+            : t('activity.paidOther', { from, to })
+      }
       subtitle={
         item.demo ? (
-          <span>
-            Demo payment · {formatDate(item.createdAt)}
-          </span>
+          <span>{t('activity.demoPayment', { date: formatDate(item.createdAt) })}</span>
         ) : (
         <a
           href={`${EXPLORER_TX_URL}${item.txHash}`}
@@ -79,7 +86,7 @@ function SettlementRow({ item, detail }) {
           className="inline-flex min-h-11 items-center gap-1 font-mono underline underline-offset-4"
         >
           {shortAddress(item.txHash)} · {formatDate(item.createdAt)} <IconExternal size={14} />
-          <span className="sr-only">(view transaction on Stellar Expert, opens in a new tab)</span>
+          <span className="sr-only">{t('activity.viewTx')}</span>
         </a>
         )
       }

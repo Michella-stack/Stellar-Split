@@ -9,6 +9,8 @@ import { TopBar } from '../components/TopBar.jsx';
 import { mockReceiptDraft } from '../features/expenses/mockReceipt.js';
 import { draftToPrefill, warningMessages } from '../features/expenses/receiptDraft.js';
 import { PhotoError, prepareReceiptPhoto } from '../features/expenses/receiptPhoto.js';
+import { useT } from '../hooks/useT.js';
+import { tNow } from '../i18n/index.js';
 import { formatDate } from '../lib/format.js';
 
 // Errors that mean the reader itself could not be used. The demo then shows a labelled sample instead of failing.
@@ -16,15 +18,16 @@ const READER_DOWN = new Set(['SCAN_UNAVAILABLE', 'NETWORK', 'TIMEOUT', 'UNKNOWN'
 
 /** @param {unknown} error */
 function describeFailure(error) {
-  if (error instanceof PhotoError) return 'We could not open that image. Try another photo or a screenshot.';
-  if (error instanceof ApiError && error.code === 'NOT_A_RECEIPT') return 'That does not look like a receipt. Try another photo.';
-  if (error instanceof ApiError && error.code === 'SCAN_UNREADABLE') return 'We could not read the total on that receipt. Try a clearer photo, or enter the expense by hand.';
-  if (error instanceof ApiError && error.code === 'RATE_LIMITED') return 'You have scanned a lot of receipts. Wait a few minutes, or enter the expense by hand.';
-  if (error instanceof ApiError && error.code === 'UNAUTHORIZED') return 'Your session ended. Sign in again to scan a receipt.';
-  return 'Something went wrong while reading the receipt. Try again, or enter the expense by hand.';
+  if (error instanceof PhotoError) return tNow('scan.errImage');
+  if (error instanceof ApiError && error.code === 'NOT_A_RECEIPT') return tNow('scan.errNotReceipt');
+  if (error instanceof ApiError && error.code === 'SCAN_UNREADABLE') return tNow('scan.errUnreadable');
+  if (error instanceof ApiError && error.code === 'RATE_LIMITED') return tNow('scan.errRateLimited');
+  if (error instanceof ApiError && error.code === 'UNAUTHORIZED') return tNow('scan.errSession');
+  return tNow('scan.errGeneric');
 }
 
 export default function ExpenseScan() {
+  const { t } = useT();
   const { id } = useParams();
   const navigate = useNavigate();
   const cameraRef = useRef(/** @type {HTMLInputElement | null} */ (null));
@@ -74,26 +77,26 @@ export default function ExpenseScan() {
 
   return (
     <>
-      <TopBar backTo={`/groups/${id}`} title="Scan a receipt" />
+      <TopBar backTo={`/groups/${id}`} title={t('scan.title')} />
       <div className="flex flex-1 flex-col gap-6 pt-2 pb-8">
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onFile} />
         <input ref={uploadRef} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onFile} />
 
         {step === 'choose' && (
           <>
-            <h1 className="font-display-wide text-4xl">Scan a receipt</h1>
-            <p className="text-muted">Take a photo of a paper receipt or upload a screenshot. We read the total and the items.</p>
+            <h1 className="font-display-wide text-4xl">{t('scan.title')}</h1>
+            <p className="text-muted">{t('scan.intro')}</p>
             {!USING_MOCKS && (
               <p role="note" className="rounded-2xl bg-surface-2 px-4 py-3 text-sm">
-                Demo: use sample receipts only. The photo is sent to Google Gemini to read it, and on Google’s free tier Google may use it to improve its products.
+                {t('scan.demoNotice')}
               </p>
             )}
             <div className="flex flex-col gap-3">
               <Button block icon={<IconCamera size={20} />} onClick={() => cameraRef.current?.click()}>
-                Take photo
+                {t('scan.takePhoto')}
               </Button>
               <Button block variant="secondary" icon={<IconReceipt size={20} />} onClick={() => uploadRef.current?.click()}>
-                Upload screenshot
+                {t('scan.upload')}
               </Button>
             </div>
           </>
@@ -105,48 +108,46 @@ export default function ExpenseScan() {
               <IconReceipt size={96} />
               <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 animate-[scan_1.8s_ease-in-out_infinite] bg-accent shadow-[0_0_24px_var(--accent)]" />
             </div>
-            <p className="text-lg font-semibold">Reading your receipt…</p>
+            <p className="text-lg font-semibold">{t('scan.reading')}</p>
           </div>
         )}
 
         {step === 'error' && (
           <>
-            <h1 className="font-display-wide text-4xl">We couldn’t read it</h1>
+            <h1 className="font-display-wide text-4xl">{t('scan.errorTitle')}</h1>
             <p role="alert" className="text-muted">
               {failure}
             </p>
             <Button block onClick={() => setStep('choose')}>
-              Try another photo
+              {t('scan.tryAnother')}
             </Button>
             <Button block variant="outline" onClick={() => navigate(`/groups/${id}/expenses/new`, { replace: true })}>
-              Enter it by hand
+              {t('scan.enterByHand')}
             </Button>
           </>
         )}
 
         {step === 'result' && result && (
           <>
-            <h1 className="font-display-wide text-4xl">{sample ? 'Sample result' : 'Here’s what we found'}</h1>
+            <h1 className="font-display-wide text-4xl">{sample ? t('scan.sampleTitle') : t('scan.found')}</h1>
             {sample && (
               <p role="note" className="rounded-2xl bg-surface-2 px-4 py-3 text-sm">
-                {USING_MOCKS
-                  ? 'This is a sample result. The photo was not read.'
-                  : 'The receipt reader is not available right now, so this is a sample result and not your photo. Enter the expense by hand to use your receipt.'}
+                {USING_MOCKS ? t('scan.sampleMock') : t('scan.sampleDown')}
               </p>
             )}
             <Card className="flex flex-col gap-4">
               <div className="flex flex-col">
-                <span className="text-lg font-semibold">{result.merchant ?? 'Unknown merchant'}</span>
-                <span className="text-sm text-muted">{result.date ? formatDate(result.date) : 'Date not found'}</span>
+                <span className="text-lg font-semibold">{result.merchant ?? t('scan.unknownMerchant')}</span>
+                <span className="text-sm text-muted">{result.date ? formatDate(result.date) : t('scan.noDate')}</span>
               </div>
               <dl className="grid grid-cols-2 gap-3">
                 <div>
-                  <dt className="text-sm text-muted">Total on receipt</dt>
+                  <dt className="text-sm text-muted">{t('scan.totalOnReceipt')}</dt>
                   <dd className="font-mono text-lg">{[result.currency, result.total].filter(Boolean).join(' ')}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-muted">In USDC</dt>
-                  <dd>{result.usdc ? <Amount value={result.usdc} size="md" /> : <span className="text-sm text-muted">You enter it next</span>}</dd>
+                  <dt className="text-sm text-muted">{t('scan.inUsdc')}</dt>
+                  <dd>{result.usdc ? <Amount value={result.usdc} size="md" /> : <span className="text-sm text-muted">{t('scan.enterNext')}</span>}</dd>
                 </div>
               </dl>
               {warningMessages(result).map((message) => (
@@ -155,11 +156,11 @@ export default function ExpenseScan() {
                 </p>
               ))}
               <div className="flex flex-col gap-1">
-                <h2 className="text-sm font-medium">Items found</h2>
+                <h2 className="text-sm font-medium">{t('scan.items')}</h2>
                 <ul className="flex flex-col divide-y divide-line text-sm">
                   {result.items.map((item, index) => (
-                    <li key={`${index}-${item.name}`} className="flex justify-between py-2">
-                      <span>{item.name}</span>
+                    <li key={`${index}-${item.nameKey ?? item.name}`} className="flex justify-between py-2">
+                      <span>{item.nameKey ? t(item.nameKey) : item.name}</span>
                       <span className="font-mono">{[result.currency, item.amount].filter(Boolean).join(' ')}</span>
                     </li>
                   ))}
@@ -167,18 +168,16 @@ export default function ExpenseScan() {
               </div>
             </Card>
             <Button block onClick={applyDetails}>
-              Use these details
+              {t('scan.use')}
             </Button>
             <Button block variant="outline" onClick={() => setStep('choose')}>
-              Scan another
+              {t('scan.another')}
             </Button>
           </>
         )}
 
         <p className="mt-auto text-sm text-muted">
-          {USING_MOCKS
-            ? 'Your photo stays on your device in this preview.'
-            : 'We do not store the photo. Nothing is saved until you review the details and save the expense.'}
+          {USING_MOCKS ? t('scan.privacyMock') : t('scan.privacyReal')}
         </p>
       </div>
     </>

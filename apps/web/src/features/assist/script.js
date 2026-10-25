@@ -1,4 +1,4 @@
-// Scripted Stellar Assist for the demo. Understands a few phrases; the real agent replaces this later.
+// Scripted Stellar Assist for the demo. Understands a few phrases in English, Spanish and Portuguese; the real agent replaces this later.
 // The spending decision mirrors the server-side policy: the server stays the authority.
 
 import { toStroops } from '@shared/money.js';
@@ -17,18 +17,19 @@ const AMOUNT = '(\\d+(?:[.,]\\d{1,7})?)';
  */
 export function parseIntent(text) {
   if (containsSecretKey(text)) return { kind: 'secret' };
-  const t = text.trim().toLowerCase();
-  if (/what do i owe|how much do i owe|my balance/.test(t)) return { kind: 'what-owe' };
+  // Lower case and drop accents so "¿Qué debo?" and "Pagar à Mateo" match the same patterns as plain ASCII.
+  const t = text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (/what do i owe|how much do i owe|my balance|que debo|que devo|cuanto debo|mi saldo|quanto devo|meu saldo/.test(t)) return { kind: 'what-owe' };
   if (/telegram/.test(t)) return { kind: 'telegram-check' };
-  if (/internet share/.test(t)) return { kind: 'pay-internet' };
+  if (/internet share|parte (?:de|da) internet/.test(t)) return { kind: 'pay-internet' };
 
-  const pay = new RegExp(`\\bpay\\s+([a-z]+)\\s+\\$?${AMOUNT}`).exec(t);
+  const pay = new RegExp(`\\b(?:pay|pagar|paga)\\s+([a-z]+)\\s+\\$?${AMOUNT}`).exec(t);
   if (pay) return { kind: 'pay', to: pay[1], amount: normalize(pay[2]) };
 
-  const expense = new RegExp(`\\$?${AMOUNT}\\s+(?:usdc\\s+)?for\\s+([a-z][a-z ]*?)(?:,|\\s+split|$)`).exec(t);
+  const expense = new RegExp(`\\$?${AMOUNT}\\s+(?:usdc\\s+)?(?:for|para|pra)\\s+(?:(?:la|el|las|los|a|o|as|os)\\s+)?([a-z][a-z ]*?)(?:,|\\s+split|\\s+divid|\\s+repart|$)`).exec(t);
   if (expense) {
-    const ways = /split\s+(\d+)\s+ways/.exec(t);
-    return { kind: 'add-expense', amount: normalize(expense[1]), description: capitalize(expense[2].trim()), ways: ways ? Number(ways[1]) : null };
+    const ways = /split\s+(\d+)\s+ways|(?:dividid[oa]|dividir|repartid[oa]|repartir)\s+(?:entre|por|em|en)\s+(\d+)/.exec(t);
+    return { kind: 'add-expense', amount: normalize(expense[1]), description: capitalize(expense[2].trim()), ways: ways ? Number(ways[1] ?? ways[2]) : null };
   }
   return { kind: 'unknown' };
 }

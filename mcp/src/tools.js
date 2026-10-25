@@ -27,6 +27,12 @@ const split = z.discriminatedUnion("rule", [
   }),
 ]);
 
+// Agent-facing names (rule, member) mapped to the API shape (type, memberId).
+const toApiSplit = (s) =>
+  s.rule === "equal"
+    ? { type: "equal", participants: s.participants }
+    : { type: "exact", shares: s.shares.map((x) => ({ memberId: x.member, amount: x.amount })) };
+
 const reply = (data) => ({ content: [{ type: "text", text: JSON.stringify(data, null, 2) }] });
 const fail = (error, status = 0) => ({
   isError: true,
@@ -79,7 +85,7 @@ export function buildServer(api) {
         }
       }
       return fromApi(
-        await api.createExpense(group_id, { payer, amount: total, description, split: s }, idempotency_key ?? randomUUID()),
+        await api.createExpense(group_id, { paidBy: payer, amount: total, description, split: toApiSplit(s) }, idempotency_key ?? randomUUID()),
       );
     },
   );

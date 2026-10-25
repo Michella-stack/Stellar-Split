@@ -1,0 +1,16 @@
+{
+  "name": "@stellar-split/shared",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Framework-independent domain rules shared by the web app and the API: amounts, splits, balances, input checks.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test \"src/**/*.test.js\""
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@stellar-split/api",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Stellar-Split REST API: groups, expenses, balances and verified Testnet USDC settlements. No runtime dependencies.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test \"test/*.test.js\""
+  }
+}

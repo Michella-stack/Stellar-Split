@@ -582,6 +582,7 @@ export default {
   "yourAgent.err.invalid": "Digite um endereço Stellar válido: um G seguido de 55 letras e dígitos.",
   "yourAgent.err.alreadyLinked": "Este agente já está vinculado a uma conta.",
   "yourAgent.err.unknown": "O Stellar Split não conhece este agente.",
+  "yourAgent.err.linkInvalid": "A assinatura não corresponde ou o pedido expirou. Tente vincular de novo.",
   "yourAgent.err.session": "Sua sessão expirou. Entre de novo.",
   "yourAgent.err.rejected": "Você recusou a solicitação no Freighter. Nada foi vinculado.",
   "yourAgent.err.wallet": "O Freighter não está pronto. Desbloqueie, mude para Testnet e tente de novo.",

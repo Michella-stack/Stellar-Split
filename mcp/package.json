@@ -1,0 +1,18 @@
+{
+  "name": "ledgerly-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server that lets agents (Hermes, OpenClaw) use the Ledgerly API. Phase 1: read, create expenses, propose settlements. No signing.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "zod": "4.6.7"
+  }
+}

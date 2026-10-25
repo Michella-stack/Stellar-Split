@@ -37,7 +37,7 @@ sequenceDiagram
   actor P as Payer
   participant W as Web app
   participant API as API and policy engine
-  participant H as Hermes on Telegram
+  participant H as Stellar Assist on Telegram
   participant F as Freighter wallet
   actor R as Payee
   participant C as Group contract

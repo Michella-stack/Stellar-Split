@@ -1,6 +1,6 @@
 # Stellar Split web app
 
-React single-page app for Stellar Split, built with Vite and Tailwind CSS v4. Stellar Testnet only. See [ADR 0001](../../docs/adr/0001-web-vite-spa.md) for why it is an SPA.
+React single-page app for Stellar Split, built with Vite and Tailwind CSS v4. Stellar Testnet only. See [ADR 0007](../../docs/adr/0007-web-vite-spa.md) for why it is an SPA.
 
 ## Run it
 
@@ -16,6 +16,15 @@ npm run dev        # http://localhost:5173
 Other scripts: `npm test` (Vitest), `npm run lint` (ESLint), `npm run build`, `npm run preview`. The shared domain rules have their own tests: `cd packages/shared && npm test`.
 
 In development, http://localhost:5173/ui shows every UI component in the dark and light themes side by side. It is not part of production builds.
+
+## Demo mode (no wallet needed)
+
+The welcome screen has **Explore with sample data**. It runs the whole app on the sample groups (Casa Alfama, Algarve trip, Stellar Assist) without Freighter and without touching Stellar, so anyone can try it from the live URL. It is the same deployment, switched by a flag in `localStorage` (`stellar-split.demo`); the page reloads when it changes.
+
+- A fixed banner on every screen says it is a demo, with **Exit demo**. Leaving forgets what was done in it.
+- Payments are simulated: the same review, steps and paid screen, but nothing is signed or sent. They are marked `demo: true`, so no screen links them to an explorer, and the receipt says "DEMO".
+- Balances on Wallet and Settle up are sample values. Stellar Assist runs on its sample data without the "Preview" note.
+- The real mode is unchanged: connect Freighter on Testnet and sign in.
 
 ## Against the real API
 
@@ -41,7 +50,7 @@ You need two Testnet accounts in Freighter. The payer is the account you sign in
 2. **Sign in:** click **Sign in with Freighter**. Freighter shows a single data entry: it costs nothing and is never sent.
 3. **Profile:** enter your name and home currency (EUR).
 4. **Your groups:** you owe $364.60 in Casa Alfama, and Algarve trip owes you $36.00, each with a € estimate.
-5. **Casa Alfama:** members from four countries, the accent card “You owe Mateo $364.60 · ≈ €335”, and everyone else's balance in words.
+5. **Casa Alfama:** members from four countries, the accent card “You owe Mateo $364.60 · ≈ €325” (the estimate follows the day's exchange rate), and everyone else's balance in words.
 6. **Add expense → Enter it yourself:** 30 for Internet, split **Exact amounts**. The check reads “Adds up to $X of $30.00” until it matches. Save it and the balances update.
 7. **Settle up with Mateo:** the review shows your available USDC. If it is short, use **Pay $X to Mateo instead** (a partial payment), then **Confirm in Freighter**. Freighter shows the same recipient, amount and asset.
 8. **Paid:** open the transaction on Stellar Expert, then **Save receipt** (PNG).
@@ -111,9 +120,13 @@ If the Freighter account or network changes before submission, the payment goes 
 
 In mock mode, set `VITE_MOCK_MATEO_ADDRESS` to a real Testnet account with a USDC trustline so that "Settle up with Mateo" reaches it.
 
+## Exchange rates
+
+The "≈ €325 estimate" lines use `useEstimate()`, which redraws when live rates arrive. The rates API is allowed in the Content-Security-Policy in `vercel.json` (`connect-src`), and its attribution is shown on the Wallet screen, as its terms ask.
+
 ## Shared rules and mocks
 
-Amounts, splits and balances come from [`packages/shared`](../../packages/shared/README.md), imported as `@shared/...`. The API client and the mock response shapes are documented in [`src/client/README.md`](src/client/README.md). Home-currency estimates (`src/lib/rates.js`) use a fixed mock rate table for now.
+Amounts, splits and balances come from [`packages/shared`](../../packages/shared/README.md), imported as `@shared/...`. The API client and the mock response shapes are documented in [`src/client/README.md`](src/client/README.md). Home-currency estimates (`src/lib/rates.js`) use daily rates from the free open.er-api.com API, cached for 6 hours. If they cannot be loaded, or look wrong (a rate more than 4 times away from the sample table), fixed sample rates are used and the Wallet screen says so. Estimates are display only: payments are always in USDC.
 
 ## Accessibility
 

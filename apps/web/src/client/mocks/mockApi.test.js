@@ -115,7 +115,7 @@ describe('settlements (two steps, like the API)', () => {
     expect((await api.getGroup('casa-alfama')).myPosition).toEqual({ net: '0.00', owes: [], owed: [] });
     const { items } = await api.listActivity('casa-alfama');
     expect(items[0]).toMatchObject({ type: 'settlement', from: 'm-you', to: 'm-mateo', txHash, intentId: intent.id });
-    await expect(api.recordSettlement('casa-alfama', { intentId: intent.id, txHash })).rejects.toMatchObject({ code: 'DUPLICATE_TX' });
+    await expect(api.recordSettlement('casa-alfama', { intentId: intent.id, txHash })).rejects.toMatchObject({ code: 'INTENT_NOT_OPEN', status: 409 });
   });
 
   it('blocks a second payment with the same person while one is reserved', async () => {
@@ -206,6 +206,21 @@ describe('mock persistence', () => {
   });
 });
 
+describe('mock settlement intents persistence', () => {
+  it('keeps a reservation across instances that share a storage, and shows what the API shows', async () => {
+    const store = new Map();
+    const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+    const first = createMockApi({ delayMs: 0, storage });
+    const { intent } = await first.createSettlementIntent('casa-alfama', { to: 'm-mateo', amount: '50' });
+    expect(intent).toMatchObject({ reservedAt: expect.any(String), payFrom: expect.any(String), network: 'stellar:testnet' });
+    const second = createMockApi({ delayMs: 0, storage });
+    await expect(second.createSettlementIntent('casa-alfama', { to: 'm-mateo', amount: '50' })).rejects.toMatchObject({ code: 'INTENT_IN_PROGRESS' });
+    await expect(second.cancelSettlementIntent('casa-alfama', 'si-missing')).rejects.toMatchObject({ code: 'INTENT_NOT_FOUND', status: 404 });
+    await second.cancelSettlementIntent('casa-alfama', intent.id);
+    await expect(second.cancelSettlementIntent('casa-alfama', intent.id)).rejects.toMatchObject({ code: 'INTENT_NOT_OPEN' });
+  });
+});
+
 describe('mock address overrides', () => {
   it('lets a real Testnet account play Mateo', async () => {
     const real = 'GAZ2D6UYGDFFORAS3PXOEIZQLVS7ME6VYRANQJNLEELMYIAOUB4PY7NY';
@@ -246,5 +261,31 @@ describe('scanReceipt (receipt scan, issue #87)', () => {
 
   it('answers a group the person is not in like a missing group', async () => {
     await expect(api.scanReceipt('no-such-group', {})).rejects.toMatchObject({ code: 'NOT_FOUND', status: 404 });
+  });
+});
+
+describe('demo mode (sample data, nothing sent to Stellar)', () => {
+  it('starts with a finished profile, so the tour does not open with a form', async () => {
+    const demo = createMockApi({ delayMs: 0, demo: true });
+    expect(await demo.getMe()).toMatchObject({ displayName: 'Alex', homeCurrency: 'EUR' });
+    expect((await api.getMe()).displayName).toBeNull();
+  });
+
+  it('marks settlements as demo, so no screen links them to an explorer', async () => {
+    const demo = createMockApi({ delayMs: 0, demo: true });
+    const { intent } = await demo.createSettlementIntent('casa-alfama', { to: 'm-mateo', amount: '100' });
+    const { settlement } = await demo.recordSettlement('casa-alfama', { intentId: intent.id, txHash: 'e'.repeat(64) });
+    expect(settlement.demo).toBe(true);
+    const normal = createMockApi({ delayMs: 0 });
+    const reserved = await normal.createSettlementIntent('casa-alfama', { to: 'm-mateo', amount: '100' });
+    expect((await normal.recordSettlement('casa-alfama', { intentId: reserved.intent.id, txHash: 'f'.repeat(64) })).settlement.demo).toBeUndefined();
+  });
+
+  it('keeps its state under its own storage key', async () => {
+    const store = new Map();
+    const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+    const demo = createMockApi({ delayMs: 0, demo: true, storage, storageKey: 'demo-key' });
+    await demo.updateMe({ displayName: 'Sam' });
+    expect([...store.keys()]).toEqual(['demo-key']);
   });
 });

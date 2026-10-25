@@ -4,6 +4,7 @@ import * as freighter from './freighter/adapter.js';
 import { WalletError } from './freighter/errors.js';
 import { WalletContext } from './wallet-context.js';
 import { SESSION_KEY, sessionStore } from './sessionStore.js';
+import { DEMO, DEMO_ADDRESS, exitDemo } from '../lib/demoMode.js';
 
 const errorCode = (error) => (error instanceof WalletError ? error.code : 'UNKNOWN');
 
@@ -65,6 +66,21 @@ export function WalletProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      if (DEMO) {
+        // Demo mode: the sample person is signed in from the start. Freighter is never contacted.
+        try {
+          const me = await api.getMe();
+          if (cancelled) return;
+          setAddress(DEMO_ADDRESS);
+          setNetwork({ name: 'testnet', passphrase: 'Test SDF Network ; September 2015', isTestnet: true });
+          setSession({ token: 'demo', address: DEMO_ADDRESS, expiresAt: '2999-01-01T00:00:00.000Z' });
+          setProfile(me);
+          setStatus('connected');
+        } catch {
+          if (!cancelled) setStatus('disconnected');
+        }
+        return;
+      }
       try {
         if (wasDisconnected()) return setStatus('disconnected');
         const existing = await freighter.getConnectedAddress();
@@ -99,7 +115,7 @@ export function WalletProvider({ children }) {
 
   // Account or network changes in Freighter invalidate anything reviewed earlier.
   useEffect(() => {
-    if (status !== 'connected') return undefined;
+    if (status !== 'connected' || DEMO) return undefined;
     return freighter.watch(({ address: next, network: nextNetwork }) => {
       if (next && next !== addressRef.current) {
         forgetSession();
@@ -159,7 +175,11 @@ export function WalletProvider({ children }) {
     }
   }, [setNetwork]);
 
-  const sign = useCallback((xdr, intent) => freighter.signTransaction(xdr, intent), []);
+  const sign = useCallback((xdr, intent) => {
+    // Demo payments are simulated and never reach this point; refuse so nothing is ever signed by accident.
+    if (DEMO) return Promise.reject(new WalletError('UNKNOWN', 'Nothing is signed in demo mode'));
+    return freighter.signTransaction(xdr, intent);
+  }, []);
 
   const signIn = useCallback(async () => {
     const current = addressRef.current;
@@ -185,6 +205,10 @@ export function WalletProvider({ children }) {
   }, []);
 
   const disconnect = useCallback(() => {
+    if (DEMO) {
+      exitDemo();
+      return;
+    }
     // Freighter has no programmatic disconnect; the app forgets the account and session and stays
     // disconnected until the person presses Connect again.
     setDisconnectedFlag(true);

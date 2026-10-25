@@ -3,7 +3,10 @@ import { Asset, Keypair, Operation } from '@stellar/stellar-sdk';
 import { checkIntent } from './intent.js';
 import { ISSUER, buildTx, creditor, payer, payment, usdc } from './test-helpers.js';
 
-const paymentIntent = { kind: 'payment', signer: payer, destination: creditor, amount: '364.60', assetCode: 'USDC', assetIssuer: ISSUER };
+const memoHash = 'ab'.repeat(32);
+const notAfter = new Date(Date.now() + 600_000).toISOString();
+const paymentIntent = { kind: 'payment', signer: payer, destination: creditor, amount: '364.60', assetCode: 'USDC', assetIssuer: ISSUER, memoHash, notAfter };
+const buildPayment = (ops, options) => buildTx(ops, { memoHash, ...options });
 const code = (fn) => {
   try {
     fn();
@@ -15,7 +18,7 @@ const code = (fn) => {
 
 describe('checkIntent: payment', () => {
   it('accepts the payment that was reviewed', () => {
-    expect(code(() => checkIntent(buildTx([payment()]), paymentIntent))).toBe('NO_ERROR');
+    expect(code(() => checkIntent(buildPayment([payment()]), paymentIntent))).toBe('NO_ERROR');
   });
 
   it.each([
@@ -26,23 +29,22 @@ describe('checkIntent: payment', () => {
     ['an extra operation', [payment(), payment()]],
     ['a different operation', [Operation.changeTrust({ asset: usdc })]],
   ])('refuses %s', (_, ops) => {
-    expect(code(() => checkIntent(buildTx(ops), paymentIntent))).toBe('INTENT_MISMATCH');
+    expect(code(() => checkIntent(buildPayment(ops), paymentIntent))).toBe('INTENT_MISMATCH');
   });
 
   it('refuses a transaction from another account', () => {
-    expect(code(() => checkIntent(buildTx([payment()], { source: Keypair.random().publicKey() }), paymentIntent))).toBe('INTENT_MISMATCH');
+    expect(code(() => checkIntent(buildPayment([payment()], { source: Keypair.random().publicKey() }), paymentIntent))).toBe('INTENT_MISMATCH');
   });
 
   it('refuses a transaction without an expiry or already expired', () => {
-    expect(code(() => checkIntent(buildTx([payment()], { timeout: 0 }), paymentIntent))).toBe('INTENT_MISMATCH');
+    expect(code(() => checkIntent(buildPayment([payment()], { timeout: 0 }), paymentIntent))).toBe('INTENT_MISMATCH');
     const later = new Date(Date.now() + 3600_000);
-    expect(code(() => checkIntent(buildTx([payment()]), paymentIntent, { now: later }))).toBe('INTENT_MISMATCH');
+    expect(code(() => checkIntent(buildPayment([payment()]), paymentIntent, { now: later }))).toBe('INTENT_MISMATCH');
   });
 });
 
 describe('checkIntent: settlement intent memo and expiry', () => {
-  const memoHash = 'ab'.repeat(32);
-  const withMemo = { ...paymentIntent, memoHash, notAfter: new Date(Date.now() + 600_000).toISOString() };
+  const withMemo = paymentIntent;
 
   it('accepts the payment that carries the reserved memo and expires in time', () => {
     expect(code(() => checkIntent(buildTx([payment()], { memoHash }), withMemo))).toBe('NO_ERROR');
@@ -51,6 +53,13 @@ describe('checkIntent: settlement intent memo and expiry', () => {
   it('refuses a missing or different memo', () => {
     expect(code(() => checkIntent(buildTx([payment()]), withMemo))).toBe('INTENT_MISMATCH');
     expect(code(() => checkIntent(buildTx([payment()], { memoHash: 'cd'.repeat(32) }), withMemo))).toBe('INTENT_MISMATCH');
+  });
+
+  it('refuses an intent without the reserved memo or expiry, or with an unparsable expiry', () => {
+    const tx = buildTx([payment()], { memoHash });
+    expect(code(() => checkIntent(tx, { ...paymentIntent, memoHash: undefined }))).toBe('INTENT_MISMATCH');
+    expect(code(() => checkIntent(tx, { ...paymentIntent, notAfter: undefined }))).toBe('INTENT_MISMATCH');
+    expect(code(() => checkIntent(tx, { ...paymentIntent, notAfter: 'not a date' }))).toBe('INTENT_MISMATCH');
   });
 
   it('refuses a payment that would stay valid after the reservation expires', () => {

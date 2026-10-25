@@ -16,6 +16,7 @@ export function loadConfig(env = process.env) {
   if ((env.STELLAR_NETWORK ?? 'testnet') !== 'testnet') fail('STELLAR_NETWORK must be testnet');
   const usdcIssuer = env.USDC_ISSUER ?? fail('USDC_ISSUER is required');
   if (!/^G[A-Z2-7]{55}$/.test(usdcIssuer)) fail('USDC_ISSUER must be a G address');
+  if (env.ALLOW_MEMORY_STORE === 'true' && env.VERCEL_ENV === 'production') fail('ALLOW_MEMORY_STORE must not be set in production: serverless instances do not share memory');
   const supabase = env.SUPABASE_URL ? { url: env.SUPABASE_URL, serviceKey: env.SUPABASE_SERVICE_ROLE_KEY ?? fail('SUPABASE_SERVICE_ROLE_KEY is required with SUPABASE_URL') } : null;
   if (!supabase && env.ALLOW_MEMORY_STORE !== 'true') fail('set SUPABASE_URL, or ALLOW_MEMORY_STORE=true for local development');
   const sessionSecret = env.SESSION_SECRET ?? fail('SESSION_SECRET is required (32+ random characters)');

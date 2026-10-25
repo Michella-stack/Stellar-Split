@@ -11,7 +11,7 @@ import { GroupTypePill } from '../features/groups/GroupTypePill.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { signOf } from '../lib/format.js';
-import { estimate } from '../lib/rates.js';
+import { useEstimate } from '../hooks/useRates.js';
 
 export default function Groups() {
   const { profile } = useWallet();
@@ -62,6 +62,7 @@ export default function Groups() {
 
 /** @param {{ totals: { youOwe: string, youAreOwed: string }, homeCurrency?: string | null }} props */
 function Summary({ totals, homeCurrency }) {
+  const estimate = useEstimate();
   const est = (v) => (homeCurrency && signOf(v) !== 0 ? (estimate(v, homeCurrency) ?? undefined) : undefined);
   return (
     <section aria-label="Across all groups" className="grid grid-cols-2 gap-3">

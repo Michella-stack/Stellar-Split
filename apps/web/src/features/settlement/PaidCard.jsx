@@ -7,6 +7,7 @@ import { IconCopy, IconDownload, IconExternal, IconShare } from '../../component
 import { EXPLORER_TX_URL } from '../../config/env.js';
 import { useCopy } from '../../hooks/useCopy.js';
 import { useToast } from '../../hooks/useToast.js';
+import { DEMO } from '../../lib/demoMode.js';
 import { downloadBlob, renderReceiptPng } from './receipt.js';
 import { shortAddress } from '../../lib/format.js';
 
@@ -35,6 +36,7 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
       explorerUrl,
       date: paidAt,
       accent,
+      demo: DEMO,
     });
     return new File([blob], filename, { type: 'image/png' });
   }
@@ -58,7 +60,7 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: 'Stellar Split receipt', text: `Paid ${recipientName} ${amount} USDC. ${explorerUrl}` });
       } else {
-        await copy(explorerUrl, 'Transaction link');
+        await copy(DEMO ? `Paid ${recipientName} ${amount} USDC (demo)` : explorerUrl, DEMO ? 'Receipt text' : 'Transaction link');
       }
     } catch (error) {
       if (error?.name !== 'AbortError') toast('Sharing did not work here. Save the receipt instead.', { tone: 'error' });
@@ -80,7 +82,7 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
       </Card>
 
       <Card className="flex flex-col gap-2">
-        <span className="text-sm text-muted">Transaction</span>
+        <span className="text-sm text-muted">{DEMO ? 'Demo payment' : 'Transaction'}</span>
         <div className="flex items-center justify-between gap-3">
           <span className="font-mono text-lg" title={txHash}>
             {shortAddress(txHash)}
@@ -89,6 +91,7 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
             <IconCopy size={20} />
           </IconButton>
         </div>
+        {DEMO && <p className="text-sm text-muted">This payment is simulated: nothing was sent to Stellar, so there is no transaction to open.</p>}
         <p role="status" className="text-sm text-muted">
           {record.status === 'saving' && 'Saving to the group…'}
           {record.status === 'saved' && 'Saved to the group.'}
@@ -109,15 +112,17 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
         </p>
       </Card>
 
-      <a
-        href={explorerUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full border-2 border-line px-6 font-semibold"
-      >
-        View on Stellar Expert <IconExternal size={18} />
-        <span className="sr-only">(opens in a new tab)</span>
-      </a>
+      {!DEMO && (
+        <a
+          href={explorerUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full border-2 border-line px-6 font-semibold"
+        >
+          View on Stellar Expert <IconExternal size={18} />
+          <span className="sr-only">(opens in a new tab)</span>
+        </a>
+      )}
       <ButtonLink to={`/groups/${groupId}`} block>
         Back to group
       </ButtonLink>

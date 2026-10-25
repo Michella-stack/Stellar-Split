@@ -33,7 +33,7 @@ Stack decision: JavaScript (ES modules, JSDoc) for the web app and API, a Vite +
 
 ## Deferred to future work
 
-Signed releases and SLSA provenance, Scorecard targets, fuzzing and formal verification, multisig admin and timelock, the full Hermes and OpenClaw test plans, approvals and velocity checks, OAuth and webhooks, mainnet, fiat on-ramps and bank integrations (non-goal NG1 in the PRD).
+Signed releases and SLSA provenance, Scorecard targets, fuzzing and formal verification, multisig admin and timelock, the full Hermes and OpenClaw test plans, approvals and velocity checks, OAuth and webhooks, mainnet, fiat on- and off-ramps through Stellar anchors (PRD roadmap, Phases 3 and 4; out of scope for v1 under NG1).
 
 ## What we still need to confirm
 
@@ -55,8 +55,11 @@ Signed releases and SLSA provenance, Scorecard targets, fuzzing and formal verif
 
 | Area | Owner |
 |---|---|
-| Contract or settlement logic | |
-| API and balances | |
-| Web app and wallet connection | |
-| x402 and agent | |
-| README, demo video, pitch | |
+| Contract or settlement logic | Victor (contract); Viviana (settlement intents in the API) |
+| API and balances | Victor, with Viviana (settlement intents, agent spend policy, receipt scanning) |
+| Web app and wallet connection | Damaris |
+| x402 and agent | Victor (MCP server, Hermes, OpenClaw, contract `settle` #88) |
+| README | Victor and Damaris |
+| Demo video and pitch | Michella |
+| Security documentation | Michella |
+| Architecture documentation | Sofiia |

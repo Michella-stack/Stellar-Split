@@ -87,8 +87,9 @@ Names only. Never commit values and never put a secret in a variable that starts
 | `RECEIPT_MODEL` | API | Optional. Defaults to `gemini-3.6-flash` |
 | `RECEIPT_FALLBACK_MODEL` | API | Optional. Tried once when the main model does not answer. Defaults to `gemini-3.5-flash-lite`. Empty turns it off |
 | `AGENT_TOKENS` | API | Optional. SHA-256 hashes of agent tokens mapped to their addresses. See `apps/api/README.md` |
+| `ALLOW_MEMORY_STORE` | API | Local development and Preview only. The API refuses to start with it when `VERCEL_ENV` is `production` |
 
-Production needs Supabase: serverless instances do not share memory, so the in-memory store (`ALLOW_MEMORY_STORE`) must not be used there. The names and meaning come from `apps/api/README.md` and `apps/api/.env.example`. Whether each variable is set in the project has not been checked.
+Production needs Supabase: serverless instances do not share memory, so the in-memory store (`ALLOW_MEMORY_STORE`) must not be used there. The names and meaning come from `apps/api/README.md` and `apps/api/.env.example`. Checked on 25 October 2026: Production has `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, and `ALLOW_MEMORY_STORE` is set only for Preview. `SUPABASE_SERVICE_ROLE_KEY` is the legacy `service_role` JWT key, because the API sends it as a `Bearer` token. Sending one verification 12 times in parallel returns exactly one 200, and a group created through the API is readable on every one of 20 parallel reads.
 
 ## After a deployment
 

@@ -3,7 +3,7 @@
 Status: draft for review by the security owner (@vestival). Date: 2026-10-25. Written against `main` at `4197089` (PRD v0.4).
 Extends PRD section 9.1. The PRD table stays the summary; this file is the working register.
 
-Stellar-Split (working name Ledgerly) keeps a shared-expense ledger on a Soroban contract and settles in USDC. Humans use a web app with Freighter. Agents (Hermes, OpenClaw) use an MCP server and pay over x402. Everything runs on **Stellar Testnet**. The model below is written for mainnet, so the ratings assume real money.
+Stellar-Split (working name Ledgerly) keeps a shared-expense ledger on a Soroban contract and settles in USDC. Humans use a web app with Freighter. Stellar Assist, the user-facing agent (running on Hermes Agent and OpenClaw), uses an MCP server and pay over x402. Everything runs on **Stellar Testnet**. The model below is written for mainnet, so the ratings assume real money.
 
 How to read the **Status** column: **Built** means code or config on `main` does it and the evidence column points at it. **Planned** means a design exists and nothing is built. **Gap** means neither exists, or the PRD claims more than the repo shows.
 
@@ -26,7 +26,7 @@ How to read the **Status** column: **Built** means code or config on `main` does
 |---|---|
 | Group member (human) | Authenticated by wallet. May be malicious toward other members. |
 | Group admin | Adds members. One per group, set at creation. |
-| Agent (Hermes, OpenClaw) | **Assumed manipulable.** No guardrail may depend on it behaving (PRD 7.4). |
+| Agent (Stellar Assist, on Hermes Agent and OpenClaw) | **Assumed manipulable.** No guardrail may depend on it behaving (PRD 7.4). |
 | Agent owner | Sets caps, approves above threshold. |
 | Recorder (API key) | May write `record_x402_settlement`. Cannot move tokens. |
 | Contract admin | May pause. No upgrade function exists today. |
@@ -44,7 +44,7 @@ flowchart LR
     W <--> F[Freighter wallet]
   end
   subgraph B2[Agent host]
-    T[Telegram] --> AG[Agent: Hermes or OpenClaw]
+    T[Telegram] --> AG[Stellar Assist: Hermes or OpenClaw]
     AG -- MCP_AUTH_TOKEN --> MCP[MCP server: signer + LEDGERLY_TOKEN]
   end
   subgraph B3[Backend]
@@ -142,7 +142,7 @@ New rows from [`verification-policy.md`](verification-policy.md). Evidence for e
 | T-50 | **Wrong payee:** the payer pays an address that is not the person they think it is (look-alike address, swapped invite, impersonation). | H | H | Payee check above 2 USD-equivalent: name, bound Telegram ID and full address compared on the server. | Planned | Draft policy. Address poisoning study (Tsuchiya and Christin, 2025). Nothing built. |
 | T-51 | Telegram username changed or taken over after binding, so the name no longer means the same person. | M | H | Bind to the numeric Telegram ID, treat the username as a label, flag any change and re-verify. | Planned | Draft policy. Telegram Bot API: `username` is optional. |
 | T-52 | Structuring: a large payment is split into small ones to stay under a tier. | M | M | Rolling 24 hour total per payer and payee counts toward the tier. Velocity limit already in PRD 7.4. | Planned | Draft policy. Precedent: EU low-value exemption counts cumulative amounts. |
-| T-53 | Verification agent talked into approving (prompt injection, forged chat text, fake memory). | M | H | Hermes only carries questions. The API decides from Telegram-authenticated callbacks and wallet signatures. No approval inside the agent's own chat. | Planned | Draft policy. Greshake et al. 2023, Patlan et al. 2025. |
+| T-53 | Verification agent talked into approving (prompt injection, forged chat text, fake memory). | M | H | Stellar Assist only carries questions. The API decides from Telegram-authenticated callbacks and wallet signatures. No approval inside the agent's own chat. | Planned | Draft policy. Greshake et al. 2023, Patlan et al. 2025. |
 | T-54 | Telegram account takeover (SIM swap, stolen session) used to confirm a payment. | M | H | Tier 2 also needs a wallet signature on the exact intent. Telegram alone never moves money. | Planned | Draft policy. Banana Gun 2024 fixed with a delay and a second factor. |
 | T-55 | One person creates many wallets and Telegram accounts to look like many members (Sybil), or two accounts claim one address. | M | M | One binding per address and per Telegram ID, admin approval of new members. | Planned | Draft policy. Douceur 2002. |
 | T-56 | A public verification bot is abused (spam, injection from strangers, token theft). | M | H | Keep the team bot allowlisted. Build any public bot as a separate minimal service after its own threat review. | Gap | `docs/AGENTS.md` allows five named team members only. Malicious Telegram bots and channels: Tsuchiya et al. 2026 and Saha Roy et al. 2025 (A8, A9). |

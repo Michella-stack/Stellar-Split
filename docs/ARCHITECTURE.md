@@ -1,15 +1,15 @@
-# Stellar-Split architecture
+# Stellar Split architecture (working name)
 
-> **Status:** Hackathon architecture · **Network:** Stellar Testnet only
+> **Status:** Early stage, in active development · **Network:** Stellar Testnet only
 
-This document translates the repository's `main` README into an implementation architecture for the HackMeridian build. It intentionally prioritizes the smallest complete demonstration: create a group, record expenses, calculate balances, and settle one real Testnet USDC payment through Freighter.
+This document translates the updated README from the `readme-update` branch into an implementation architecture for the HackMeridian build. It intentionally prioritizes the smallest complete demonstration: create a group, record expenses, calculate balances, and settle one real Testnet USDC payment through Freighter.
 
 For product requirements, judging criteria, deferred work, and the submission checklist, refer to the corresponding documents under `docs/`, especially `docs/BUILD-FOCUS.md`.
 
 ## 1. Architecture principles
 
 1. **Testnet only.** Every wallet, server, asset, contract, RPC, Horizon, explorer, and x402 operation must be configured for Stellar Testnet. Unknown or non-testnet configuration fails closed.
-2. **Non-custodial.** User secret keys remain inside Freighter. Stellar-Split never asks for, receives, stores, or logs a secret key.
+2. **Non-custodial.** User secret keys remain inside Freighter. Stellar Split never asks for, receives, stores, or logs a secret key.
 3. **Direct settlement.** USDC moves from the member who owes money to the member who is owed. The application never holds user funds.
 4. **Ledger plus payment.** Expenses create deterministic balances; successful Stellar payments reduce those balances and retain the transaction hash as evidence.
 5. **Hackathon focus.** Human group, expense, balance, and settlement flows come before agent infrastructure.
@@ -26,7 +26,7 @@ For product requirements, judging criteria, deferred work, and the submission ch
 | Record an expense | Required | Support equal and exact splits with server-side validation. |
 | Show balances | Required | Show what each member owes or is owed. |
 | Settle in Testnet USDC | Required | Transfer USDC directly to the creditor and display the Stellar transaction hash. |
-| Soroban group contract | Implemented | Deployed on Testnet with group membership, expense hashes, balances, direct token settlement and x402 settlement recording. |
+| Soroban group contract | Implemented in repository | Rust contract code records expenses and settlements without holding a token balance. Public contract ID and demo asset configuration remain to be confirmed. |
 | Agent settlement through x402 | Stretch | Settle within a server-enforced spend cap through the Stellar `exact` scheme and a facilitator. |
 | Mainnet | Out of scope | The application must refuse to operate on public network. |
 | Production platform features | Deferred | MCP, approvals, webhooks, OAuth, indexing infrastructure, and other long-term product features are not hackathon requirements unless `BUILD-FOCUS.md` promotes them. |
@@ -34,31 +34,19 @@ For product requirements, judging criteria, deferred work, and the submission ch
 ## 3. System context
 
 ```mermaid
-flowchart TD
+flowchart LR
     User[Group member] --> Web[React + Tailwind web app]
-    Web --> Wallet[Freighter wallet]
-    Web --> API[JavaScript API]
-    API --> Ledger[Group, expense, and balance ledger]
-
-    Wallet --> Stellar[Stellar Testnet]
-    Stellar --> USDC[Testnet USDC]
-    Stellar --> Explorer[Testnet explorer]
-
-    Web -. transaction hash .-> API
-    API -. verified settlement .-> Ledger
-
-    Web --> Contract[Soroban group contract]
-    API --> Contract
+    User -- signs --> Wallet[Freighter wallet]
+    Web --> API[JavaScript API: groups, expenses, balances]
+    Wallet -- signed USDC payment --> Stellar[Stellar Testnet]
+    API --> Contract[Soroban group contract: expenses and settlements]
     Contract --> Stellar
-
-    Agent[Agent stretch goal] -. settlement request .-> API
-    API -. 402 challenge .-> Agent
-    Agent -. signed payment .-> API
+    Agent[Agent: stretch goal] -. pays over x402 .-> API
     API -. verify and settle .-> Facilitator[x402 facilitator]
-    Facilitator -. USDC transfer .-> Stellar
+    Facilitator -. submit payment .-> Stellar
 ```
 
-Solid lines represent implemented or required human-demo boundaries. Dashed lines represent the x402 stretch functionality.
+Solid lines represent the required human-demo architecture described by the updated README. Dashed lines represent the x402 stretch path. React and Tailwind are project technology decisions layered onto the README's web-app boundary.
 
 ## 4. Runtime components
 
@@ -203,7 +191,7 @@ Browser-safe transaction construction must be separated from server-only RPC or 
 
 **Location:** `contracts/group`
 
-The group contract is implemented with `soroban-sdk` and deployed to Stellar Testnet. Its current contract ID is `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`. The deployed smoke-test group uses native XLM; a separate group configured with the confirmed Testnet USDC token contract is required for the USDC demo.
+The group contract is implemented in Rust with `soroban-sdk` under `contracts/`. In line with the updated README, the public integration values are not considered confirmed until the README's architecture table is populated with the group contract ID, Testnet USDC asset, and example transaction.
 
 The contract is non-custodial:
 
@@ -213,7 +201,7 @@ The contract is non-custodial:
 - duplicate settlement records are rejected; and
 - contract and asset IDs are explicit Testnet configuration.
 
-The implemented interface is documented in `contracts/README.md`. The web and API must build against that interface rather than an assumed method shape.
+The implemented interface is documented in `contracts/README.md`. The web and API must build against that interface rather than an assumed method shape. Repository code may contain deployment evidence, but the hackathon architecture must not present an ID or asset as the public demo configuration until the updated README confirms it.
 
 ### 4.7 x402 agent stretch path
 
@@ -328,12 +316,12 @@ The web builds the transaction for the implemented contract's `settle(group, fro
 | Wallet account and signatures | Freighter; secret material never enters the application |
 | Payment finality | Stellar Testnet |
 | Settlement receipt | Verified Stellar transaction plus API association to an intent |
-| Group membership, expense hashes, balances and settlement records | Deployed Soroban Testnet contract |
+| Group membership, expense hashes, balances and settlement records | Soroban group contract; public Testnet integration details pending confirmation |
 | Agent spend cap, when enabled | API policy state |
 
 ## 9. Configuration
 
-A future `.env.example` should document names and safe sample values only.
+The root `.env.example` documents names and safe Testnet defaults only. Contract, asset and facilitator values remain blank until the public demo integration is confirmed.
 
 | Variable | Runtime | Purpose |
 |---|---|---|
@@ -341,7 +329,7 @@ A future `.env.example` should document names and safe sample values only.
 | `HORIZON_URL` | Server or public when required | Approved Stellar Testnet Horizon endpoint. |
 | `SOROBAN_RPC_URL` | Server or public when required | Approved Stellar Testnet RPC endpoint. |
 | `USDC_ASSET_CODE` / `USDC_ISSUER` or token contract ID | Shared/public | Exact Testnet USDC identity used by the demo. |
-| `GROUP_CONTRACT_ID` | Shared/public | Deployed Testnet group contract; currently `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`. |
+| `GROUP_CONTRACT_ID` | Shared/public | Confirmed Testnet group contract ID; required before the public demo and intentionally not asserted here while the updated README says `To be added`. |
 | `X402_FACILITATOR_URL` | Server, stretch | Testnet-capable facilitator endpoint. |
 | `X402_FACILITATOR_API_KEY` | Server secret, stretch | Facilitator credential; never exposed to browser code. |
 
@@ -387,7 +375,7 @@ The hackathon-focused ownership map is:
 │   ├── stellar/                      # Testnet transaction and verification helpers
 │   └── x402/                         # Isolated agent stretch integration
 ├── contracts/
-│   └── group/                        # Implemented and deployed Soroban contract
+│   └── group/                        # Implemented Soroban contract; demo integration pending
 ├── tests/
 │   ├── integration/
 │   ├── e2e/
@@ -428,7 +416,7 @@ Before implementation documentation is considered final, verify and record:
 2. exact reviewed React, Tailwind, Freighter, and Stellar package versions;
 3. the persistence mechanism used by the API;
 4. the official Testnet USDC identifier;
-5. the confirmed Testnet USDC token contract used to create the demo group;
+5. the confirmed Testnet group contract ID and USDC asset used by the demo;
 6. whether the browser or API submits signed human transactions;
 7. the testnet explorer URL format;
 8. the facilitator selected for the x402 stretch flow; and

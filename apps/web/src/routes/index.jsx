@@ -35,6 +35,8 @@ export const routes = [
           { path: 'groups/:id/activity', lazy: screen(() => import('./Activity.jsx')) },
           { path: 'groups/:id/settle/:memberId', lazy: screen(() => import('./Settle.jsx')) },
           { path: 'join/:code', lazy: screen(() => import('./Join.jsx')) },
+          // The API's invite links use /invite/CODE.
+          { path: 'invite/:code', lazy: screen(() => import('./Join.jsx')) },
           { path: 'assist', lazy: screen(() => import('./Assist.jsx')) },
           { path: 'assist/intro', lazy: screen(() => import('./AssistIntro.jsx')) },
           { path: 'assist/setup', lazy: screen(() => import('./AssistSetup.jsx')) },

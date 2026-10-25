@@ -195,3 +195,22 @@ describe('mock address overrides', () => {
     expect(members.find((m) => m.id === 'm-jake').address).not.toBe('not-an-address');
   });
 });
+
+describe('members and idempotency (same behaviour as the API)', () => {
+  const address = 'GAZ2D6UYGDFFORAS3PXOEIZQLVS7ME6VYRANQJNLEELMYIAOUB4PY7NY';
+
+  it('adds a member by address, named or shortened, and refuses duplicates', async () => {
+    const { member } = await api.addMember('algarve-trip', { address });
+    expect(member.displayName).toBe('GAZ2…Y7NY');
+    await expect(api.addMember('algarve-trip', { address })).rejects.toMatchObject({ code: 'ALREADY_MEMBER' });
+    await expect(api.addMember('algarve-trip', { address: address.replace(/Y$/, 'Z') })).rejects.toMatchObject({ code: 'INVALID_ADDRESS' });
+  });
+
+  it('returns the first expense when the same idempotency key is retried', async () => {
+    const input = { description: 'Taxi', amount: '12', paidBy: 'm-you', split: { type: 'equal', participants: ['m-you', 'm-mateo'] } };
+    const first = await api.createExpense('casa-alfama', input, { idempotencyKey: 'k-1' });
+    const again = await api.createExpense('casa-alfama', input, { idempotencyKey: 'k-1' });
+    expect(again.expense.id).toBe(first.expense.id);
+    expect((await api.listExpenses('casa-alfama')).expenses.filter((e) => e.description === 'Taxi')).toHaveLength(1);
+  });
+});

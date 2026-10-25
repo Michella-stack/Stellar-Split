@@ -40,3 +40,30 @@ Review of 2026-10-25 on `main` plus the open PRs #28 to #32. Items marked **chec
 ## No drift found
 
 `soroban-sdk` 28.0.0, `stellar-cli` 28.1.0 and Rust 1.97.0 agree across `contracts/README.md`, `Cargo.toml`, `contracts.yml` and `rust-toolchain.toml`. Error codes 1 to 15 match `lib.rs`.
+
+## Update after the architecture documentation
+
+Checked against `main` after `docs/ARCHITECTURE.md`, the repository skeleton and the new story priorities landed.
+
+### Resolved since the first review
+
+| Item above | What changed |
+|---|---|
+| 1 and 3 (which phase holds the signer and `ledgerly_settle`) | BUILD-FOCUS, ARCHITECTURE and the PRD roadmap now call agent x402 settlement a stretch goal, and stories 11 to 13 are "could", 14, 15 and 19 to 21 Phase 2 |
+| 3 (OpenClaw phase) | PR #28 was merged. See the new item N1 for what it left |
+| 6 (`.env.example`) | The file now exists at the repository root |
+| 6 (`docs/LITERATURE.md`) | No document other than this review refers to it any more |
+| 7 (approved versions) | The list is no longer empty: PR #38 approved the web dependencies |
+
+### New or still open
+
+| # | Conflict | Fix |
+|---|---|---|
+| N1 | Story 18 (OpenClaw integration) is Phase 1a and "must" while story 15 (Hermes integration) is Phase 2 and "should". ARCHITECTURE treats both agents alike | Give both the same phase and priority |
+| N2 | The real MCP server is `mcp/`. The repository skeleton also has `mcp-server/`, which ARCHITECTURE section 12 declares old scaffolding. The PRD and several stories still say "MCP server" without a path | Delete the empty `mcp-server/` or say in its README that `mcp/` is the implementation |
+| N3 | ARCHITECTURE section 4.8 and `docs/AGENTS.md` said no agent holds a Stellar key. Each agent now has a funded Testnet account | Fixed in the pull request that adds the delegated payment design: they now say no container can reach a key |
+| N4 | ARCHITECTURE lists the Testnet USDC identity as "to confirm". The accounts created for the agents use Circle's testnet USDC, classic issuer `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` and Stellar Asset Contract `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA`. These values come from the Stellar developer skill and from `@x402/stellar`'s exported constants, and have not been confirmed by the team | Confirm them, then record them in ARCHITECTURE section 9 |
+| N5 | The deployed contract's group 1 uses native XLM. The settlement demo needs a group whose token is the Testnet USDC contract | Create a USDC group before wiring `settle` |
+| N6 | The PRD says the verifier checks that the payer is the debtor. The delegated payment design lets an agent linked to the debtor be the payer | Decide in review of ADR 0004, then align the PRD |
+| N7 | `database/migrations/` exists but ARCHITECTURE says `database/` is future scaffolding, and no migration location is chosen | Decide where the SQL goes (see `docs/schema/README.md`) |
+| N8 | `.github/dependabot.yml` still has npm for `/` while the only `package.json` is in `mcp/`, and `apps/web` will add another | Add entries per directory |

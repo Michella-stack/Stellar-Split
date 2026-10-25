@@ -12,9 +12,10 @@ export function createHttpApi({ baseUrl, getToken }) {
    * @param {'GET' | 'POST' | 'PATCH'} method
    * @param {string} path
    * @param {unknown} [body]
+   * @param {Record<string, string>} [extraHeaders]
    */
-  async function request(method, path, body) {
-    const headers = { Accept: 'application/json' };
+  async function request(method, path, body, extraHeaders = {}) {
+    const headers = { Accept: 'application/json', ...extraHeaders };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -53,9 +54,12 @@ export function createHttpApi({ baseUrl, getToken }) {
     createGroup: (input) => request('POST', '/v1/groups', input),
     getGroup: (groupId) => request('GET', `/v1/groups/${enc(groupId)}`),
     createInvite: (groupId, input = {}) => request('POST', `/v1/groups/${enc(groupId)}/invites`, input),
+    addMember: (groupId, input) => request('POST', `/v1/groups/${enc(groupId)}/members`, input),
     acceptInvite: (code) => request('POST', `/v1/invites/${enc(code)}/accept`),
     listExpenses: (groupId) => request('GET', `/v1/groups/${enc(groupId)}/expenses`),
-    createExpense: (groupId, input) => request('POST', `/v1/groups/${enc(groupId)}/expenses`, input),
+    // The same idempotency key on a retry makes the API return the first result instead of a duplicate.
+    createExpense: (groupId, input, { idempotencyKey } = {}) =>
+      request('POST', `/v1/groups/${enc(groupId)}/expenses`, input, idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     recordSettlement: (groupId, input) => request('POST', `/v1/groups/${enc(groupId)}/settlements`, input),
     listActivity: (groupId) => request('GET', `/v1/groups/${enc(groupId)}/activity`),
     getAgent: (agentId) => request('GET', `/v1/agents/${enc(agentId)}`),

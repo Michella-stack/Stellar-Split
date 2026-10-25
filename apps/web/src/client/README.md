@@ -22,16 +22,21 @@ These shapes are the web team's proposal until the API team confirms them. If th
 | `listGroups()` | `GET /v1/groups` | `{ groups: GroupSummary[], totals: { youOwe, youAreOwed } }` |
 | `createGroup({ name, type })` | `POST /v1/groups` | `GroupDetail` |
 | `getGroup(id)` | `GET /v1/groups/:id` | `GroupDetail` |
-| `createInvite(id, { address? })` | `POST /v1/groups/:id/invites` | `{ inviteUrl, code }` |
+| `createInvite(id, { address? })` | `POST /v1/groups/:id/invites` | `{ inviteUrl, code }`. With `address`, only that wallet can accept. Links use `/invite/CODE`, and the web serves both `/invite/:code` and `/join/:code` |
+| `addMember(id, { address, displayName? })` | `POST /v1/groups/:id/members` | `{ member: Member }`. Adds a wallet directly; the name defaults to the short address |
 | `acceptInvite(code)` | `POST /v1/invites/:code/accept` | `{ groupId, alreadyMember }` |
 | `listExpenses(id)` | `GET /v1/groups/:id/expenses` | `{ expenses: Expense[] }` (newest first) |
-| `createExpense(id, input)` | `POST /v1/groups/:id/expenses` `{ description, amount, paidBy, split, source? }` | `{ expense: Expense }` |
+| `createExpense(id, input, { idempotencyKey })` | `POST /v1/groups/:id/expenses` `{ description, amount, paidBy, split, source? }` with an `Idempotency-Key` header (one key per form, so a retry cannot add the expense twice) | `{ expense: Expense }` |
 | `recordSettlement(id, input)` | `POST /v1/groups/:id/settlements` `{ to, amount, txHash }` | `{ settlement: Settlement }` |
 | `listActivity(id)` | `GET /v1/groups/:id/activity` | `{ items: (Expense & { type: 'expense' } \| Settlement & { type: 'settlement' })[] }` |
 | `getAgent(id)` | `GET /v1/agents/:id` | `{ agent: Agent, pendingApprovals: Approval[] }` |
 | `updateAgent(id, patch)` | `PATCH /v1/agents/:id` `{ status?, policy? }` | `{ agent: Agent }` |
 | `listAgentActivity(id)` | `GET /v1/agents/:id/activity` | `{ items: AgentActivity[] }` |
 | `approve(id)` / `reject(id)` | `POST /v1/approvals/:id/approve` or `/reject` | `{ approval: Approval, agent: Agent }` |
+
+## Stellar Assist
+
+The API has no `/v1/agents` or `/v1/approvals` routes yet. With `VITE_USE_MOCKS=false`, the Assist screens use their own in-memory sample data (exported as `assist` from `api.js`) and show a "Preview" note. The rest of the app uses the real API.
 
 ## Types
 

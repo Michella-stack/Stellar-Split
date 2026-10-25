@@ -350,6 +350,8 @@ Security here covers four surfaces: the contract, the application, the repositor
 
 ### 9.1 Threat model (STRIDE)
 
+This table is the summary. The full register, with assets, trust boundaries, risk ratings, status and evidence for each threat, is in [`docs/THREAT-MODEL.md`](THREAT-MODEL.md). Rows that the repository does not yet back up are marked there as Planned or Gap, and section 7 of that file lists what can be claimed publicly.
+
 | Threat | Example | Mitigation |
 |---|---|---|
 | Spoofing | Attacker presents a forged agent credential or a stolen API key. | Keys hashed at rest, short-lived OAuth tokens, SEP-10 style address verification, per-key IP allowlist optional, instant revocation. |

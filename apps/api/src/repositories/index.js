@@ -62,7 +62,11 @@ export function createSupabaseRepository({ url, serviceKey, fetchImpl = globalTh
       signal: AbortSignal.timeout(10_000),
     });
     const data = res.status === 204 ? null : await res.json().catch(() => null);
-    if (!res.ok) throw Object.assign(new Error(`Supabase ${res.status}: ${data?.message ?? ''}`), { pgCode: data?.code, status: res.status });
+    if (!res.ok) {
+      // 5xx and 429 are the database being unavailable (retryable). Other 4xx are our own request being refused.
+      const unavailable = res.status >= 500 || res.status === 429;
+      throw Object.assign(new Error(`Supabase ${res.status}: ${data?.message ?? ''}`), { pgCode: data?.code, status: res.status, ...(unavailable ? { code: 'SUPABASE_UNAVAILABLE' } : {}) });
+    }
     return data;
   }
   const eq = (v) => `eq.${encodeURIComponent(v)}`;

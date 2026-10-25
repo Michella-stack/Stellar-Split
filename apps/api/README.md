@@ -47,8 +47,16 @@ Shapes follow [`apps/web/src/client/README.md`](../web/src/client/README.md). Er
 
 - Only members see or change a group. Non-members get 404, so group ids cannot be probed.
 - Amounts are decimal strings, positive, at most 7 decimals. Exact splits must add up, otherwise `422 SPLIT_MISMATCH` with the difference.
-- Any request body that contains something shaped like a Stellar secret key is refused (`SECRET_KEY_REJECTED`) before it is parsed.
+- Any request body that contains something shaped like a Stellar secret key is refused (`SECRET_KEY_REJECTED`), both before it is parsed and again on the parsed values, so JSON escapes such as `\u0053` do not get past it.
+- Bodies over 64 KB get `413` with a JSON error and the connection is closed. Wrong types (an array where a string is expected) get `400 VALIDATION`.
+- Stellar or the database being down, slow or overloaded (network failure, timeout, 5xx or 429 from Supabase) is `502 UPSTREAM_UNAVAILABLE`, which is safe to retry. A refused request to Supabase (other 4xx) stays `500`.
 - A settlement is recorded only when Horizon on Stellar Testnet shows a successful USDC payment from the caller's address to the creditor's address for exactly that amount. The amount cannot exceed what the payer owes or what the creditor is owed. Each transaction hash is recorded once.
+- A payment older than 30 minutes, or from before the group existed, cannot settle a debt (`422 PAYMENT_TOO_OLD`), so an old payment made outside the app cannot be replayed against a new debt. The debt is read again, and the settlement recorded, inside a per-group queue, so two requests for the same debt cannot both pass the overpay check.
 - Testnet only: the API refuses to start with another network and checks the Horizon network passphrase before the first verification.
 
-Not built: approvals, agent policies and the x402 settle flow (issues #11 to #13, #19).
+Not built: approvals (there is no `/v1/approvals` route), agent policies and the x402 settle flow (issues #11 to #13, #19).
+
+## Known limits
+
+- The per-group queue lives in one process. With several serverless instances, two requests on different instances can still race. A database-side check is needed for that (see `docs/adr/0003-one-open-settlement-intent-per-debt.md`).
+- The age limit is a quick fix. The stronger one is to tie each payment to its settlement intent, for example through the transaction memo, so that a payment can only settle the debt it was made for.

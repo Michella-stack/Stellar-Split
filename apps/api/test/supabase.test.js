@@ -39,3 +39,15 @@ test('maps camelCase to snake_case, sends the service key, handles duplicates', 
   await repo.insertSettlement({ id: 's1', groupId: 'g1', txHash: 'a'.repeat(64) });
   await assert.rejects(repo.insertSettlement({ id: 's2', groupId: 'g1', txHash: 'a'.repeat(64) }), { code: 'DUPLICATE_TX' });
 });
+
+
+test('a database that is down or overloaded is reported as unavailable, other refusals are not', async () => {
+  const answer = (status) => async () => new Response(JSON.stringify({ message: 'x' }), { status });
+  const repoFor = (status) => createSupabaseRepository({ url: 'https://db.test', serviceKey: 'k', fetchImpl: answer(status) });
+  for (const status of [500, 502, 503, 429]) {
+    await assert.rejects(() => repoFor(status).getGroup('g'), (err) => err.code === 'SUPABASE_UNAVAILABLE', String(status));
+  }
+  for (const status of [400, 401, 404]) {
+    await assert.rejects(() => repoFor(status).getGroup('g'), (err) => err.code === undefined, String(status));
+  }
+});

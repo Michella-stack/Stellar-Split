@@ -25,7 +25,8 @@ async function fakeHorizon(url) {
   const m = /^\/transactions\/([0-9a-f]{64})(\/operations)?$/.exec(path);
   const tx = m && chain.get(m[1]);
   if (!tx) return json(404, {});
-  return m[2] ? json(200, { _embedded: { records: tx.ops } }) : json(200, { successful: tx.successful ?? true, created_at: '2026-10-25T15:00:00Z' });
+  if (tx.delayMs) await new Promise((r) => setTimeout(r, tx.delayMs));
+  return m[2] ? json(200, { _embedded: { records: tx.ops } }) : json(200, { successful: tx.successful ?? true, created_at: tx.createdAt ?? new Date().toISOString() });
 }
 
 const agentToken = 'agent-token-for-tests-0123456789';
@@ -210,4 +211,133 @@ test('unknown routes and wrong methods', async () => {
   assert.equal((await call('GET', '/v1/nope')).status, 404);
   assert.equal((await call('DELETE', '/v1/groups')).status, 405);
   assert.equal((await call('POST', '/v1/groups', { token: tokens.alice, body: '{not json' })).body.error.code, 'VALIDATION');
+});
+
+
+// ---- Review findings (PR 51) ----
+
+const hex = (n) => `f${n.toString(16).padStart(63, '0')}`;
+const payment = (from, to, amount) => [{ type: 'payment', from: from.address, to: to.address, asset_code: 'USDC', asset_issuer: USDC_ISSUER, amount }];
+
+async function groupWithDebt() {
+  // Bob owes Alice 5.00 in a fresh group.
+  const g = await call('POST', '/v1/groups', { token: tokens.alice, body: { name: `Debt ${Math.random()}`, displayName: 'Alice' } });
+  const id = g.body.group.id;
+  await call('POST', `/v1/groups/${id}/members`, { token: tokens.alice, body: { address: bob.address, displayName: 'Bob' } });
+  const members = (await call('GET', `/v1/groups/${id}`, { token: tokens.alice })).body.members;
+  const m = Object.fromEntries(members.map((x) => [x.displayName.toLowerCase(), x.id]));
+  const e = await call('POST', `/v1/groups/${id}/expenses`, { token: tokens.alice, body: { description: 'Rent', amount: '10', paidBy: m.alice, split: { type: 'equal', participants: [m.alice, m.bob] } } });
+  assert.equal(e.status, 201);
+  return { id, m };
+}
+
+test('an old payment cannot settle a debt that appeared later', async () => {
+  const { id, m } = await groupWithDebt();
+  chain.set(hex(1), { ops: payment(bob, alice, '5.0000000'), createdAt: '2026-09-01T10:00:00Z' });
+  const r = await call('POST', `/v1/groups/${id}/settlements`, { token: tokens.bob, body: { to: m.alice, amount: '5', txHash: hex(1) } });
+  assert.equal(r.status, 422);
+  assert.equal(r.body.error.code, 'PAYMENT_TOO_OLD');
+  const net = (await call('GET', `/v1/groups/${id}`, { token: tokens.alice })).body.balances.map((b) => b.net);
+  assert.deepEqual(net, ['5.00', '-5.00']);
+});
+
+test('two concurrent settlements for the same debt: one is recorded, the other is refused as an overpay', async () => {
+  const { id, m } = await groupWithDebt();
+  // The chain answers slowly, so both requests read the debt before either one records.
+  chain.set(hex(2), { ops: payment(bob, alice, '5.0000000'), delayMs: 40 });
+  chain.set(hex(3), { ops: payment(bob, alice, '5.0000000'), delayMs: 40 });
+  const send = (h) => call('POST', `/v1/groups/${id}/settlements`, { token: tokens.bob, body: { to: m.alice, amount: '5', txHash: h } });
+  const results = await Promise.all([send(hex(2)), send(hex(3))]);
+  assert.deepEqual(results.map((r) => r.status).sort(), [201, 422]);
+  assert.equal(results.find((r) => r.status === 422).body.error.code, 'OVERPAY');
+  const net = (await call('GET', `/v1/groups/${id}`, { token: tokens.alice })).body.balances.map((b) => b.net);
+  assert.deepEqual(net, ['0.00', '0.00']);
+});
+
+test('a crafted bearer token gets 401, not 500', async () => {
+  for (const token of [`a.${'é'.repeat(43)}`, `${'é'.repeat(10)}.${'é'.repeat(43)}`, 'a.b']) {
+    const r = await call('GET', '/v1/groups', { token });
+    assert.equal(r.status, 401, token.slice(0, 12));
+  }
+});
+
+test('an invalid display name does not leave an empty group behind', async () => {
+  const repo = createMemoryRepository();
+  let inserted = 0;
+  const counting = { ...repo, insertGroup: async (g) => (inserted += 1, repo.insertGroup(g)) };
+  const stellar = createStellar({ horizonUrl: 'https://horizon.test', usdcIssuer: USDC_ISSUER, fetchImpl: fakeHorizon });
+  const ledger = createLedger({ repo: counting, stellar });
+  const me = { kind: 'human', address: alice.address };
+  await assert.rejects(() => ledger.createGroup(me, { name: 'Orphan', displayName: 'x'.repeat(100) }), { status: 400 });
+  await assert.rejects(() => ledger.createGroup({ kind: 'human', address: 'GNOTANADDRESS' }, { name: 'Orphan' }), { status: 400 });
+  assert.equal(inserted, 0, 'no group row may be written for a request that is refused');
+  assert.equal((await ledger.createGroup(me, { name: 'Fine', displayName: 'Alice' })).group.name, 'Fine');
+  assert.equal(inserted, 1);
+});
+
+test('an oversized body gets a 413 with a JSON error', async () => {
+  const r = await call('POST', '/v1/groups', { token: tokens.alice, body: JSON.stringify({ name: 'x', pad: 'y'.repeat(200 * 1024) }) });
+  assert.equal(r.status, 413);
+  assert.equal(r.body.error.message, 'Request body too large');
+});
+
+test('a secret key written with JSON escapes is refused', async () => {
+  const escaped = `{"name":"Trip","displayName":"\\u0053${'A'.repeat(55)}"}`;
+  const r = await call('POST', '/v1/groups', { token: tokens.alice, body: escaped });
+  assert.equal(r.status, 400);
+  assert.equal(r.body.error.code, 'SECRET_KEY_REJECTED');
+});
+
+test('values of the wrong type are refused instead of stored', async () => {
+  for (const body of [{ homeCurrency: ['USD'] }, { homeCurrency: 123 }, { email: 5 }, { email: ['a@b.co'] }]) {
+    const r = await call('PATCH', '/v1/me', { token: tokens.alice, body });
+    assert.equal(r.status, 400, JSON.stringify(body));
+    assert.equal(r.body.error.code, 'VALIDATION');
+  }
+});
+
+test('an unreachable upstream is a 502, not a 500', async () => {
+  const repo = { ...createMemoryRepository(), getUser: async () => { throw new TypeError('fetch failed'); } };
+  const auth = createAuth({ secret: 'test-secret-at-least-32-characters-long', repo });
+  const stellar = createStellar({ horizonUrl: 'https://horizon.test', usdcIssuer: USDC_ISSUER, fetchImpl: fakeHorizon });
+  const srv = createApp({ auth, ledger: createLedger({ repo, stellar }), log: () => {} });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  try {
+    const url = `http://127.0.0.1:${srv.address().port}`;
+    const w = wallet();
+    const c = await (await fetch(`${url}/v1/auth/challenge`, { method: 'POST', body: JSON.stringify({ address: w.address }) })).json();
+    const v = await (await fetch(`${url}/v1/auth/verify`, { method: 'POST', body: JSON.stringify({ address: w.address, challenge: c.challenge, signature: w.signMessage(c.challenge) }) })).json();
+    const r = await fetch(`${url}/v1/me`, { headers: { authorization: `Bearer ${v.session.token}` } });
+    assert.equal(r.status, 502);
+    assert.equal((await r.json()).error.code, 'UPSTREAM_UNAVAILABLE');
+  } finally {
+    srv.close();
+  }
+});
+
+test('a Horizon that cannot be reached is reported as unavailable', async () => {
+  const down = createStellar({ horizonUrl: 'https://horizon.test', usdcIssuer: USDC_ISSUER, fetchImpl: async () => { throw new TypeError('fetch failed'); } });
+  await assert.rejects(() => down.verifyPayment({ txHash: hex(9), from: bob.address, to: alice.address, amount: '5.00' }), { code: 'HORIZON_UNAVAILABLE' });
+});
+
+test('listing groups loads them in parallel', async () => {
+  const repo = createMemoryRepository();
+  let inFlight = 0;
+  let peak = 0;
+  const slow = (fn) => async (...a) => {
+    inFlight += 1;
+    peak = Math.max(peak, inFlight);
+    await new Promise((r) => setTimeout(r, 10));
+    inFlight -= 1;
+    return fn(...a);
+  };
+  const wrapped = { ...repo, listMembers: slow(repo.listMembers) };
+  const stellar = createStellar({ horizonUrl: 'https://horizon.test', usdcIssuer: USDC_ISSUER, fetchImpl: fakeHorizon });
+  const ledger = createLedger({ repo: wrapped, stellar });
+  const me = { kind: 'human', address: alice.address };
+  for (const name of ['One', 'Two', 'Three']) await ledger.createGroup(me, { name, displayName: 'Alice' });
+  peak = 0;
+  const out = await ledger.listGroups(me);
+  assert.equal(out.groups.length, 3);
+  assert.ok(peak >= 3, `expected the three groups to load at once, peak was ${peak}`);
 });

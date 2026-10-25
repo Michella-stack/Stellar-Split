@@ -12,7 +12,9 @@ export function createStellar({ horizonUrl, usdcIssuer, fetchImpl = globalThis.f
   let networkChecked = false;
 
   async function get(path) {
-    const res = await fetchImpl(base + path, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(timeoutMs) });
+    const res = await fetchImpl(base + path, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(timeoutMs) }).catch((err) => {
+      throw err?.name === 'TimeoutError' ? err : Object.assign(new Error('Horizon is unreachable'), { code: 'HORIZON_UNAVAILABLE', cause: err });
+    });
     if (res.status === 404) return null;
     if (!res.ok) throw Object.assign(new Error(`Horizon answered ${res.status}`), { code: 'HORIZON_UNAVAILABLE' });
     return res.json();

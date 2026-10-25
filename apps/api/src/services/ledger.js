@@ -21,6 +21,8 @@ export class ApiError extends Error {
 
 const MAX_AMOUNT = toStroops('1000000000000');
 const MAX_MEMBERS = 50;
+// A payment older than this cannot settle a debt (an old payment made outside the app must not count).
+const DEFAULT_MAX_PAYMENT_AGE_MS = 30 * 60_000;
 const pub = ({ idempotencyKey, ...e }) => e;
 const fmt = (stroops) => fromStroops(stroops, { minDecimals: 2 });
 const invalid = (message, details) => new ApiError(400, 'VALIDATION', message, details);
@@ -39,8 +41,21 @@ function amountOf(value, field = 'amount') {
 /**
  * @param {{ repo: object, stellar: object, appUrl?: string, now?: () => Date }} deps
  */
-export function createLedger({ repo, stellar, appUrl = '', now = () => new Date() }) {
+export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(), maxPaymentAgeMs = DEFAULT_MAX_PAYMENT_AGE_MS }) {
   const ts = () => now().toISOString();
+  const queues = new Map();
+
+  // Runs tasks for one key one after another. In-process only: see the note in settle().
+  async function serialised(key, task) {
+    const run = (queues.get(key) ?? Promise.resolve()).catch(() => {}).then(task);
+    const tail = run.catch(() => {});
+    queues.set(key, tail);
+    try {
+      return await run;
+    } finally {
+      if (queues.get(key) === tail) queues.delete(key);
+    }
+  }
 
   async function load(groupId) {
     const group = await repo.getGroup(groupId);
@@ -78,12 +93,13 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     };
   }
 
-  async function addMemberRow(groupId, existing, { address, displayName, kind }) {
+  // Validates and builds the member row without writing anything, so callers can check input before their first insert.
+  async function draftMember(groupId, existing, { address, displayName, kind }) {
     if (!decodeAddress(address)) throw new ApiError(400, 'INVALID_ADDRESS', 'Not a valid Stellar account address');
     if (existing.some((m) => m.address === address)) throw new ApiError(409, 'ALREADY_MEMBER', 'This address is already a member');
     if (existing.length >= MAX_MEMBERS) throw invalid(`A group has at most ${MAX_MEMBERS} members`);
     const user = await repo.getUser(address);
-    return repo.insertMember({
+    return {
       id: randomUUID(),
       groupId,
       kind: kind === 'agent' ? 'agent' : 'human',
@@ -91,8 +107,10 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       address,
       homeCurrency: user?.homeCurrency ?? 'USD',
       createdAt: ts(),
-    });
+    };
   }
+
+  const addMemberRow = async (groupId, existing, input) => repo.insertMember(await draftMember(groupId, existing, input));
 
   return {
     async me(principal) {
@@ -104,11 +122,11 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       const next = { ...current };
       if (patch.displayName !== undefined) next.displayName = text(patch.displayName, 'displayName', 60);
       if (patch.homeCurrency !== undefined) {
-        if (!/^[A-Z]{3}$/.test(patch.homeCurrency)) throw invalid('homeCurrency must be a 3-letter code');
+        if (typeof patch.homeCurrency !== 'string' || !/^[A-Z]{3}$/.test(patch.homeCurrency)) throw invalid('homeCurrency must be a 3-letter code');
         next.homeCurrency = patch.homeCurrency;
       }
       if (patch.email !== undefined) {
-        if (patch.email !== null && !/^[^\s@]{1,64}@[^\s@]{1,190}$/.test(patch.email)) throw invalid('email is not valid');
+        if (patch.email !== null && (typeof patch.email !== 'string' || !/^[^\s@]{1,64}@[^\s@]{1,190}$/.test(patch.email))) throw invalid('email is not valid');
         next.email = patch.email;
       }
       return repo.saveUser(next);
@@ -119,8 +137,9 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       let owe = 0n;
       let owed = 0n;
       const out = [];
-      for (const g of groups) {
-        const { members, expenses, settlements, net } = await load(g.id);
+      const states = await Promise.all(groups.map((g) => load(g.id))); // one round trip per group at a time would not scale
+      for (const [i, g] of groups.entries()) {
+        const { members, expenses, settlements, net } = states[i];
         const me = members.find((m) => m.address === principal.address);
         const mine = net.get(me.id);
         if (mine < 0n) owe -= mine;
@@ -133,9 +152,13 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
 
     async createGroup(principal, input = {}) {
       const type = ['flat', 'trip', 'other'].includes(input.type) ? input.type : 'other';
-      const group = await repo.insertGroup({ id: randomUUID(), name: text(input.name, 'name', 80), type, createdBy: principal.address, createdAt: ts() });
-      await addMemberRow(group.id, [], { address: principal.address, displayName: input.displayName, kind: principal.kind });
-      return detail({ ...(await load(group.id)), me: (await repo.listMembers(group.id))[0] });
+      const name = text(input.name, 'name', 80);
+      const id = randomUUID();
+      // Everything that can be refused is checked before the first insert, so a bad request never leaves an empty group.
+      const first = await draftMember(id, [], { address: principal.address, displayName: input.displayName, kind: principal.kind });
+      const group = await repo.insertGroup({ id, name, type, createdBy: principal.address, createdAt: ts() });
+      const me = await repo.insertMember(first);
+      return detail({ ...(await load(group.id)), me });
     },
 
     async getGroup(principal, groupId) {
@@ -230,7 +253,7 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
      * With dryRun, returns the payment intent (who to pay, how much, which asset) without recording anything.
      */
     async settle(principal, groupId, input = {}, { dryRun = false } = {}) {
-      const { members, net, me } = await forMember(principal, groupId);
+      const { group, members, net, me } = await forMember(principal, groupId);
       const to = members.find((m) => m.id === input.to);
       if (!to || to.id === me.id) throw invalid('to must be another member of the group');
       const amount = amountOf(input.amount);
@@ -246,12 +269,31 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       if (!/^[0-9a-f]{64}$/.test(txHash)) throw invalid('txHash must be a 64-character hex transaction hash');
       const check = await stellar.verifyPayment({ txHash, from: me.address, to: to.address, amount: intent.amount });
       if (!check.ok) throw new ApiError(422, check.code, check.message);
-      const settlement = await repo
-        .insertSettlement({ id: randomUUID(), groupId, from: me.id, to: to.id, amount: intent.amount, txHash, createdAt: ts() })
-        .catch((err) => {
-          throw err.code === 'DUPLICATE_TX' ? new ApiError(409, 'DUPLICATE_TX', 'This transaction is already recorded') : err;
-        });
-      return { settlement, explorerUrl: stellar.explorerTx(txHash) };
+
+      // A payment made long ago, or before the group existed, cannot settle a debt that appeared later.
+      // This is the quick fix. The stronger one ties the payment to the intent, for example through the transaction memo.
+      const paidAt = Date.parse(check.ledgerCloseTime);
+      if (!Number.isFinite(paidAt) || paidAt < Date.parse(group.createdAt) || now().getTime() - paidAt > maxPaymentAgeMs) {
+        throw new ApiError(422, 'PAYMENT_TOO_OLD', 'This payment is too old to settle this debt. Pay again from the app.');
+      }
+
+      // The debt was read before the slow chain check. Read it again inside a per-group queue and record in the same step,
+      // so two requests for the same debt cannot both pass the overpay check.
+      // Limit: the queue lives in this process. Several serverless instances need a database-side check as well.
+      return serialised(groupId, async () => {
+        const fresh = await forMember(principal, groupId);
+        const owed = -fresh.net.get(me.id);
+        const credit = fresh.net.get(to.id);
+        if (owed <= 0n || credit <= 0n || amount > (owed < credit ? owed : credit)) {
+          throw new ApiError(422, 'OVERPAY', 'The amount is more than you owe this member', { youOwe: fmt(owed > 0n ? owed : 0n), theyAreOwed: fmt(credit > 0n ? credit : 0n) });
+        }
+        const settlement = await repo
+          .insertSettlement({ id: randomUUID(), groupId, from: me.id, to: to.id, amount: intent.amount, txHash, createdAt: ts() })
+          .catch((err) => {
+            throw err.code === 'DUPLICATE_TX' ? new ApiError(409, 'DUPLICATE_TX', 'This transaction is already recorded') : err;
+          });
+        return { settlement, explorerUrl: stellar.explorerTx(txHash) };
+      });
     },
 
     async activity(principal, groupId) {

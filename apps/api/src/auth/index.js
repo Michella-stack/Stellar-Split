@@ -87,7 +87,12 @@ export function verifySignedMessage(address, message, signature) {
 export function createAuth({ secret, repo, sessionTtlMs = 12 * 3600_000, challengeTtlMs = 5 * 60_000, agentTokens = new Map(), now = Date.now }) {
   if (typeof secret !== 'string' || secret.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters');
   const mac = (text) => createHmac('sha256', secret).update(text).digest('base64url');
-  const same = (a, b) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  // Compare byte lengths: timingSafeEqual throws if they differ, and a non-ASCII tag can match in string length.
+  const same = (a, b) => {
+    const x = Buffer.from(a);
+    const y = Buffer.from(b);
+    return x.length === y.length && timingSafeEqual(x, y);
+  };
   const message = (address, nonce, expires) =>
     `Stellar-Split sign-in\nAddress: ${address}\nNonce: ${nonce}\nExpires: ${new Date(expires).toISOString()}`;
 

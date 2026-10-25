@@ -7,15 +7,28 @@ import { routes } from './routes/v1/index.js';
 
 const MAX_BODY = 64 * 1024;
 
+// Errors that mean Stellar or the database could not be reached, so the caller may retry (502, not 500).
+const UPSTREAM_CODES = new Set(['HORIZON_UNAVAILABLE', 'SUPABASE_UNAVAILABLE']);
+const NETWORK_CODES = new Set(['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET', 'EAI_AGAIN', 'UND_ERR_CONNECT_TIMEOUT']);
+const isUpstream = (err) =>
+  UPSTREAM_CODES.has(err?.code) ||
+  err?.name === 'TimeoutError' ||
+  (err instanceof TypeError && err.message === 'fetch failed') ||
+  NETWORK_CODES.has(err?.cause?.code);
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let size = 0;
+    let refused = false;
     const chunks = [];
     req.on('data', (c) => {
+      // Keep draining after the limit, without storing, so the 413 can still be delivered. The response closes the connection.
+      if (refused) return;
       size += c.length;
       if (size > MAX_BODY) {
+        refused = true;
+        chunks.length = 0;
         reject(new ApiError(413, 'VALIDATION', 'Request body too large'));
-        req.destroy();
       } else chunks.push(c);
     });
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
@@ -41,8 +54,8 @@ export function createHandler({ auth, ledger, allowedOrigins = [], log = (l) => 
         ? { 'access-control-allow-origin': origin, vary: 'Origin', 'access-control-allow-headers': 'authorization, content-type, idempotency-key', 'access-control-allow-methods': 'GET, POST, PATCH, OPTIONS' }
         : {}),
     };
-    const send = (status, body) => {
-      res.writeHead(status, headers).end(body === undefined ? undefined : JSON.stringify(body));
+    const send = (status, body, extra = {}) => {
+      res.writeHead(status, { ...headers, ...extra }).end(body === undefined ? undefined : JSON.stringify(body));
       log({ t: new Date().toISOString(), method: req.method, path: url.pathname, status, ms: Date.now() - started });
     };
 
@@ -63,6 +76,8 @@ export function createHandler({ auth, ledger, allowedOrigins = [], log = (l) => 
           throw new ApiError(400, 'VALIDATION', 'Body must be JSON');
         }
         if (body === null || typeof body !== 'object' || Array.isArray(body)) throw new ApiError(400, 'VALIDATION', 'Body must be a JSON object');
+        // JSON escapes (\u0053...) hide a seed from the check above, so look again at the parsed values.
+        if (containsSecretKey(JSON.stringify(body))) throw new ApiError(400, 'SECRET_KEY_REJECTED', 'Never send a Stellar secret key');
       }
       const [status, out] = await route[2]({
         params: route[1].exec(url.pathname).slice(1),
@@ -73,9 +88,11 @@ export function createHandler({ auth, ledger, allowedOrigins = [], log = (l) => 
       });
       send(status, out);
     } catch (err) {
-      if (err instanceof ApiError) return send(err.status, { error: { code: err.code, message: err.message, ...(err.details ? { details: err.details } : {}) } });
+      if (err instanceof ApiError) {
+        return send(err.status, { error: { code: err.code, message: err.message, ...(err.details ? { details: err.details } : {}) } }, err.status === 413 ? { connection: 'close' } : {});
+      }
       log({ t: new Date().toISOString(), level: 'error', path: url.pathname, error: String(err?.code ?? err?.message ?? err).slice(0, 200) });
-      const upstream = err?.code === 'HORIZON_UNAVAILABLE' || err?.name === 'TimeoutError';
+      const upstream = isUpstream(err);
       send(upstream ? 502 : 500, { error: { code: upstream ? 'UPSTREAM_UNAVAILABLE' : 'INTERNAL', message: upstream ? 'Stellar or the database did not answer' : 'Unexpected error' } });
     }
   };

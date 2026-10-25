@@ -60,4 +60,4 @@ stellar contract build          # stellar-cli 28.1.0, soroban-sdk refuses plain 
 ../scripts/deploy-testnet.sh    # generates and funds a testnet identity, deploys, prints the contract id
 ```
 
-Testnet contract id: CONTRACT_ID_PLACEHOLDER
+Testnet contract id: `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y` (admin and recorder `GCOURV2JXCIXK3CHXMJ4HBOPS5TMWGLL4AVKTO6A44DYYDJE2FA5I4N4`, wasm hash `ca6ba904c5759a963a3b08611a8d4519aa6a8e75670dacab873ace8fe27463e4`). Group 1 exists as a smoke test with native XLM as the token.

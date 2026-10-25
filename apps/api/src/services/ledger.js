@@ -128,7 +128,10 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     throw new ApiError(403, decision.code, decision.message, decision.details);
   }
 
-  function publicIntent(i, me, to, asset = stellar.asset) {
+  /** The address that must send the payment: the agent for an on-behalf intent, otherwise the debtor. */
+  const payerOf = (i, members) => i.payerAddress ?? members.find((m) => m.id === i.from)?.address;
+
+  function publicIntent(i, payer, to, asset = stellar.asset) {
     return {
       id: i.id,
       groupId: i.groupId,
@@ -137,7 +140,9 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       amount: i.amount,
       asset,
       network: 'stellar:testnet',
-      payFrom: me.address,
+      payFrom: payer,
+      payer,
+      debtorMemberId: i.from,
       payTo: to.address,
       memo: { type: 'hash', value: i.memoHash },
       status: i.status,
@@ -337,7 +342,7 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       }
 
       const intent = typeof input.intentId === 'string' ? await repo.getIntent(input.intentId) : null;
-      if (!intent || intent.groupId !== groupId || intent.from !== me.id) {
+      if (!intent || intent.groupId !== groupId || payerOf(intent, members) !== me.address) {
         throw new ApiError(404, 'INTENT_NOT_FOUND', 'Reserve a settlement intent first: POST /v1/groups/:id/settlements/intents');
       }
       if (input.to !== undefined && input.to !== intent.to) throw invalid('to does not match the settlement intent');
@@ -352,7 +357,7 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
 
       // The money has moved. If the intent was cancelled, or an expense changed the debt since the reservation,
       // keep the payment for an operator instead of rejecting it silently or overpaying.
-      if (intent.status === 'cancelled' || overpays(net, me.id, to.id, toStroops(intent.amount))) {
+      if (intent.status === 'cancelled' || overpays(net, intent.from, to.id, toStroops(intent.amount))) {
         await repo.updateIntent(intent.id, { status: 'needs_review', txHash, closedAt: ts() });
         throw new ApiError(409, 'NEEDS_REVIEW', 'The payment arrived but no longer matches an open debt. It is kept for review.', { txHash });
       }
@@ -372,14 +377,22 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     async reserveSettlement(principal, groupId, input = {}) {
       const { group, members, me } = await forMember(principal, groupId);
       const asset = groupAsset(group);
+      // An agent may pay a linked owner's debt (ADR 0005): the owner is the debtor, the agent is the payer, and the agent's caps apply.
+      let debtor = me;
+      if (input.onBehalfOf !== undefined) {
+        const owner = members.find((m) => m.id === input.onBehalfOf);
+        const link = principal.kind === 'agent' && owner ? await repo.getActiveAgentLink(me.address) : null;
+        if (!link || link.ownerAddress !== owner.address) throw new ApiError(403, 'NOT_LINKED', 'This agent is not linked to that member');
+        debtor = owner;
+      }
       const to = members.find((m) => m.id === input.to);
-      if (!to || to.id === me.id) throw invalid('to must be another member of the group');
+      if (!to || to.id === debtor.id) throw invalid('to must be another member of the group');
       const amount = amountOf(input.amount);
       const reservedAt = ts();
       await repo.expireIntents(groupId, reservedAt);
       const id = randomUUID();
       const intent = await repo
-        .insertIntent({ id, groupId, from: me.id, to: to.id, amount: fmt(amount), memoHash: memoFor(id), reservedAt, expiresAt: new Date(Date.parse(reservedAt) + INTENT_TTL_MS).toISOString() })
+        .insertIntent({ id, groupId, from: debtor.id, ...(debtor === me ? {} : { payerAddress: me.address }), to: to.id, amount: fmt(amount), memoHash: memoFor(id), reservedAt, expiresAt: new Date(Date.parse(reservedAt) + INTENT_TTL_MS).toISOString() })
         .catch((err) => {
           throw err.code === 'INTENT_IN_PROGRESS' ? new ApiError(409, 'INTENT_IN_PROGRESS', err.message) : err;
         });
@@ -387,23 +400,90 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       // be counted twice, and two reservations by one agent in different groups each see the other.
       const { net } = await load(groupId);
       try {
-        terms(members, net, me, input);
+        terms(members, net, debtor, input);
         await enforceAgentCaps(principal, groupId, amount, id);
       } catch (err) {
         await repo.updateIntent(id, { status: 'cancelled', closedAt: ts() });
         throw err;
       }
-      return { intent: publicIntent(intent, me, to, asset) };
+      return { intent: publicIntent(intent, me.address, to, asset) };
     },
 
     /** Cancels a reserved intent, for example when the person rejects the signature in Freighter. Only the payer can. */
     async cancelSettlement(principal, groupId, intentId) {
       const { group, members, me } = await forMember(principal, groupId);
       const intent = await repo.getIntent(intentId);
-      if (!intent || intent.groupId !== groupId || intent.from !== me.id) throw new ApiError(404, 'INTENT_NOT_FOUND', 'Settlement intent not found');
+      if (!intent || intent.groupId !== groupId || payerOf(intent, members) !== me.address) throw new ApiError(404, 'INTENT_NOT_FOUND', 'Settlement intent not found');
       if (intent.status !== 'reserved') throw new ApiError(409, 'INTENT_NOT_OPEN', `This settlement intent is ${intent.status}`);
       const cancelled = await repo.updateIntent(intent.id, { status: 'cancelled', closedAt: ts() });
-      return { intent: publicIntent(cancelled, me, members.find((m) => m.id === intent.to), groupAsset(group)) };
+      return { intent: publicIntent(cancelled, me.address, members.find((m) => m.id === intent.to), groupAsset(group)) };
+    },
+
+    /** Links `agentAddress` to the signed-in owner. The caller has already verified the owner's signature (auth.verifyLink). */
+    async linkAgent(principal, agentAddress) {
+      const link = await repo
+        .insertAgentLink({ id: randomUUID(), ownerAddress: principal.address, agentAddress, linkedAt: ts() })
+        .catch((err) => {
+          throw err.code === 'AGENT_ALREADY_LINKED' ? new ApiError(409, 'AGENT_ALREADY_LINKED', err.message) : err;
+        });
+      return { agent: { address: link.agentAddress, ownerAddress: link.ownerAddress, linkedAt: link.linkedAt } };
+    },
+
+    async listAgents(principal) {
+      return { agents: (await repo.listAgentLinks(principal.address)).map((l) => ({ address: l.agentAddress, linkedAt: l.linkedAt, revokedAt: l.revokedAt ?? null })) };
+    },
+
+    async revokeAgent(principal, agentAddress) {
+      if (!(await repo.revokeAgentLink(principal.address, agentAddress, ts()))) throw new ApiError(404, 'NOT_FOUND', 'No active link to this agent');
+    },
+
+    /**
+     * x402-style handshake, self-verified (no facilitator). Without a payment, answers the payment terms with status 402.
+     * With one, checks the transaction with the same Horizon verifier as POST /settlements and records the settlement.
+     * Only the payer of the intent can call it. Returns { status, headers, body }.
+     * @param {{ paymentSignature?: string, resource: string }} request
+     */
+    async x402(principal, groupId, intentId, { paymentSignature, resource }) {
+      const { group, members } = await forMember(principal, groupId);
+      const intent = await repo.getIntent(intentId);
+      if (!intent || intent.groupId !== groupId || payerOf(intent, members) !== principal.address) throw new ApiError(404, 'INTENT_NOT_FOUND', 'Settlement intent not found');
+      const asset = groupAsset(group);
+      const to = members.find((m) => m.id === intent.to);
+      const required = (error) => {
+        const secs = Math.floor((Date.parse(intent.expiresAt) - now().getTime()) / 1000);
+        const terms = {
+          x402Version: 1,
+          error,
+          accepts: [{
+            scheme: 'exact', network: 'stellar:testnet', asset: `${asset.code}:${asset.issuer}`, payTo: to.address, amount: intent.amount,
+            maxTimeoutSeconds: Math.max(0, secs), resource,
+            extra: { intentId: intent.id, memoType: 'hash', memo: intent.memoHash, expiresAt: intent.expiresAt },
+          }],
+        };
+        return { status: 402, headers: { 'payment-required': Buffer.from(JSON.stringify(terms)).toString('base64') }, body: terms };
+      };
+      if (!paymentSignature) {
+        if (intent.status !== 'reserved' || Date.parse(intent.expiresAt) < now().getTime()) throw new ApiError(409, 'INTENT_NOT_OPEN', `This settlement intent is ${intent.status === 'reserved' ? 'expired' : intent.status}`);
+        return required(null);
+      }
+      let payment;
+      try {
+        payment = JSON.parse(Buffer.from(paymentSignature, 'base64').toString('utf8'));
+      } catch {
+        return required('PAYMENT-SIGNATURE is not base64 JSON');
+      }
+      if (payment?.x402Version !== 1 || payment.scheme !== 'exact' || payment.network !== 'stellar:testnet' || !/^[0-9a-f]{64}$/i.test(payment.payload?.txHash ?? '')) {
+        return required('PAYMENT-SIGNATURE must be { x402Version: 1, scheme: "exact", network: "stellar:testnet", payload: { txHash } }');
+      }
+      try {
+        const { settlement } = await this.settle(principal, groupId, { intentId, txHash: payment.payload.txHash });
+        const receipt = { success: true, transaction: settlement.txHash, network: 'stellar:testnet' };
+        return { status: 200, headers: { 'payment-response': Buffer.from(JSON.stringify(receipt)).toString('base64') }, body: { settlement } };
+      } catch (err) {
+        // A payment the verifier refuses is a payment not made yet: answer 402 again so the agent can retry. Other refusals keep their code.
+        if (err instanceof ApiError && err.status === 422 && intent.status === 'reserved') return required(`${err.code}: ${err.message}`);
+        throw err;
+      }
     },
 
     async activity(principal, groupId) {

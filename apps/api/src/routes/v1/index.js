@@ -1,5 +1,6 @@
 // /v1 routes. Shapes follow apps/web/src/client/README.md. Errors: { error: { code, message, details? } }.
 
+import { decodeAddress } from '../../auth/index.js';
 import { ApiError } from '../../services/ledger.js';
 import { SCAN_BODY_LIMIT } from '../../services/receipts.js';
 
@@ -10,6 +11,17 @@ const unauthorized = () => new ApiError(401, 'UNAUTHORIZED', 'Sign in first');
  */
 export function routes({ auth, ledger, receipts }) {
   const need = (ctx) => ctx.principal ?? (() => { throw unauthorized(); })();
+  const human = (ctx) => {
+    const p = need(ctx);
+    if (p.kind !== 'human') throw new ApiError(403, 'FORBIDDEN', 'Only a signed-in person can manage agent links');
+    return p;
+  };
+  const agentOf = (address, owner) => {
+    if (!decodeAddress(address)) throw new ApiError(400, 'INVALID_ADDRESS', 'agentAddress is not a valid Stellar account address');
+    if (address === owner.address) throw new ApiError(400, 'VALIDATION', 'An account cannot be its own agent');
+    if (!auth.isAgent(address)) throw new ApiError(400, 'AGENT_NOT_REGISTERED', 'This address is not a registered agent');
+    return address;
+  };
   const ok = (body) => [200, body];
   const created = (body) => [201, body];
 
@@ -25,6 +37,26 @@ export function routes({ auth, ledger, receipts }) {
       const session = await auth.verify(body?.address, body?.challenge, body?.signature);
       if (!session) throw new ApiError(401, 'UNAUTHORIZED', 'Signature, address or challenge is not valid');
       return ok({ session });
+    }],
+
+    // Agent linking (ADR 0005). Only a signed-in human can link an agent to themselves.
+    ['POST', /^\/v1\/agents\/link\/challenge$/, async (ctx) => {
+      const owner = human(ctx);
+      const agent = agentOf(ctx.body?.agentAddress, owner);
+      return ok(auth.linkChallenge(owner.address, agent));
+    }],
+    ['POST', /^\/v1\/agents\/link$/, async (ctx) => {
+      const owner = human(ctx);
+      const agent = agentOf(ctx.body?.agentAddress, owner);
+      if (!(await auth.verifyLink(owner.address, agent, ctx.body.message, ctx.body.signature))) {
+        throw new ApiError(400, 'LINK_INVALID', 'The link message or signature is not valid, expired or already used');
+      }
+      return created(await ledger.linkAgent(owner, agent));
+    }],
+    ['GET', /^\/v1\/me\/agents$/, async (ctx) => ok(await ledger.listAgents(human(ctx)))],
+    ['DELETE', /^\/v1\/me\/agents\/(G[A-Z2-7]{55})$/, async (ctx) => {
+      await ledger.revokeAgent(human(ctx), ctx.params[0]);
+      return [204];
     }],
 
     ['GET', /^\/v1\/me$/, async (ctx) => ok(await ledger.me(need(ctx)))],
@@ -48,6 +80,14 @@ export function routes({ auth, ledger, receipts }) {
     }],
     ['POST', /^\/v1\/groups\/([\w-]{1,64})\/settlements\/intents$/, async (ctx) =>
       created(await ledger.reserveSettlement(need(ctx), ctx.params[0], ctx.body))],
+    ['POST', /^\/v1\/groups\/([\w-]{1,64})\/settlements\/intents\/([\w-]{1,64})\/x402$/, async (ctx) => {
+      const proto = ctx.headers['x-forwarded-proto']?.split(',')[0] ?? 'http';
+      const r = await ledger.x402(need(ctx), ctx.params[0], ctx.params[1], {
+        paymentSignature: ctx.headers['payment-signature'],
+        resource: `${proto}://${ctx.headers.host}/v1/groups/${ctx.params[0]}/settlements/intents/${ctx.params[1]}/x402`,
+      });
+      return [r.status, r.body, r.headers];
+    }],
     ['POST', /^\/v1\/groups\/([\w-]{1,64})\/settlements\/intents\/([\w-]{1,64})\/cancel$/, async (ctx) =>
       ok(await ledger.cancelSettlement(need(ctx), ctx.params[0], ctx.params[1]))],
     // A photo is far bigger than any other body, so this route has its own limit (the fourth element).

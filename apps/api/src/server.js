@@ -51,7 +51,7 @@ export function createHandler({ auth, ledger, receipts, allowedOrigins = [], log
       'cache-control': 'no-store',
       'x-content-type-options': 'nosniff',
       ...(origin && allowedOrigins.includes(origin)
-        ? { 'access-control-allow-origin': origin, vary: 'Origin', 'access-control-allow-headers': 'authorization, content-type, idempotency-key', 'access-control-allow-methods': 'GET, POST, PATCH, OPTIONS' }
+        ? { 'access-control-allow-origin': origin, vary: 'Origin', 'access-control-allow-headers': 'authorization, content-type, idempotency-key, payment-signature', 'access-control-expose-headers': 'payment-required, payment-response', 'access-control-allow-methods': 'GET, POST, PATCH, DELETE, OPTIONS' }
         : {}),
     };
     const send = (status, body, extra = {}) => {
@@ -83,14 +83,14 @@ export function createHandler({ auth, ledger, receipts, allowedOrigins = [], log
         // JSON escapes (\u0053...) hide a seed from the check above, so look again at the parsed values.
         if (containsSecretKey(JSON.stringify(body))) throw new ApiError(400, 'SECRET_KEY_REJECTED', 'Never send a Stellar secret key');
       }
-      const [status, out] = await route[2]({
+      const [status, out, extra] = await route[2]({
         params: route[1].exec(url.pathname).slice(1),
         query: url.searchParams,
         headers: req.headers,
         body,
         principal,
       });
-      send(status, out);
+      send(status, out, extra);
     } catch (err) {
       if (err instanceof ApiError) {
         return send(err.status, { error: { code: err.code, message: err.message, ...(err.details ? { details: err.details } : {}) } }, err.status === 413 || err.closeConnection ? { connection: 'close' } : {});

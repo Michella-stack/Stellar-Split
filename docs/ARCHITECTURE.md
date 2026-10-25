@@ -100,8 +100,9 @@ apps/web/src/
 ├── hooks/                   # React hooks for UI integrations
 ├── wallets/
 │   └── freighter/           # The only Freighter integration boundary
-├── client/                  # Vite browser entry
-├── api/                     # HTTP client for the Node.js API
+├── client/                  # API client (mock or real, one switch) and Horizon access
+├── config/                  # Testnet-only runtime configuration (fails closed)
+├── lib/                     # Browser helpers: formatting, rate estimates, theme
 └── styles/                  # Tailwind entry point and design tokens
 ```
 

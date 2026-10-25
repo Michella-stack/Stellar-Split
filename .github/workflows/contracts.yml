@@ -18,7 +18,7 @@ jobs:
         with:
           toolchain: "1.97.0"
           targets: wasm32v1-none
-          components: clippy
+          components: clippy, rustfmt
       # Official prebuilt binary pinned by checksum. Building from source needs system libs and ~10 min.
       - name: Install stellar-cli 28.1.0
         env:
@@ -29,9 +29,13 @@ jobs:
           echo "${STELLAR_CLI_SHA256}  ${STELLAR_CLI_TGZ}" | sha256sum -c -
           mkdir -p "$HOME/.local/bin" && tar xzf "${STELLAR_CLI_TGZ}" -C "$HOME/.local/bin" stellar
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: cargo fmt --all --check
+        working-directory: contracts
       - run: stellar contract build
         working-directory: contracts
       - run: cargo clippy --locked --all-targets -- -D warnings
+        working-directory: contracts
+      - run: cargo fmt --check
         working-directory: contracts
       - run: cargo test --locked
         working-directory: contracts

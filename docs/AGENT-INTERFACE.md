@@ -1,6 +1,6 @@
-# Agent interface (MCP) - phase 1a, part 1
+# Agent interface (MCP) - non-paying tools
 
-Status: the read, expense and propose tools are built in `mcp/`. It follows PRD section 7 and does not change it. The signer and `ledgerly_settle` are also Phase 1a in the PRD and in story 14, but are not built yet. See `docs/AGENT-WALLETS.md`.
+Status: the read, expense and propose tools are built in `mcp/`. It follows PRD section 7 and does not change it. The signer and `ledgerly_settle` are a stretch goal (story 14 is Phase 2) and are not built. See `docs/AGENT-WALLETS.md` and `docs/DELEGATED-PAYMENTS.md`.
 
 Agents (Hermes, OpenClaw) reach Ledgerly through an MCP server that runs on the agent host and talks to the Ledgerly API with a per-agent credential.
 
@@ -16,7 +16,7 @@ Telegram group -> Hermes / OpenClaw -> ledgerly-mcp (HTTP, same host) -> Ledgerl
 | `ledgerly_get_balances` | No | Yes |
 | `ledgerly_create_expense` (equal and exact splits) | No | Yes |
 | `ledgerly_propose_settlement` | No | Yes (dry run only) |
-| `ledgerly_settle` (x402 payment, agent signer) | Yes | **No.** Next, still Phase 1a |
+| `ledgerly_settle` (x402 payment, agent signer) | Yes | **No.** Stretch goal, Phase 2 |
 
 There is no signing code and no key handling in this phase. The MCP server cannot move money.
 

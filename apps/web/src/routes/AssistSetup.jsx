@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { getAgent, updateAgent } from '../client/api.js';
+import { assist } from '../client/api.js';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { Chip } from '../components/Chip.jsx';
@@ -16,7 +16,7 @@ const dollars = (v) => `$${v}`;
 const whole = (decimal) => Number.parseInt(decimal, 10);
 
 export default function AssistSetup() {
-  const agent = useApi(() => getAgent('assist'), 'agent');
+  const agent = useApi(() => assist.getAgent('assist'), 'agent');
   return (
     <>
       <TopBar backTo="/assist" title="Stellar Assist" />
@@ -51,7 +51,7 @@ function RulesForm({ agent }) {
     if (problems.length > 0) return;
     setSaving(true);
     try {
-      await updateAgent(agent.id, {
+      await assist.updateAgent(agent.id, {
         status: isSetUp ? agent.status : 'active',
         policy: { addBills, payBills, bills, maxPerPayment: `${maxPerPayment}.00`, approvalAbove: `${approvalAbove}.00`, dailyCap: `${dailyCap}.00` },
       });

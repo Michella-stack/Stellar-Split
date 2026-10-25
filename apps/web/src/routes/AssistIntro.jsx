@@ -1,6 +1,7 @@
 import { AgentAvatar } from '../components/Avatar.jsx';
 import { ButtonLink } from '../components/Button.jsx';
 import { TopBar } from '../components/TopBar.jsx';
+import { PreviewNote } from '../features/assist/PreviewNote.jsx';
 
 const STEPS = [
   { title: 'Tracks recurring bills', body: 'Electricity, internet, water: it adds them to your group and splits them for you.' },
@@ -13,6 +14,7 @@ export default function AssistIntro() {
     <>
       <TopBar backTo="/groups" />
       <div className="flex flex-1 flex-col gap-6 pt-2 pb-8">
+        <PreviewNote />
         <AgentAvatar size="lg" />
         <h1 className="font-display-wide text-4xl">Meet Stellar Assist</h1>
         <p className="text-lg text-muted">An AI helper for your shared bills, within rules you set.</p>

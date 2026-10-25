@@ -1,0 +1,29 @@
+name: Actions SHA pinning
+on:
+  pull_request:
+    paths:
+      - ".github/**"
+      - "supply-chain/check-actions-pinned.sh"
+permissions:
+  contents: read
+jobs:
+  pinned:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run check script from the base branch
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          mkdir -p .guard
+          if git cat-file -e "$BASE_SHA:supply-chain/check-actions-pinned.sh" 2>/dev/null; then
+            git show "$BASE_SHA:supply-chain/check-actions-pinned.sh" > .guard/check-actions-pinned.sh
+          else
+            # Only the PR that adds the script has no base copy. Code owner review covers that PR.
+            echo "::notice::check-actions-pinned.sh not on base branch yet, running the PR copy"
+            cp supply-chain/check-actions-pinned.sh .guard/check-actions-pinned.sh
+          fi
+          bash .guard/check-actions-pinned.sh .github

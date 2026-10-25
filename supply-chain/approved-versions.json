@@ -1,0 +1,4 @@
+{
+  "_format": "Each entry: {\"ecosystem\": \"npm\" or \"crates.io\", \"name\": \"pkg\", \"version\": \"x.y.z\", \"approved\": \"YYYY-MM-DD\", \"by\": \"@github-user\", \"next_review\": \"YYYY-MM-DD\"}. The guard fails a PR that sets a version older than the approved one.",
+  "packages": []
+}

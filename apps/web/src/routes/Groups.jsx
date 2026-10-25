@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { listGroups } from '../client/api.js';
 import { Amount } from '../components/Amount.jsx';
 import { ButtonLink } from '../components/Button.jsx';
-import { Card } from '../components/Card.jsx';
+import { Avatar } from '../components/Avatar.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
 import { IconChevronRight, IconPlus, IconUsers } from '../components/icons.jsx';
 import { LoadError, Loading } from '../components/LoadState.jsx';
@@ -48,7 +48,7 @@ export default function Groups() {
                     </li>
                   ))}
                 </ul>
-                <ButtonLink to="/groups/new" variant="secondary" block icon={<IconPlus size={20} />}>
+                <ButtonLink to="/groups/new" block icon={<IconPlus size={20} />}>
                   New group
                 </ButtonLink>
               </>
@@ -64,16 +64,16 @@ export default function Groups() {
 function Summary({ totals, homeCurrency }) {
   const est = (v) => (homeCurrency && signOf(v) !== 0 ? (estimate(v, homeCurrency) ?? undefined) : undefined);
   return (
-    <Card as="section" aria-label="Across all groups" className="grid grid-cols-2 gap-4">
-      <div className="flex flex-col gap-1">
-        <span className="text-sm text-muted">You owe</span>
+    <section aria-label="Across all groups" className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col gap-1 rounded-card border-2 border-owe/40 bg-owe/10 p-4">
+        <span className="text-sm font-semibold">You owe</span>
         <Amount value={totals.youOwe} size="md" tone={signOf(totals.youOwe) ? 'owe' : 'default'} estimate={est(totals.youOwe)} />
       </div>
-      <div className="flex flex-col gap-1">
-        <span className="text-sm text-muted">You’re owed</span>
+      <div className="flex flex-col gap-1 rounded-card border-2 border-owed/40 bg-owed/10 p-4">
+        <span className="text-sm font-semibold">You’re owed</span>
         <Amount value={totals.youAreOwed} size="md" tone={signOf(totals.youAreOwed) ? 'owed' : 'default'} estimate={est(totals.youAreOwed)} />
       </div>
-    </Card>
+    </section>
   );
 }
 
@@ -82,12 +82,13 @@ function GroupCard({ group }) {
   const sign = signOf(group.myNet);
   return (
     <Link to={`/groups/${group.id}`} className="flex items-center gap-4 rounded-card bg-surface p-5 hover:bg-surface-2">
-      <span className="flex min-w-0 flex-1 flex-col gap-2">
-        <span className="flex items-center gap-2">
-          <span className="truncate text-lg font-semibold">{group.name}</span>
+      <Avatar name={group.name} id={group.id} size="lg" className="rounded-[20px]" />
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="truncate text-lg font-semibold">{group.name}</span>
+        <span className="flex items-center gap-2 text-sm text-muted">
           <GroupTypePill type={group.type} />
+          {group.memberCount} members
         </span>
-        <span className="text-sm text-muted">{group.memberCount} members</span>
       </span>
       <span className="flex flex-col items-end">
         {sign === 0 ? (

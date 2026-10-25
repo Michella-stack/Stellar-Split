@@ -296,7 +296,10 @@ test("untrusted: the bearer token goes to the API and never appears in any tool 
     "POST /v1/groups/g1/expenses": json(201, { id: "e1" }),
     "POST /v1/groups/g1/settlements": json(403, { error: { code: "policy_daily_cap", message: "no" } }),
   };
-  const mock = await serve((req, res, body) => (routes[`${req.method} ${req.url.split("?")[0]}`] ?? json(404, {}))(req, res, body));
+  const mock = await serve((req, res, body) => {
+    const key = `${req.method} ${req.url.split("?")[0]}`;
+    return (Object.hasOwn(routes, key) ? routes[key] : json(404, {}))(req, res, body); // own keys only, never the prototype
+  });
   const client = await connect(createApi({ baseUrl: mock.url, token: TOKEN }));
   const results = [
     await client.callTool({ name: "ledgerly_list_groups", arguments: {} }),

@@ -13,6 +13,7 @@ import { USDC_FAUCET_URL } from '../config/env.js';
 import { useCopy } from '../hooks/useCopy.js';
 import { useTheme } from '../hooks/useTheme.js';
 import { useWallet } from '../hooks/useWallet.js';
+import { DEMO } from '../lib/demoMode.js';
 import { shortAddress } from '../lib/format.js';
 import { ACCENTS } from '../lib/theme.js';
 
@@ -85,6 +86,7 @@ export default function Wallet() {
           <Balances balances={balances} error={loadError} onRetry={refresh} onFund={fund} funding={funding} />
         </section>
 
+        {!DEMO && (
         <section aria-labelledby="usdc-title" className="flex flex-col gap-2">
           <h2 id="usdc-title" className="text-lg font-semibold">
             Get testnet USDC
@@ -103,6 +105,7 @@ export default function Wallet() {
             <span className="sr-only">(opens in a new tab)</span>
           </a>
         </section>
+        )}
 
         <section aria-labelledby="look-title" className="flex flex-col gap-4">
           <h2 id="look-title" className="text-lg font-semibold">
@@ -139,7 +142,7 @@ export default function Wallet() {
             navigate('/', { replace: true });
           }}
         >
-          Disconnect
+          {DEMO ? 'Exit demo' : 'Disconnect'}
         </Button>
       </div>
     </>

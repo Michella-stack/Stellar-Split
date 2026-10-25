@@ -3,6 +3,7 @@
 import { Asset, BASE_FEE, Horizon, Memo, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
 import { toStroops } from '@shared/money.js';
 import { CONFIG, FRIENDBOT_URL, NETWORK_PASSPHRASE } from '../config/env.js';
+import { DEMO } from '../lib/demoMode.js';
 
 const TX_TIMEOUT_SECONDS = 180;
 
@@ -44,6 +45,8 @@ export class SettlementError extends Error {
  * @returns {Promise<AccountBalances>}
  */
 export async function loadBalances(address) {
+  // Demo mode never contacts Stellar: the sample person holds sample money.
+  if (DEMO) return { funded: true, xlm: '1000.0000000', usdc: '500.0000000', usdcLimit: '922337203685.4775807', subentries: 1 };
   let account;
   try {
     account = await horizon().loadAccount(address);

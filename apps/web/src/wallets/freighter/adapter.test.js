@@ -19,7 +19,8 @@ const { assertTestnet, connect, getConnectedAddress, isAvailable, signMessage, s
 const TESTNET = { network: 'TESTNET', networkPassphrase: 'Test SDF Network ; September 2015' };
 const PUBLIC = { network: 'PUBLIC', networkPassphrase: 'Public Global Stellar Network ; September 2015' };
 const rejected = { error: { code: -4, message: 'The user rejected this request.' } };
-const intent = { kind: 'payment', signer: payer, destination: creditor, amount: '364.6', assetCode: 'USDC', assetIssuer: ISSUER };
+const memoHash = 'ab'.repeat(32);
+const intent = { kind: 'payment', signer: payer, destination: creditor, amount: '364.6', assetCode: 'USDC', assetIssuer: ISSUER, memoHash, notAfter: new Date(Date.now() + 600_000).toISOString() };
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -77,7 +78,7 @@ describe('network', () => {
 });
 
 describe('signTransaction', () => {
-  const xdr = () => buildTx([payment()]);
+  const xdr = () => buildTx([payment()], { memoHash });
 
   it('signs a transaction that matches the intent, pinned to Testnet and the signer', async () => {
     expect(await signTransaction(xdr(), intent)).toEqual({ signedXdr: 'SIGNED', signer: payer });
@@ -100,7 +101,7 @@ describe('signTransaction', () => {
   });
 
   it('refuses a transaction that differs from the reviewed intent', async () => {
-    expect(await codeOf(signTransaction(buildTx([payment({ amount: '1000' })]), intent))).toBe('INTENT_MISMATCH');
+    expect(await codeOf(signTransaction(buildTx([payment({ amount: '1000' })], { memoHash }), intent))).toBe('INTENT_MISMATCH');
     expect(ext.signTransaction).not.toHaveBeenCalled();
   });
 

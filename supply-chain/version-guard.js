@@ -110,7 +110,7 @@ async function getJson(fetchImpl, url, init) {
 // Normalized: [{ version, published: Date, deprecated: string|null, yanked: bool }]
 async function fetchRegistry(fetchImpl, ecosystem, name) {
   if (ecosystem === 'npm') {
-    const doc = await getJson(fetchImpl, `https://registry.npmjs.org/${name.replace('/', '%2f')}`);
+    const doc = await getJson(fetchImpl, `https://registry.npmjs.org/${name.replace(/\//g, '%2f')}`);
     return Object.entries(doc.versions || {}).map(([version, meta]) => ({
       version,
       published: new Date(doc.time?.[version]),
@@ -213,7 +213,7 @@ function renderReport(deps, problems) {
   lines.push(`Found ${problems.length} problem(s) in ${deps.length} added or changed dependencies.`, '');
   lines.push('| Dependency | Ecosystem | File | Proposed | Expected | Reason |', '|---|---|---|---|---|---|');
   for (const p of problems) {
-    const cell = (s) => String(s).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const cell = (s) => String(s).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\n/g, ' ');
     lines.push(`| \`${cell(p.name)}\` | ${p.ecosystem} | ${cell(p.file)} | ${cell(p.version)} | ${cell(p.expected || '-')} | ${cell(p.reason)} |`);
   }
   lines.push('', 'Pin each dependency to the expected version, or to the newest stable release that has passed its cooldown.');

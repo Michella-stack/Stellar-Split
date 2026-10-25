@@ -70,6 +70,7 @@ Demo steps, the live URL and Testnet transaction evidence will be added here.
 - [Product requirements](docs/PRD.md)
 - [Judging criteria](docs/JUDGING.md)
 - [Build focus](docs/BUILD-FOCUS.md)
+- [Agents: setup and access](docs/AGENTS.md)
 - [Security policy](SECURITY.md)
 - [Supply chain checks](supply-chain/README.md)
 

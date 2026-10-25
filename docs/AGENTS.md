@@ -1,0 +1,102 @@
+# Agents: setup and access
+
+Stellar-Split is tested with two independent AI agents, Hermes Agent and OpenClaw. Both are reachable only on Telegram, and only by the people listed under [Who can use the agents](#who-can-use-the-agents).
+
+## At a glance
+
+| | Hermes Agent | OpenClaw |
+|---|---|---|
+| Telegram bot | `@stellarsplithermesbot` | `@stellarsplitbot` |
+| Container | `hermes-stellar` | `openclaw-stellar` |
+| Image | `nousresearch/hermes-agent:stable` | `ghcr.io/openclaw/openclaw:latest` (2026.10.7) |
+| Running digest | `sha256:9c5561579f3ffdf333401797094ac3a743738d6c25d40f4331c7bf77b694238d` | `sha256:fb26f0841659dc757f23feec9adeab51f11d76779a409db5d22e191b43841afa` |
+| Model | `gpt-6-luna` (provider `openai-codex`) | `openai/gpt-6-luna` (primary) |
+| Test plan | PRD section 7.3, issue #15 | PRD section 7.3, issue #18 |
+
+## Where they run
+
+Both agents run on one private home server (Ubuntu 24.04 LTS), each in its own Docker Compose project:
+
+```
+~/stellar-agents/
+├── hermes/     docker-compose.yml, .env, data/   (mounted at /opt/data)
+├── openclaw/   docker-compose.yml, .env, state/  (mounted at /home/node/.openclaw)
+└── k8s/        ingress for the web dashboards
+```
+
+The server has no public SSH. It is administered over a private Tailscale network by the owner only.
+
+Both containers:
+
+- restart with `unless-stopped`
+- are capped at 4 GB of memory and 2 CPUs
+- publish their dashboard port only on the internal k3s bridge address, not on the LAN or the internet
+
+OpenClaw also runs with `cap_drop: [NET_RAW, NET_ADMIN]`, `no-new-privileges` and a health check. All of its bundled optional skills that the config lists are disabled.
+
+## Who can use the agents
+
+Access is limited to these Telegram users:
+
+| Person | Telegram |
+|---|---|
+| Victor Estival (owner) | owner account |
+| Michella Warren | `@Michella_Ironfeather` |
+| Damaris Castro | `@damarisic` |
+
+Anyone else is ignored, whether they write in a group or in a private chat.
+
+How it is enforced:
+
+- **Where:** in groups, the bots answer only in the private group "Stellar Agents" and in each bot's own test group. The groups are invite-only and the owner controls membership.
+- **Mention required:** in a group, a bot answers only when it is @mentioned (`require_mention` in Hermes, `requireMention` in OpenClaw).
+- **User allowlist:** each gateway checks the sender's numeric Telegram ID against an allowlist before the model sees the message. Hermes uses `TELEGRAM_ALLOWED_USERS` and `TELEGRAM_GROUP_ALLOWED_USERS`. OpenClaw uses `dmPolicy: allowlist` with `allowFrom`, and `groupPolicy: allowlist` with `groupAllowFrom`.
+- **Private chats:** only the owner can talk to the bots one to one.
+- **Telegram privacy mode:** both bots are admins of "Stellar Agents", so Telegram delivers group messages to them. The gateway allowlist above still decides who gets an answer.
+
+The allowlists hold numeric Telegram IDs, which are kept on the server and not in this repository.
+
+### Getting access
+
+1. Ask Victor to add you to the "Stellar Agents" Telegram group.
+2. Send one message in the group so your Telegram ID can be read from the gateway logs.
+3. Victor adds the ID to both allowlists and restarts the two containers.
+
+### Talking to the agents
+
+In "Stellar Agents", mention the bot by its exact username:
+
+```
+@stellarsplithermesbot what do I owe in the flat group?
+@stellarsplitbot what do I owe in the flat group?
+```
+
+A misspelled username is not a mention, so the bot stays silent. Tap the bot in the member list to insert it.
+
+## Secrets
+
+- Bot tokens, the OpenClaw gateway token, the Hermes dashboard credentials and the model provider login live only in `.env` files and data volumes on the server.
+- None of them are in this repository.
+- The agents hold no Stellar keys. Payments will go through the Ledgerly MCP server (issue #14), which keeps the signing key in its own container, away from the agent and its model (PRD FR-38).
+
+## Web dashboards
+
+Each agent has a web dashboard for the owner. Both sit behind Cloudflare Access and Authentik single sign-on, and the containers do not expose them on any other interface.
+
+## Operations
+
+Run these on the server:
+
+| Task | Command |
+|---|---|
+| Status | `docker ps --filter name=stellar` |
+| Logs | `docker logs -f hermes-stellar` or `docker logs -f openclaw-stellar` |
+| Restart after a config change | `cd ~/stellar-agents/hermes && docker compose up -d --force-recreate` (same in `openclaw/`) |
+| Hermes config | `~/stellar-agents/hermes/data/config.yaml` and `~/stellar-agents/hermes/.env` |
+| OpenClaw config | `~/stellar-agents/openclaw/state/openclaw.json` and `~/stellar-agents/openclaw/.env` |
+
+## Status
+
+- Both bots answer in "Stellar Agents" when @mentioned.
+- The Ledgerly MCP server (#14) is not connected yet, so neither agent can read balances or settle.
+- The Phase 1a tests are HA-1, HA-3, HA-4, HA-6 for Hermes and OC-1, OC-4, OC-6 for OpenClaw (PRD section 7.3).

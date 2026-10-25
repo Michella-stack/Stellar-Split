@@ -20,6 +20,8 @@ From Telegram, each agent can list its groups, read balances, record an expense 
 
 ## Design
 
+Where the MCP server runs, and why, is decided in [ADR 0009](adr/0009-mcp-server-runs-next-to-each-agent.md).
+
 ```
 Telegram -> hermes-stellar --(network A, MCP_AUTH_TOKEN-A)--> ledgerly-mcp-hermes ---HTTPS, LEDGERLY_TOKEN-A---> API
 Telegram -> openclaw-stellar --(network B, MCP_AUTH_TOKEN-B)--> ledgerly-mcp-openclaw ---HTTPS, LEDGERLY_TOKEN-B---> API

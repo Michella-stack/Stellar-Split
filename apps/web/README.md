@@ -13,7 +13,35 @@ cp .env.example .env
 npm run dev        # http://localhost:5173
 ```
 
-Other scripts: `npm test` (Vitest), `npm run lint` (ESLint), `npm run build`, `npm run preview`.
+Other scripts: `npm test` (Vitest), `npm run lint` (ESLint), `npm run build`, `npm run preview`. The shared domain rules have their own tests: `cd packages/shared && npm test`.
+
+In development, http://localhost:5173/ui shows every UI component in the dark and light themes side by side. It is not part of production builds.
+
+## Before the demo
+
+You need two Testnet accounts in Freighter. The payer is the account you sign in with. The creditor plays "Mateo" in the demo data.
+
+1. In Freighter, switch the network to **Test Net**. Create a second account from the account menu if you only have one.
+2. Fund both accounts with test XLM: **Wallet → Fund with Friendbot** in the app, or the Friendbot button in Freighter.
+3. Give both accounts a USDC trustline. "Settle up" offers **Add USDC trustline** when it is missing, or use Freighter → Manage assets with issuer `GBBD47IF…LFLA5`.
+4. Get testnet USDC for the payer from https://faucet.circle.com (Stellar Testnet).
+5. Put the creditor's **public** address in `.env` as `VITE_MOCK_MATEO_ADDRESS`, restart `npm run dev` and open a new tab. Mock data is kept per tab.
+
+## Demo script (about 3 minutes)
+
+1. **Welcome:** “Different currencies. One balance.” Click **Connect Freighter wallet** and approve.
+2. **Sign in:** click **Sign in with Freighter**. Freighter shows a single data entry: it costs nothing and is never sent.
+3. **Profile:** enter your name and home currency (EUR).
+4. **Your groups:** you owe $364.60 in Casa Alfama, and Algarve trip owes you $36.00, each with a € estimate.
+5. **Casa Alfama:** members from four countries, the accent card “You owe Mateo $364.60 · ≈ €335”, and everyone else's balance in words.
+6. **Add expense → Enter it yourself:** 30 for Internet, split **Exact amounts**. The check reads “Adds up to $X of $30.00” until it matches. Save it and the balances update.
+7. **Settle up with Mateo:** the review shows your available USDC. If it is short, use **Pay $X to Mateo instead** (a partial payment), then **Confirm in Freighter**. Freighter shows the same recipient, amount and asset.
+8. **Paid:** open the transaction on Stellar Expert, then **Save receipt** (PNG).
+9. **Stellar Assist:** set the rules ($25 per payment, ask above $5, $50 a day), approve the $7.50 internet share, then in the chat try “Pay Mateo 364.60” to show the “Over my limit” card.
+
+Evidence from testing, both payments of Testnet USDC sent by this app to the demo creditor:
+[7e15141b…](https://stellar.expert/explorer/testnet/tx/7e15141b4fa3484aa319efcc783a81df6e35ab5d77dfb0576d8c38e80af576de) (1.50 USDC) and
+[fee0d278…](https://stellar.expert/explorer/testnet/tx/fee0d278e996b207c1998a60959bf85d2bf7dd0621b0b0e6376d9dd2d24d4099) (1.00 USDC).
 
 ## Environment variables
 
@@ -77,6 +105,17 @@ In mock mode, set `VITE_MOCK_MATEO_ADDRESS` to a real Testnet account with a USD
 ## Shared rules and mocks
 
 Amounts, splits and balances come from [`packages/shared`](../../packages/shared/README.md), imported as `@shared/...`. The API client and the mock response shapes are documented in [`src/client/README.md`](src/client/README.md). Home-currency estimates (`src/lib/rates.js`) use a fixed mock rate table for now.
+
+## Accessibility
+
+- The target is WCAG 2.1 AA. `src/styles/contrast.test.js` checks every text and background pair in both themes, and every accent fill, against 4.5:1.
+- The UI uses real buttons, links and labels. Touch targets are at least 44 px and focus is always visible. A “Skip to content” link is provided, and focus moves to the new screen after navigation.
+- Owing and being owed are always written (“you owe”, “owes you”, “is owed”), never shown by colour alone.
+- Animations respect `prefers-reduced-motion`.
+
+## Performance
+
+Screens load on first visit (route-level code splitting). The Stellar SDK loads only for sign-in, payments and the Wallet screen. Address checks use the shared `isValidStellarAddress`, which needs no SDK.
 
 ## Theme
 

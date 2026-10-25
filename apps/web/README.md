@@ -24,8 +24,9 @@ All `VITE_` variables are compiled into the browser bundle, so none of them may 
 | `VITE_USE_MOCKS` | `true` serves local mock data instead of calling the API. |
 | `VITE_API_URL` | Base URL of the Stellar-Split API. |
 | `VITE_HORIZON_URL` | Stellar Testnet Horizon. |
-| `VITE_USDC_ISSUER` | Issuer of Testnet USDC (verified before the settlement phase). |
+| `VITE_USDC_ISSUER` | Issuer of Circle Testnet USDC, `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
 | `VITE_NETWORK` | Must be `testnet`. |
+| `VITE_MOCK_MATEO_ADDRESS` | Mock mode only: a real Testnet account that plays Mateo, so a demo payment can reach it. |
 
 ## Layout
 
@@ -58,6 +59,20 @@ src/
 2. `npm run dev`, open http://localhost:5173 and click **Connect Freighter wallet**.
 3. Approve access, then **Sign in with Freighter** and approve the sign-in request.
 4. Fill in your profile. Open **Wallet** and use **Fund with Friendbot** if the account is new.
+
+## Settle up (Stellar Testnet)
+
+The first settlement path is a plain USDC payment from the person who owes to the person owed (`src/client/stellar.js`, the only Horizon code). The Soroban contract `settle` can replace it later behind the same functions.
+
+1. **Review:** amount (or a smaller partial amount, never more than the debt), recipient with short address, group, asset, network, fee and home-currency estimates.
+2. **Checks before Freighter opens:** your account exists and has a USDC trustline, enough USDC and enough XLM for the fee; the recipient exists and has a USDC trustline; you are not paying yourself.
+3. **Signing:** the adapter re-reads the network and the account and checks the transaction matches the review.
+4. **Submit once** to Horizon, never retried. On success the hash links to Stellar Expert and the settlement is recorded through the API.
+5. **Problems** each have their own next step: cancelled, not enough USDC, no trustline (adds one as its own signed transaction), recipient not ready, network error, timeout. A timeout or a dropped connection shows the transaction to check instead of "try again", because the payment may have gone through.
+
+If the Freighter account or network changes before submission, the payment goes back to review.
+
+In mock mode, set `VITE_MOCK_MATEO_ADDRESS` to a real Testnet account with a USDC trustline so that "Settle up with Mateo" reaches it.
 
 ## Shared rules and mocks
 

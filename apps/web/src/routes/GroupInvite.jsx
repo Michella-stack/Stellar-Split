@@ -6,6 +6,7 @@ import { Button, ButtonLink } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { IconCopy, IconShare } from '../components/icons.jsx';
 import { LoadError, Loading } from '../components/LoadState.jsx';
+import { QrCode } from '../components/QrCode.jsx';
 import { TextField } from '../components/TextField.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { addressError } from '../features/groups/address.js';
@@ -57,6 +58,7 @@ export default function GroupInvite() {
           {link.error && <LoadError title="Could not create a link" error={link.error} onRetry={link.reload} />}
           {link.data && (
             <Card className="flex flex-col gap-4">
+              <QrCode value={link.data.inviteUrl} label="QR code with the invite link" className="mx-auto w-48 max-w-full" />
               <p className="font-mono text-sm break-all">{link.data.inviteUrl}</p>
               <div className="flex flex-wrap gap-2">
                 <Button variant="secondary" icon={<IconCopy size={20} />} onClick={() => copy(link.data.inviteUrl, 'Invite link')}>

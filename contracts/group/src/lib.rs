@@ -1,5 +1,5 @@
 #![no_std]
-//! Non-custodial group ledger for Stellar Split (working name).
+//! Non-custodial group ledger for Ledgerly.
 //! Sign convention: positive net balance = is owed money, negative = owes.
 
 use soroban_sdk::{
@@ -169,16 +169,8 @@ fn apply_settlement(env: &Env, group: u32, from: &Address, to: &Address, amount:
     if amount > debt.min(to_net) {
         panic_with_error!(env, Error::Overpay);
     }
-    put(
-        env,
-        &DataKey::Balance(group, from.clone()),
-        &add(env, from_net, amount),
-    );
-    put(
-        env,
-        &DataKey::Balance(group, to.clone()),
-        &add(env, to_net, -amount),
-    );
+    put(env, &DataKey::Balance(group, from.clone()), &add(env, from_net, amount));
+    put(env, &DataKey::Balance(group, to.clone()), &add(env, to_net, -amount));
 }
 
 #[contractimpl]
@@ -200,11 +192,7 @@ impl GroupContract {
 
     pub fn create_group(env: Env, admin: Address, token: Address) -> u32 {
         admin.require_auth();
-        let id: u32 = env
-            .storage()
-            .instance()
-            .get(&DataKey::NextGroup)
-            .unwrap_or(1);
+        let id: u32 = env.storage().instance().get(&DataKey::NextGroup).unwrap_or(1);
         let next = id
             .checked_add(1)
             .unwrap_or_else(|| panic_with_error!(&env, Error::Overflow));
@@ -218,11 +206,7 @@ impl GroupContract {
                 token: token.clone(),
             },
         );
-        put(
-            &env,
-            &DataKey::Members(id),
-            &Vec::from_array(&env, [admin.clone()]),
-        );
+        put(&env, &DataKey::Members(id), &Vec::from_array(&env, [admin.clone()]));
         put(&env, &DataKey::Balance(id, admin.clone()), &0i128);
         GroupCreated {
             group: id,
@@ -230,11 +214,7 @@ impl GroupContract {
             token,
         }
         .publish(&env);
-        MemberAdded {
-            group: id,
-            member: admin,
-        }
-        .publish(&env);
+        MemberAdded { group: id, member: admin }.publish(&env);
         id
     }
 

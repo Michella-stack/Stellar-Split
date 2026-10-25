@@ -5,7 +5,7 @@ Source: Victor Estival's PRD v0.3 (`docs/PRD.md`), cut down to what can be built
 
 ## Prior work disclosure
 
-Before the event the team wrote the PRD (now v0.3, dated 25 October 2026) and reviewed public literature on remittances and stablecoins (`docs/LITERATURE.md`). No application code for this project was written before the event. Raven, a separate earlier Testnet prototype by Michella, is not part of this repository.
+Before the event the team wrote the PRD (v0.3, dated 25 October 2026) and reviewed public literature on remittances and stablecoins (sources are linked in the README). No application code for this project was written before the event. Raven, a separate earlier Testnet prototype by Michella, is not part of this repository.
 
 ## One-line pitch (to agree)
 
@@ -22,7 +22,7 @@ Split shared costs, such as rent sent home by family, and settle them in USDC on
 4. **One real Testnet settlement.** A debtor pays a creditor in Testnet USDC. The transaction hash is shown and links to a Testnet explorer. This is the required on-chain evidence. (FR-22, FR-25)
 5. **Agent settlement through x402 (stretch).** One agent pays a settlement over x402 on `stellar:testnet`, within a spend cap. Only start this once items 1 to 4 work. (FR-32, FR-33)
 
-The non-custodial Soroban group contract is implemented in the repository. Public demo integration remains pending until the group contract ID, Testnet USDC asset and example transaction are confirmed in the project README. The human settlement flow should use the contract's `settle` function once those values are confirmed.
+Decision: settle with a plain USDC transfer plus an off-chain ledger first. The Soroban group contract in `contracts/group` is written; switching the human settlement to its `settle` function comes once the plain transfer works.
 
 ## Security basics we keep
 
@@ -57,7 +57,7 @@ Signed releases and SLSA provenance, Scorecard targets, fuzzing and formal verif
 
 | Area | Owner |
 |---|---|
-| Contract or settlement logic | Contract implemented; public demo integration owner to confirm |
+| Contract or settlement logic | |
 | API and balances | |
 | Web app and wallet connection | |
 | x402 and agent | |

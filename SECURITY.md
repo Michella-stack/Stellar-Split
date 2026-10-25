@@ -11,8 +11,7 @@ Include what you found, how to reproduce it, and the impact you expect.
 In scope:
 
 - Soroban contracts under `/contracts`
-- The web app and API code in this repository
-- Agent and MCP code if added after the human demo
+- The app, API and MCP server code in this repository
 - GitHub workflows and the supply chain checks under `/.github` and `/supply-chain`
 
 Out of scope:

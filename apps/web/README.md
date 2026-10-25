@@ -125,6 +125,16 @@ Addresses on the Settle up review and on Wallet open the account on Stellar Expe
 
 In mock mode, set `VITE_MOCK_MATEO_ADDRESS` to a real Testnet account with a USDC trustline so that "Settle up with Mateo" reaches it.
 
+## Languages
+
+The app is in English, Spanish (Latin American, neutral) and Portuguese (European). Pick one on the welcome screen or on Wallet; the choice is kept in the browser, and the first visit follows the browser language.
+
+- Messages live in `src/i18n/messages/{en,es,pt}.js`. English is the source and the fallback; a missing key shows the English text, never a blank.
+- Use `const { t } = useT()` in components and `tNow()` elsewhere. Counts use plural keys (`key_one`, `key_other`).
+- Amounts follow the language: `$1,172.20` in English, `$1.172,20` in Spanish and Portuguese.
+- A test checks that all three files have the same keys and placeholders, and that every key used in the code exists.
+- Stellar Assist chat understands the same phrases in all three languages. Setup errors on a missing `.env` (ConfigError) stay in English.
+
 ## Exchange rates
 
 The "≈ €325 estimate" lines use `useEstimate()`, which redraws when live rates arrive. The rates API is allowed in the Content-Security-Policy in `vercel.json` (`connect-src`), and its attribution is shown on the Wallet screen, as its terms ask.

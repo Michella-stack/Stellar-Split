@@ -1,13 +1,15 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { TopBar } from '../components/TopBar.jsx';
 import { WalletProblem } from '../features/wallet/WalletProblem.jsx';
+import { useT } from '../hooks/useT.js';
 import { useWallet } from '../hooks/useWallet.js';
 
 /** Full-screen loading state while the wallet connection is restored. */
 export function WalletChecking() {
+  const { t } = useT();
   return (
     <div role="status" className="flex flex-1 items-center justify-center py-24 text-muted">
-      Checking your wallet…
+      {t('wallet.checking')}
     </div>
   );
 }

@@ -1,10 +1,13 @@
 // Display formatting for amounts that arrive as decimal strings. No floating point anywhere.
+// Separators, dates and names follow the language in use (see i18n/state.js).
+
+import { currentLocale, currentSeparators, tNow } from '../i18n/state.js';
 
 const DECIMAL = /^-?\d+(\.\d+)?$/;
 
-/** @param {string} digits */
-function groupThousands(digits) {
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+/** @param {string} digits @param {string} separator */
+export function groupThousands(digits, separator = ',') {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, separator);
 }
 
 const SYMBOLS = { USDC: '$', EURC: '€' };
@@ -14,7 +17,7 @@ const SYMBOLS = { USDC: '$', EURC: '€' };
  * USDC, euros for EURC. The sign is dropped: callers say "you owe" or "owes you" in words.
  * @param {string} value e.g. "-364.6", "1172.2000000"
  * @param {string} [code] 'USDC' (default) or 'EURC'
- * @returns {string} e.g. "$364.60", "€1,172.20"
+ * @returns {string} e.g. "$364.60" and "$1,172.20" in English, "€1.172,20" in Spanish and Portuguese
  */
 export function formatMoney(value, code = 'USDC') {
   if (!DECIMAL.test(value)) throw new Error(`Not a decimal string: ${value}`);
@@ -23,13 +26,14 @@ export function formatMoney(value, code = 'USDC') {
   if (Number(fraction[2] ?? '0') >= 5) cents += 1n;
   const major = (cents / 100n).toString();
   const rest = (cents % 100n).toString().padStart(2, '0');
-  return `${SYMBOLS[code] ?? '$'}${groupThousands(major)}.${rest}`;
+  const { group, decimal } = currentSeparators();
+  return `${SYMBOLS[code] ?? '$'}${groupThousands(major, group)}${decimal}${rest}`;
 }
 
 /**
  * Formats a USDC decimal string as dollars with two decimals.
  * @param {string} value e.g. "-364.6", "1172.2000000"
- * @returns {string} e.g. "$364.60", "$1,172.20"
+ * @returns {string} e.g. "$364.60"
  */
 export function formatUsd(value) {
   return formatMoney(value, 'USDC');
@@ -69,7 +73,7 @@ export function initials(name) {
  * @param {string} iso
  */
 export function formatDate(iso) {
-  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(iso));
+  return new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short' }).format(new Date(iso));
 }
 
 /**
@@ -78,7 +82,7 @@ export function formatDate(iso) {
  * @param {string | null} meId
  */
 export function memberName(member, meId) {
-  if (!member) return 'Someone';
-  if (member.id === meId) return 'You';
-  return member.displayName ?? 'Member';
+  if (!member) return tNow('common.someone');
+  if (member.id === meId) return tNow('common.you');
+  return member.displayName ?? tNow('common.member');
 }

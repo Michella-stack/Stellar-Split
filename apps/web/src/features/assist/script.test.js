@@ -16,6 +16,21 @@ describe('parseIntent', () => {
     expect(parseIntent('Check a payment on Telegram')).toEqual({ kind: 'telegram-check' });
   });
 
+  it('understands Spanish', () => {
+    expect(parseIntent('48 para la luz, dividido entre 4')).toEqual({ kind: 'add-expense', amount: '48.00', description: 'Luz', ways: 4 });
+    expect(parseIntent('Pagar Mateo 12,50')).toEqual({ kind: 'pay', to: 'mateo', amount: '12.50' });
+    expect(parseIntent('¿Qué debo?')).toEqual({ kind: 'what-owe' });
+    expect(parseIntent('Pagar mi parte de internet')).toEqual({ kind: 'pay-internet' });
+    expect(parseIntent('Comprobar un pago por Telegram')).toEqual({ kind: 'telegram-check' });
+  });
+
+  it('understands Portuguese', () => {
+    expect(parseIntent('48 para a eletricidade, dividido por 4')).toEqual({ kind: 'add-expense', amount: '48.00', description: 'Eletricidade', ways: 4 });
+    expect(parseIntent('O que devo?')).toEqual({ kind: 'what-owe' });
+    expect(parseIntent('Pagar a minha parte da internet')).toEqual({ kind: 'pay-internet' });
+    expect(parseIntent('Verificar um pagamento por Telegram')).toEqual({ kind: 'telegram-check' });
+  });
+
   it('refuses secret keys before anything else', () => {
     expect(parseIntent(`pay mateo 5 with ${'S' + 'D'.repeat(55)}`)).toEqual({ kind: 'secret' });
   });

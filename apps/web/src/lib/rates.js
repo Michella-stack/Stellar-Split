@@ -4,6 +4,8 @@
 // reached or answers something odd, a fixed sample table is used and the UI says so. Money maths never uses these.
 
 import { toStroops } from '@shared/money.js';
+import { currentSeparators } from '../i18n/state.js';
+import { groupThousands } from './format.js';
 
 /** Units of each currency per 1 USD. Sample values, not market data: used until live rates arrive, or if they never do. */
 const FIXED_RATES_PER_USD = Object.freeze({
@@ -141,6 +143,6 @@ export function estimate(usdc, currency, rates = snapshot.rates) {
   const scale = 10n ** 14n; // 7 decimals on the amount × 7 decimals on the rate
   const product = toStroops(usdc.replace(/^-/, '')) * toStroops(rate);
   const units = (product + scale / 2n) / scale;
-  const grouped = units.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const grouped = groupThousands(units.toString(), currentSeparators().group);
   return currency in SYMBOL_PREFIX ? `${SYMBOL_PREFIX[currency]}${grouped}` : `${currency} ${grouped}`;
 }

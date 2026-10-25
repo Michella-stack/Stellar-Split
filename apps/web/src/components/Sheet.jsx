@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
+import { useT } from '../hooks/useT.js';
 import { IconButton } from './IconButton.jsx';
 import { IconClose } from './icons.jsx';
 
@@ -7,6 +8,7 @@ import { IconClose } from './icons.jsx';
  * @param {{ open: boolean, onClose: () => void, title: string, children: import('react').ReactNode }} props
  */
 export function Sheet({ open, onClose, title, children }) {
+  const { t } = useT();
   const ref = useRef(/** @type {HTMLDialogElement | null} */ (null));
   const titleId = useId();
 
@@ -34,7 +36,7 @@ export function Sheet({ open, onClose, title, children }) {
           <h2 id={titleId} className="font-display-wide text-2xl">
             {title}
           </h2>
-          <IconButton label="Close" onClick={onClose}>
+          <IconButton label={t('common.close')} onClick={onClose}>
             <IconClose size={20} />
           </IconButton>
         </div>

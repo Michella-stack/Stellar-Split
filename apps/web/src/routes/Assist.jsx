@@ -13,10 +13,13 @@ import { Progress } from '../components/Progress.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { ApprovalCard } from '../features/assist/ApprovalCard.jsx';
 import { useApi } from '../hooks/useApi.js';
+import { useT } from '../hooks/useT.js';
 import { useToast } from '../hooks/useToast.js';
+import { activityText } from '../features/assist/activityText.js';
 import { formatDate, formatUsd } from '../lib/format.js';
 
 export default function Assist() {
+  const { t } = useT();
   const [version, setVersion] = useState(0);
   const agent = useApi(() => assist.getAgent('assist'), `agent#${version}`);
   const activity = useApi(() => assist.listAgentActivity('assist'), `agent-activity#${version}`);
@@ -28,8 +31,8 @@ export default function Assist() {
   return (
     <>
       <TopBar />
-      {agent.loading && <Loading label="Loading Stellar Assist" />}
-      {agent.error && <LoadError title="Could not load Stellar Assist" error={agent.error} onRetry={agent.reload} />}
+      {agent.loading && <Loading label={t('agent.loading')} />}
+      {agent.error && <LoadError title={t('agent.loadError')} error={agent.error} onRetry={agent.reload} />}
       {agent.data && <Dashboard data={agent.data} activity={activity} members={group.data?.members ?? []} onChange={refresh} />}
     </>
   );
@@ -37,10 +40,11 @@ export default function Assist() {
 
 /** @param {{ data: any, activity: any, members: any[], onChange: () => void }} props */
 function Dashboard({ data, activity, members, onChange }) {
+  const { t } = useT();
   const toast = useToast();
   const { agent, pendingApprovals } = data;
   const [toggling, setToggling] = useState(false);
-  const nameOf = (id) => members.find((m) => m.id === id)?.displayName ?? 'a member';
+  const nameOf = (id) => members.find((m) => m.id === id)?.displayName ?? t('common.member');
   const paused = agent.status === 'paused';
   const spent = Number(agent.spentToday);
   const cap = Number(agent.policy.dailyCap);
@@ -49,10 +53,10 @@ function Dashboard({ data, activity, members, onChange }) {
     setToggling(true);
     try {
       await assist.updateAgent(agent.id, { status: paused ? 'active' : 'paused' });
-      toast(paused ? 'Stellar Assist resumed' : 'Stellar Assist paused. It will not add or pay anything.', { tone: 'success' });
+      toast(paused ? t('agent.resumedToast') : t('agent.pausedToast'), { tone: 'success' });
       onChange();
     } catch {
-      toast('Could not change the status. Try again.', { tone: 'error' });
+      toast(t('agent.statusError'), { tone: 'error' });
     } finally {
       setToggling(false);
     }
@@ -64,10 +68,10 @@ function Dashboard({ data, activity, members, onChange }) {
       <div className="flex items-center gap-4">
         <AgentAvatar size="lg" />
         <div className="flex flex-col gap-1">
-          <h1 className="font-display-wide text-3xl">Stellar Assist</h1>
+          <h1 className="font-display-wide text-3xl">{t('agent.name')}</h1>
           <Pill tone={paused ? 'neutral' : 'accent'} className="self-start">
             <span aria-hidden="true" className={paused ? 'size-2 rounded-full bg-muted' : 'size-2 rounded-full bg-on-accent'} />
-            {paused ? 'Paused' : 'Active'}
+            {paused ? t('agent.paused') : t('agent.active')}
           </Pill>
         </div>
       </div>
@@ -85,34 +89,34 @@ function Dashboard({ data, activity, members, onChange }) {
       <Card as="section" aria-labelledby="spent-title" className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between gap-3">
           <h2 id="spent-title" className="font-semibold">
-            Spent today
+            {t('agent.spentToday')}
           </h2>
           <span className="tabular-nums">
-            <strong>{formatUsd(agent.spentToday)}</strong> <span className="text-muted">of {formatUsd(agent.policy.dailyCap)}</span>
+            <strong>{formatUsd(agent.spentToday)}</strong> <span className="text-muted">{t('agent.ofCap', { cap: formatUsd(agent.policy.dailyCap) })}</span>
           </span>
         </div>
-        <Progress label="Spent today against the daily cap" value={spent} max={cap} valueText={`${formatUsd(agent.spentToday)} of ${formatUsd(agent.policy.dailyCap)}`} />
+        <Progress label={t('agent.spentProgress')} value={spent} max={cap} valueText={t('agent.spentValue', { spent: formatUsd(agent.spentToday), cap: formatUsd(agent.policy.dailyCap) })} />
         <dl className="mt-2 grid grid-cols-3 gap-3 text-sm">
-          <Limit term="Max per payment" value={formatUsd(agent.policy.maxPerPayment)} />
-          <Limit term="Ask me first above" value={formatUsd(agent.policy.approvalAbove)} />
-          <Limit term="Wallet balance" value={formatUsd(agent.wallet.balance)} />
+          <Limit term={t('agent.maxPerPayment')} value={formatUsd(agent.policy.maxPerPayment)} />
+          <Limit term={t('agent.askAbove')} value={formatUsd(agent.policy.approvalAbove)} />
+          <Limit term={t('agent.walletBalance')} value={formatUsd(agent.wallet.balance)} />
         </dl>
         <Link to="/assist/setup" className="inline-flex min-h-11 items-center self-start font-medium underline underline-offset-4">
-          Edit rules
+          {t('agent.editRules')}
         </Link>
       </Card>
 
       <section aria-labelledby="recent-title" className="flex flex-col gap-1">
         <h2 id="recent-title" className="text-lg font-semibold">
-          Recent activity
+          {t('agent.recent')}
         </h2>
-        {activity.loading && <Loading label="Loading activity" />}
-        {activity.error && <LoadError title="Could not load activity" error={activity.error} onRetry={activity.reload} />}
+        {activity.loading && <Loading label={t('agent.loadingActivity')} />}
+        {activity.error && <LoadError title={t('agent.activityError')} error={activity.error} onRetry={activity.reload} />}
         {activity.data && (
           <ul>
             {activity.data.items.map((item) => (
               <li key={item.id}>
-                <ActivityRow item={item} />
+                <ActivityRow item={item} nameOf={nameOf} />
               </li>
             ))}
           </ul>
@@ -121,10 +125,10 @@ function Dashboard({ data, activity, members, onChange }) {
 
       <div className="flex flex-col gap-3">
         <ButtonLink to="/assist/chat" block icon={<IconRobot size={20} />}>
-          Chat with Assist
+          {t('agent.chat')}
         </ButtonLink>
         <Button variant="outline" block loading={toggling} onClick={togglePause}>
-          {paused ? 'Resume' : 'Pause agent'}
+          {paused ? t('agent.resume') : t('agent.pause')}
         </Button>
       </div>
     </div>
@@ -141,10 +145,13 @@ function Limit({ term, value }) {
   );
 }
 
-const STATUS_WORDS = { done: 'Done', blocked: 'Blocked', pending: 'Waiting for you', approved: 'Approved', rejected: 'Declined' };
+const STATUSES = ['done', 'blocked', 'pending', 'approved', 'rejected'];
 
-/** @param {{ item: any }} props */
-function ActivityRow({ item }) {
+/** @param {{ item: any, nameOf: (id: string) => string }} props */
+function ActivityRow({ item, nameOf }) {
+  const { t } = useT();
+  const status = STATUSES.includes(item.status) ? t(`agent.status.${item.status}`) : item.status;
+  const reason = item.reasonCode ? t(`agent.reason.${item.reasonCode}`) : item.reason;
   const Icon = item.kind === 'blocked' ? IconAlert : item.kind === 'expense' ? IconReceipt : IconCheck;
   return (
     <ListRow
@@ -156,8 +163,8 @@ function ActivityRow({ item }) {
           <Icon size={20} />
         </span>
       }
-      title={item.description}
-      subtitle={item.reason ? `${STATUS_WORDS[item.status]}: ${item.reason}` : `${STATUS_WORDS[item.status] ?? item.status} · ${formatDate(item.createdAt)}`}
+      title={activityText(t, item, nameOf)}
+      subtitle={reason ? `${status}: ${reason}` : `${status} · ${formatDate(item.createdAt)}`}
       trailing={<span className="font-mono text-sm">{formatUsd(item.amount)}</span>}
     />
   );

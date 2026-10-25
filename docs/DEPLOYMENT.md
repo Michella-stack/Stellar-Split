@@ -18,6 +18,9 @@ The project is `stellar-split` in the Vercel team `vestival's projects`. Deploym
 | Vercel project and public URL | Working. The health endpoint answered 200 |
 | Content served | The real web app, from commit `b720476` (merge of #66). The first two deployments were made by hand and served a placeholder page |
 | Automatic deploys from GitHub | **Working through Option B** (GitHub Actions). The first production run succeeded and the deployment carries the commit. Option A (Vercel Git integration) is not connected |
+| Production variables | Checked in the dashboard, 25 October 2026: `SESSION_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_URL`, `USDC_ISSUER` and `GEMINI_API_KEY` are set. `ALLOW_MEMORY_STORE` is set only for Preview. System environment variables are exposed, which the production guard against the in-memory store needs |
+| Database | Supabase project `Split-Stellar`: `used_nonces`, `settlement_intents` and `record_settlement` exist (migrations 001 and 002 applied), and the project is healthy. On the live URL, one signed challenge sent 12 times in parallel got one 200 and eleven 401, and a group created through the API was readable on 20 of 20 parallel reads |
+| Deploy token | The earliest-expiring Vercel token expires on **24 November 2026**. When it does, deployments fail with an authentication error; create a new token and replace `VERCEL_TOKEN` before then |
 
 ## What is deployed
 
@@ -109,4 +112,6 @@ In Vercel, *Deployments*, pick a previous good deployment and promote it. Or rev
 
 ## Not verified
 
-That Option A works with the personal account setup, the environment variables of the live project, and the preview deployments of Option B on a real pull request (only the production run has been seen). The health check passes, but sign-in and any route that needs Supabase have not been tried on the live URL.
+That Option A works with the personal account setup, and the preview deployments of Option B on a real pull request (only the production run has been seen). Sign-in with a throwaway Testnet key and group creation were tried on the live URL on 25 October 2026. Sign-in with Freighter, and a payment from one real wallet to another, have not been.
+
+A test group named `check79 <timestamp>` was left in production by those checks. It holds no real data, and the API has no route to delete a group.

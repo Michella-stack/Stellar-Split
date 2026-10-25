@@ -1,12 +1,14 @@
 // Draws a payment receipt as a PNG in the browser (canvas, no dependencies). Nothing is uploaded.
 
+import { currentLocale } from '../../i18n/state.js';
+import { tNow } from '../../i18n/state.js';
 import { formatMoney } from '../../lib/format.js';
 
 const W = 1080;
 const H = 1350;
 
 /**
- * @typedef {{ amount: string, fromName: string, toName: string, toAddress: string, groupName: string,
+ * @typedef {{ amount: string, toName: string, toAddress: string, groupName: string,
  *   txHash: string, explorerUrl: string, date: Date, accent: string, demo?: boolean, asset?: string }} ReceiptData
  */
 
@@ -31,21 +33,21 @@ export async function renderReceiptPng(r) {
   ctx.fill();
   ctx.fillStyle = '#0b0b0d';
   ctx.font = '600 36px Geist, system-ui, sans-serif';
-  ctx.fillText(`${r.fromName} paid ${r.toName}`, 112, 250);
+  ctx.fillText(tNow('receipt.paid', { to: r.toName }), 112, 250);
   ctx.font = '800 150px Archivo, system-ui, sans-serif';
   ctx.fillText(formatMoney(r.amount, r.asset), 104, 440);
   ctx.font = '600 34px "Geist Mono", ui-monospace, monospace';
-  ctx.fillText(r.demo ? `${r.asset ?? 'USDC'} · DEMO` : `${r.asset ?? 'USDC'} · Stellar Testnet`, 112, 540);
+  ctx.fillText(r.demo ? tNow('receipt.usdcDemo', { asset: r.asset ?? 'USDC' }) : tNow('receipt.usdcTestnet', { asset: r.asset ?? 'USDC' }), 112, 540);
 
   ctx.fillStyle = '#f5f5f2';
   ctx.font = '800 48px Archivo, system-ui, sans-serif';
   ctx.fillText('Stellar Split', 64, 104);
 
   const rows = [
-    ['Group', r.groupName],
-    ['To', `${r.toName} · ${r.toAddress.slice(0, 6)}…${r.toAddress.slice(-6)}`],
-    ['Date', r.date.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })],
-    [r.demo ? 'Demo reference' : 'Transaction', `${r.txHash.slice(0, 16)}…${r.txHash.slice(-8)}`],
+    [tNow('receipt.group'), r.groupName],
+    [tNow('receipt.to'), `${r.toName} · ${r.toAddress.slice(0, 6)}…${r.toAddress.slice(-6)}`],
+    [tNow('receipt.date'), r.date.toLocaleString(currentLocale(), { dateStyle: 'medium', timeStyle: 'short' })],
+    [r.demo ? tNow('receipt.demoRef') : tNow('receipt.transaction'), `${r.txHash.slice(0, 16)}…${r.txHash.slice(-8)}`],
   ];
   let y = 720;
   for (const [label, value] of rows) {
@@ -53,15 +55,15 @@ export async function renderReceiptPng(r) {
     ctx.font = '400 32px Geist, system-ui, sans-serif';
     ctx.fillText(label, 64, y);
     ctx.fillStyle = '#f5f5f2';
-    ctx.font = label === 'Transaction' || label === 'Demo reference' ? '500 34px "Geist Mono", ui-monospace, monospace' : '500 36px Geist, system-ui, sans-serif';
+    ctx.font = label === tNow('receipt.transaction') || label === tNow('receipt.demoRef') ? '500 34px "Geist Mono", ui-monospace, monospace' : '500 36px Geist, system-ui, sans-serif';
     ctx.fillText(value, 64, y + 48);
     y += 130;
   }
 
   ctx.fillStyle = '#a3a3ad';
   ctx.font = '400 26px Geist, system-ui, sans-serif';
-  if (!r.demo) ctx.fillText('Verify: ' + r.explorerUrl.replace(/^https:\/\//, '').slice(0, 64) + '…', 64, H - 96);
-  ctx.fillText(r.demo ? 'Demo: simulated, nothing was sent to Stellar.' : 'Test network: no real money moved.', 64, H - 56);
+  if (!r.demo) ctx.fillText(tNow('receipt.verify') + ' ' + r.explorerUrl.replace(/^https:\/\//, '').slice(0, 64) + '…', 64, H - 96);
+  ctx.fillText(r.demo ? tNow('receipt.demoNote') : tNow('receipt.testNote'), 64, H - 56);
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not create image'))), 'image/png'));
 }

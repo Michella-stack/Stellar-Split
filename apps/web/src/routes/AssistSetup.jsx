@@ -9,6 +9,7 @@ import { Stepper } from '../components/Stepper.jsx';
 import { Switch } from '../components/Switch.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { useApi } from '../hooks/useApi.js';
+import { useT } from '../hooks/useT.js';
 import { useToast } from '../hooks/useToast.js';
 
 const BILLS = ['Electricity', 'Internet', 'Water', 'Streaming'];
@@ -16,12 +17,13 @@ const dollars = (v) => `$${v}`;
 const whole = (decimal) => Number.parseInt(decimal, 10);
 
 export default function AssistSetup() {
+  const { t } = useT();
   const agent = useApi(() => assist.getAgent('assist'), 'agent');
   return (
     <>
-      <TopBar backTo="/assist" title="Stellar Assist" />
-      {agent.loading && <Loading label="Loading rules" />}
-      {agent.error && <LoadError title="Could not load Stellar Assist" error={agent.error} onRetry={agent.reload} />}
+      <TopBar backTo="/assist" title={t('agent.name')} />
+      {agent.loading && <Loading label={t('agent.setup.loading')} />}
+      {agent.error && <LoadError title={t('agent.loadError')} error={agent.error} onRetry={agent.reload} />}
       {agent.data && <RulesForm agent={agent.data.agent} />}
     </>
   );
@@ -29,6 +31,7 @@ export default function AssistSetup() {
 
 /** @param {{ agent: any }} props */
 function RulesForm({ agent }) {
+  const { t } = useT();
   const navigate = useNavigate();
   const toast = useToast();
   const p = agent.policy;
@@ -41,8 +44,8 @@ function RulesForm({ agent }) {
   const [saving, setSaving] = useState(false);
 
   const problems = [
-    approvalAbove > maxPerPayment && '“Ask me first above” cannot be higher than the maximum per payment.',
-    maxPerPayment > dailyCap && 'The maximum per payment cannot be higher than the daily cap.',
+    approvalAbove > maxPerPayment && t('agent.setup.errAsk'),
+    maxPerPayment > dailyCap && t('agent.setup.errMax'),
   ].filter(Boolean);
   const isSetUp = agent.status !== 'inactive';
 
@@ -55,26 +58,26 @@ function RulesForm({ agent }) {
         status: isSetUp ? agent.status : 'active',
         policy: { addBills, payBills, bills, maxPerPayment: `${maxPerPayment}.00`, approvalAbove: `${approvalAbove}.00`, dailyCap: `${dailyCap}.00` },
       });
-      toast(isSetUp ? 'Rules saved' : 'Stellar Assist is active', { tone: 'success' });
+      toast(isSetUp ? t('agent.setup.saved') : t('agent.setup.activated'), { tone: 'success' });
       navigate('/assist', { replace: true });
     } catch {
-      toast('Could not save the rules. Try again.', { tone: 'error' });
+      toast(t('agent.setup.saveError'), { tone: 'error' });
       setSaving(false);
     }
   }
 
   return (
     <form onSubmit={save} className="flex flex-col gap-6 pt-2 pb-8">
-      <h1 className="font-display-wide text-4xl">Set your rules</h1>
+      <h1 className="font-display-wide text-4xl">{t('agent.setup.title')}</h1>
 
       <Card className="flex flex-col divide-y divide-line py-2">
-        <Switch label="Add bills to the group" description="Logs recurring bills and splits them" checked={addBills} onChange={setAddBills} />
-        <Switch label="Pay bills and debts" description="From its own wallet, within your limits" checked={payBills} onChange={setPayBills} />
+        <Switch label={t('agent.setup.addBills')} description={t('agent.setup.addBillsDesc')} checked={addBills} onChange={setAddBills} />
+        <Switch label={t('agent.setup.payBills')} description={t('agent.setup.payBillsDesc')} checked={payBills} onChange={setPayBills} />
       </Card>
 
       <div role="group" aria-labelledby="bills-label" className="flex flex-col gap-2">
         <span id="bills-label" className="text-sm font-medium">
-          Bills it looks after
+          {t('agent.setup.billsLabel')}
         </span>
         <div className="flex flex-wrap gap-2">
           {BILLS.map((bill) => (
@@ -83,16 +86,16 @@ function RulesForm({ agent }) {
               selected={bills.includes(bill)}
               onClick={() => setBills((all) => (all.includes(bill) ? all.filter((b) => b !== bill) : [...all, bill]))}
             >
-              {bill}
+              {t(`bill.${bill.toLowerCase()}`)}
             </Chip>
           ))}
         </div>
       </div>
 
       <Card className="flex flex-col divide-y divide-line py-2">
-        <Stepper label="Max per payment" value={maxPerPayment} onChange={setMaxPerPayment} min={5} max={100} step={5} format={dollars} />
-        <Stepper label="Ask me first above" value={approvalAbove} onChange={setApprovalAbove} min={0} max={50} step={1} format={dollars} />
-        <Stepper label="Daily cap" value={dailyCap} onChange={setDailyCap} min={10} max={200} step={10} format={dollars} />
+        <Stepper label={t('agent.maxPerPayment')} value={maxPerPayment} onChange={setMaxPerPayment} min={5} max={100} step={5} format={dollars} />
+        <Stepper label={t('agent.askAbove')} value={approvalAbove} onChange={setApprovalAbove} min={0} max={50} step={1} format={dollars} />
+        <Stepper label={t('agent.dailyCap')} value={dailyCap} onChange={setDailyCap} min={10} max={200} step={10} format={dollars} />
       </Card>
       {problems.length > 0 && (
         <ul role="alert" className="flex flex-col gap-1 font-medium text-owe">
@@ -103,11 +106,11 @@ function RulesForm({ agent }) {
       )}
 
       <p className="rounded-2xl bg-surface-2 px-4 py-3">
-        You’ll top it up with <strong>${dailyCap} USDC</strong> from Freighter, never more than one day’s cap. Nothing is sent until you confirm a top-up.
+        {t('agent.setup.topUp', { amount: `$${dailyCap}` })}
       </p>
 
       <Button type="submit" block loading={saving} disabled={problems.length > 0}>
-        {isSetUp ? 'Save rules' : 'Activate'}
+        {isSetUp ? t('agent.setup.save') : t('agent.setup.activate')}
       </Button>
     </form>
   );

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AddressLink } from '../components/AddressLink.jsx';
+import { LanguagePicker } from '../components/LanguagePicker.jsx';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { Chip } from '../components/Chip.jsx';
@@ -13,6 +14,7 @@ import { fundWithFriendbot, loadBalances } from '../client/stellar.js';
 import { CONFIG, USDC_FAUCET_URL } from '../config/env.js';
 import { useCopy } from '../hooks/useCopy.js';
 import { useRates } from '../hooks/useRates.js';
+import { useT } from '../hooks/useT.js';
 import { useTheme } from '../hooks/useTheme.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { DEMO } from '../lib/demoMode.js';
@@ -20,9 +22,8 @@ import { formatDate } from '../lib/format.js';
 import { RATES_ATTRIBUTION_URL } from '../lib/rates.js';
 import { ACCENTS } from '../lib/theme.js';
 
-const ACCENT_NAMES = { lime: 'Lime', cyan: 'Cyan', orange: 'Orange', violet: 'Violet' };
-
 export default function Wallet() {
+  const { t } = useT();
   const wallet = useWallet();
   const navigate = useNavigate();
   const copy = useCopy();
@@ -31,6 +32,8 @@ export default function Wallet() {
   const [balances, setBalances] = useState(/** @type {any} */ (null));
   const [loadError, setLoadError] = useState(false);
   const [funding, setFunding] = useState(false);
+  const eurcOn = CONFIG.ok && Boolean(CONFIG.config.eurcIssuer);
+  const faucetAssets = eurcOn ? 'USDC / EURC' : 'USDC';
 
   const refresh = useCallback(async () => {
     if (!wallet.address) return;
@@ -63,96 +66,98 @@ export default function Wallet() {
 
   return (
     <>
-      <TopBar title="Wallet" />
+      <TopBar title={t('walletScreen.title')} />
       <div className="flex flex-col gap-6 pb-8">
         <Card className="flex flex-col gap-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-col">
-              <span className="text-sm text-muted">{wallet.profile?.displayName ?? 'Your wallet'}</span>
+              <span className="text-sm text-muted">{wallet.profile?.displayName ?? t('walletScreen.yourWallet')}</span>
               {wallet.address ? <AddressLink address={wallet.address} className="text-lg" /> : <span className="font-mono text-lg">—</span>}
             </div>
-            <IconButton label="Copy full address" onClick={() => copy(wallet.address, 'Address')}>
+            <IconButton label={t('walletScreen.copyAddress')} onClick={() => copy(wallet.address, 'copied.address')}>
               <IconCopy size={20} />
             </IconButton>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Pill tone="solid">Freighter</Pill>
-            <Pill mono>Stellar Testnet</Pill>
+            <Pill tone="solid">{t('walletScreen.freighter')}</Pill>
+            <Pill mono>{t('common.stellarTestnet')}</Pill>
           </div>
         </Card>
 
         <section aria-labelledby="balances-title" className="flex flex-col gap-3">
           <h2 id="balances-title" className="text-lg font-semibold">
-            Balances
+            {t('walletScreen.balances')}
           </h2>
           <Balances balances={balances} error={loadError} onRetry={refresh} onFund={fund} funding={funding} />
         </section>
 
         {!DEMO && (
-        <section aria-labelledby="usdc-title" className="flex flex-col gap-2">
+          <section aria-labelledby="usdc-title" className="flex flex-col gap-2">
           <h2 id="usdc-title" className="text-lg font-semibold">
-            Get testnet USDC{CONFIG.ok && CONFIG.config.eurcIssuer ? ' and EURC' : ''}
+            {t('walletScreen.getUsdc', { asset: faucetAssets })}
           </h2>
-          <p className="text-muted">
-            Testnet USDC is free and has no value. First your account needs a USDC trustline (you can add it when you settle up), then
-            request USDC from Circle’s faucet: choose Stellar Testnet and paste your address.
-          </p>
+          <p className="text-muted">{t('walletScreen.getUsdcBody')}</p>
+          {eurcOn && <p className="text-muted">{t('walletScreen.eurcNote')}</p>}
           <a
             href={USDC_FAUCET_URL}
             target="_blank"
             rel="noreferrer"
             className="inline-flex min-h-11 items-center gap-1 font-medium underline underline-offset-4"
           >
-            Open Circle faucet <IconExternal size={16} />
-            <span className="sr-only">(opens in a new tab)</span>
+            {t('walletScreen.openFaucet')} <IconExternal size={16} />
+            <span className="sr-only">{t('common.opensNewTab')}</span>
           </a>
         </section>
         )}
 
         <section aria-labelledby="rates-title" className="flex flex-col gap-2">
           <h2 id="rates-title" className="text-lg font-semibold">
-            Exchange rates
+            {t('walletScreen.ratesTitle')}
           </h2>
           <p className="text-muted">
             {rates.source === 'live' && rates.updatedAt
-              ? `Estimates in your home currency use daily rates from ${formatDate(rates.updatedAt)}. They are only a guide: the payment is always in USDC.`
-              : 'Estimates in your home currency use fixed sample rates, because live rates could not be loaded. They are only a guide: the payment is always in USDC.'}
+              ? t('walletScreen.ratesLive', { date: formatDate(rates.updatedAt) })
+              : t('walletScreen.ratesFixed')}
           </p>
           {rates.source === 'live' && (
             <a href={RATES_ATTRIBUTION_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium underline underline-offset-4">
-              Rates by Exchange Rate API <IconExternal size={14} />
-              <span className="sr-only">(opens in a new tab)</span>
+              {t('walletScreen.ratesBy')} <IconExternal size={14} />
+              <span className="sr-only">{t('common.opensNewTab')}</span>
             </a>
           )}
         </section>
 
         <section aria-labelledby="look-title" className="flex flex-col gap-4">
           <h2 id="look-title" className="text-lg font-semibold">
-            Appearance
+            {t('walletScreen.appearance')}
           </h2>
           <Segmented
-            label="Theme"
+            label={t('walletScreen.theme')}
             value={theme}
             onChange={(next) => next !== theme && toggleTheme()}
             options={[
-              { value: 'dark', label: 'Dark' },
-              { value: 'light', label: 'Light' },
+              { value: 'dark', label: t('walletScreen.themeDark') },
+              { value: 'light', label: t('walletScreen.themeLight') },
             ]}
           />
-          <div role="group" aria-label="Accent colour" className="flex flex-wrap gap-2">
+          <div role="group" aria-label={t('walletScreen.accent')} className="flex flex-wrap gap-2">
             {ACCENTS.map((a) => (
               <Chip key={a} selected={a === accent} onClick={() => setAccent(a)}>
                 <span aria-hidden="true" className="size-4 rounded-full border border-line" style={{ background: `var(--swatch-${a})` }} />
-                {ACCENT_NAMES[a]}
+                {t(`accent.${a}`)}
               </Chip>
             ))}
           </div>
         </section>
 
-        <p className="text-sm text-muted">
-          To use another wallet, switch the account in Freighter: Stellar Split notices and asks you to sign in again. Or disconnect
-          here and connect again with the account you want.
-        </p>
+        <section aria-labelledby="lang-title" className="flex flex-col gap-3">
+          <h2 id="lang-title" className="text-lg font-semibold">
+            {t('lang.label')}
+          </h2>
+          <LanguagePicker />
+        </section>
+
+        <p className="text-sm text-muted">{t('walletScreen.switchHint')}</p>
         <Button
           variant="outline"
           block
@@ -161,7 +166,7 @@ export default function Wallet() {
             navigate('/', { replace: true });
           }}
         >
-          {DEMO ? 'Exit demo' : 'Disconnect'}
+          {DEMO ? t('demo.exit') : t('walletScreen.disconnect')}
         </Button>
       </div>
     </>
@@ -170,12 +175,13 @@ export default function Wallet() {
 
 /** @param {{ balances: any, error: boolean, onRetry: () => void, onFund: () => void, funding: boolean }} props */
 function Balances({ balances, error, onRetry, onFund, funding }) {
+  const { t } = useT();
   if (error) {
     return (
       <Card tone="outline" role="alert" className="flex flex-col gap-3">
-        <p>Could not load balances from Stellar Testnet.</p>
+        <p>{t('walletScreen.balancesError')}</p>
         <Button variant="secondary" onClick={onRetry}>
-          Try again
+          {t('common.tryAgain')}
         </Button>
       </Card>
     );
@@ -183,25 +189,25 @@ function Balances({ balances, error, onRetry, onFund, funding }) {
   if (!balances) {
     return (
       <Card role="status" className="text-muted">
-        Loading balances…
+        {t('walletScreen.balancesLoading')}
       </Card>
     );
   }
   if (!balances.funded) {
     return (
       <Card tone="outline" className="flex flex-col gap-3">
-        <p className="font-medium">This account is not on Testnet yet.</p>
-        <p className="text-muted">Fund it with free test XLM from Friendbot to create it.</p>
+        <p className="font-medium">{t('walletScreen.notOnTestnet')}</p>
+        <p className="text-muted">{t('walletScreen.fundHint')}</p>
         <Button variant="secondary" loading={funding} onClick={onFund}>
-          Fund with Friendbot
+          {t('walletScreen.fund')}
         </Button>
       </Card>
     );
   }
   return (
     <Card className="flex flex-col divide-y divide-line py-2">
-      <BalanceRow code="USDC" value={balances.usdc} empty="No USDC trustline yet" />
-      {CONFIG.ok && CONFIG.config.eurcIssuer && <BalanceRow code="EURC" value={balances.eurc} empty="No EURC trustline yet" />}
+      <BalanceRow code="USDC" value={balances.usdc} empty={t('walletScreen.noTrustline', { asset: 'USDC' })} />
+      {CONFIG.ok && CONFIG.config.eurcIssuer && <BalanceRow code="EURC" value={balances.eurc} empty={t('walletScreen.noTrustline', { asset: 'EURC' })} />}
       <BalanceRow code="XLM" value={balances.xlm} />
     </Card>
   );

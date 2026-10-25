@@ -1,6 +1,6 @@
 import { useId } from 'react';
-import { useAssetCode } from '../../lib/asset.js';
-import { ASSETS } from '../../lib/asset.js';
+import { useT } from '../../hooks/useT.js';
+import { ASSETS, useAssetCode } from '../../lib/asset.js';
 import { cleanAmountInput } from './splitPreview.js';
 
 /**
@@ -8,12 +8,13 @@ import { cleanAmountInput } from './splitPreview.js';
  * @param {{ value: string, onChange: (value: string) => void, error?: string | null, label?: string }} props
  */
 export function AmountInput({ value, onChange, error, label }) {
+  const { t } = useT();
   const id = useId();
   const code = useAssetCode();
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-sm font-medium">
-        {label ?? `Amount in ${code}`}
+        {label ?? t('expense.amountLabel', { asset: code })}
       </label>
       <div className="flex items-baseline gap-2 rounded-card bg-surface px-5 py-4 focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-text">
         <span aria-hidden="true" className="font-display-wide text-5xl text-muted">

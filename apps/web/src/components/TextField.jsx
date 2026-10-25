@@ -4,9 +4,9 @@ import { cx } from '../lib/cx.js';
 /**
  * Labelled text input with hint and error text wired to aria-describedby.
  * @param {import('react').InputHTMLAttributes<HTMLInputElement> & { label: string, hint?: string, error?: string | null,
- *   optional?: boolean }} props
+ *   optional?: boolean, inputClassName?: string }} props
  */
-export function TextField({ label, hint, error, optional = false, className, id: idProp, ...rest }) {
+export function TextField({ label, hint, error, optional = false, className, inputClassName, id: idProp, ...rest }) {
   const autoId = useId();
   const id = idProp ?? autoId;
   const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
@@ -23,6 +23,7 @@ export function TextField({ label, hint, error, optional = false, className, id:
         className={cx(
           'min-h-14 rounded-input border-2 bg-surface px-4 text-base text-text placeholder:text-muted',
           error ? 'border-owe' : 'border-line focus:border-text',
+          inputClassName,
         )}
         {...rest}
       />

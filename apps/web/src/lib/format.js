@@ -51,3 +51,22 @@ export function initials(name) {
   const letters = parts.length === 1 ? parts[0].slice(0, 2) : parts[0][0] + parts.at(-1)[0];
   return letters.toUpperCase();
 }
+
+/**
+ * Short date for lists, e.g. "25 Oct".
+ * @param {string} iso
+ */
+export function formatDate(iso) {
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(iso));
+}
+
+/**
+ * How to name a member to the current person: "You" for themselves.
+ * @param {{ id: string, displayName: string | null } | undefined} member
+ * @param {string | null} meId
+ */
+export function memberName(member, meId) {
+  if (!member) return 'Someone';
+  if (member.id === meId) return 'You';
+  return member.displayName ?? 'Member';
+}

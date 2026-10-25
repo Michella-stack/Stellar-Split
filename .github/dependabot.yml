@@ -1,8 +1,9 @@
 # No auto-merge. Every Dependabot PR goes through the checks in .github/workflows and owner review.
 version: 2
 updates:
+  # The root has no package.json; each JavaScript package has its own lockfile.
   - package-ecosystem: "npm"
-    directory: "/"
+    directories: ["/apps/web", "/apps/api", "/mcp", "/packages/shared"]
     schedule:
       interval: "weekly"
     cooldown:

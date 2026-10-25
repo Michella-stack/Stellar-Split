@@ -227,7 +227,7 @@ The implemented interface and deployment evidence are documented in `contracts/R
 
 **Locations:** `mcp/`, `agents/`, future API settlement route and x402 adapter
 
-The phase-1 MCP server is implemented in `mcp/`. It exposes `ledgerly_list_groups`, `ledgerly_get_balances`, `ledgerly_create_expense`, `ledgerly_propose_settlement` and `ledgerly_get_approval`. It has no signer and cannot move money. Hermes and OpenClaw persona files live in `agents/`; personas shape behavior but are not security controls.
+The phase-1 MCP server is implemented in `mcp/`. It exposes `ledgerly_list_groups`, `ledgerly_get_balances`, `ledgerly_create_expense`, and `ledgerly_propose_settlement`. It has no signer and cannot move money. There is no approval tool because the API has no approvals route yet. Hermes and OpenClaw persona files live in `agents/`; personas shape behavior but are not security controls.
 
 The future paying flow remains isolated from the required human flow:
 

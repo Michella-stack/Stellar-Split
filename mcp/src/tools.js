@@ -27,12 +27,6 @@ const split = z.discriminatedUnion("rule", [
   }),
 ]);
 
-// Agent-facing names (rule, member) mapped to the API shape (type, memberId).
-const toApiSplit = (s) =>
-  s.rule === "equal"
-    ? { type: "equal", participants: s.participants }
-    : { type: "exact", shares: s.shares.map((x) => ({ memberId: x.member, amount: x.amount })) };
-
 const reply = (data) => ({ content: [{ type: "text", text: JSON.stringify(data, null, 2) }] });
 const fail = (error, status = 0) => ({
   isError: true,
@@ -85,7 +79,7 @@ export function buildServer(api) {
         }
       }
       return fromApi(
-        await api.createExpense(group_id, { paidBy: payer, amount: total, description, split: toApiSplit(s) }, idempotency_key ?? randomUUID()),
+        await api.createExpense(group_id, { payer, amount: total, description, split: s }, idempotency_key ?? randomUUID()),
       );
     },
   );
@@ -95,22 +89,11 @@ export function buildServer(api) {
     {
       title: "Propose settlement",
       description:
-        "Returns the settlement intent and the payment requirements for paying `to`, without paying anything. Does not spend money. May answer that the amount needs human approval.",
+        "Returns the settlement intent and the payment requirements for paying `to`, without paying anything. Does not spend money. Approvals are not built yet, so the answer is only the intent.",
       inputSchema: { group_id: id, to: id, amount },
       annotations: readOnly,
     },
     async ({ group_id, to, amount: total }) => fromApi(await api.proposeSettlement(group_id, { to, amount: total })),
-  );
-
-  server.registerTool(
-    "ledgerly_get_approval",
-    {
-      title: "Get approval status",
-      description: "Status of a pending human approval. Does not spend money. The agent cannot approve its own requests.",
-      inputSchema: { approval_id: id },
-      annotations: readOnly,
-    },
-    async ({ approval_id }) => fromApi(await api.getApproval(approval_id)),
   );
 
   return server;

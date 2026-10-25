@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { validateAmount } from '@shared/money.js';
-import { containsSecretKey } from '@shared/validation.js';
 import { createExpense, getGroup } from '../client/api.js';
 import { Amount } from '../components/Amount.jsx';
 import { Button } from '../components/Button.jsx';
@@ -14,7 +13,7 @@ import { TextField } from '../components/TextField.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { MemberAvatar } from '../features/balances/MemberAvatar.jsx';
 import { AmountInput } from '../features/expenses/AmountInput.jsx';
-import { cleanAmountInput, equalPreview, exactStatus } from '../features/expenses/splitPreview.js';
+import { cleanAmountInput, descriptionError as describeProblem, equalPreview, exactStatus } from '../features/expenses/splitPreview.js';
 import { useApi } from '../hooks/useApi.js';
 import { useToast } from '../hooks/useToast.js';
 import { formatUsd, memberName } from '../lib/format.js';
@@ -62,7 +61,7 @@ function ExpenseForm({ detail }) {
 
   const amountCheck = validateAmount(amount);
   const amountError = touched && !amountCheck.ok ? AMOUNT_ERRORS[amountCheck.code] : null;
-  const descriptionError = containsSecretKey(description) ? 'This looks like a secret key. Never share it.' : null;
+  const descriptionError = describeProblem(description, touched);
   const ordered = members.map((m) => m.id).filter((mid) => participants.includes(mid));
   const equal = equalPreview(amount, ordered, paidBy);
   const exactCheck = exactStatus(amount, exact);

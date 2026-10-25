@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanAmountInput, equalPreview, exactStatus } from './splitPreview.js';
+import { cleanAmountInput, descriptionError, equalPreview, exactStatus } from './splitPreview.js';
 
 describe('cleanAmountInput', () => {
   it.each([
@@ -44,5 +44,18 @@ describe('exactStatus', () => {
     expect(exactStatus('60', { a: '1.123456789' }).state).toBe('bad-share');
     expect(exactStatus('', { a: '10' }).state).toBe('no-amount');
     expect(exactStatus('10', {}).state).toBe('empty');
+  });
+});
+
+describe('descriptionError', () => {
+  it('stays quiet while typing and says what is missing after Save is pressed', () => {
+    expect(descriptionError('', false)).toBeNull();
+    expect(descriptionError('', true)).toBe('Say what it was for.');
+    expect(descriptionError('   ', true)).toBe('Say what it was for.');
+    expect(descriptionError('Groceries', true)).toBeNull();
+  });
+
+  it('refuses a secret key at once', () => {
+    expect(descriptionError(`S${'A'.repeat(55)}`, false)).toMatch(/secret key/);
   });
 });

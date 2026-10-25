@@ -87,7 +87,10 @@ impl Setup<'_> {
 fn create_group_and_members() {
     let s = setup();
     assert_eq!(s.group, 1);
-    assert_eq!(s.client.members(&s.group), vec![&s.env, s.a.clone(), s.b.clone(), s.c.clone()]);
+    assert_eq!(
+        s.client.members(&s.group),
+        vec![&s.env, s.a.clone(), s.b.clone(), s.c.clone()]
+    );
     assert_eq!(s.client.group_token(&s.group), s.token.address);
     assert_eq!(s.bal(&s.a), 0);
     let g2 = s.client.create_group(&s.b, &s.token.address);
@@ -97,7 +100,10 @@ fn create_group_and_members() {
         s.client.try_add_member(&s.group, &s.b),
         Err(Ok(Error::AlreadyMember.into()))
     );
-    assert_eq!(s.client.try_members(&99), Err(Ok(Error::GroupNotFound.into())));
+    assert_eq!(
+        s.client.try_members(&99),
+        Err(Ok(Error::GroupNotFound.into()))
+    );
     assert_eq!(
         s.client.try_balance(&s.group, &s.admin),
         Err(Ok(Error::NotMember.into()))
@@ -180,7 +186,8 @@ fn expense_rejections() {
     );
     let ok = vec![e, (s.a.clone(), 10i128), (s.b.clone(), -10i128)];
     assert_eq!(
-        s.client.try_add_expense(&s.group, &outsider, &hash(e, 3), &ok),
+        s.client
+            .try_add_expense(&s.group, &outsider, &hash(e, 3), &ok),
         Err(Ok(Error::NotMember.into()))
     );
     assert_eq!(

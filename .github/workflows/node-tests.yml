@@ -4,6 +4,7 @@ on:
     paths:
       - "apps/api/**"
       - "packages/shared/**"
+      - "packages/policy-engine/**"
       - "mcp/**"
       - ".github/workflows/node-tests.yml"
   push:
@@ -22,6 +23,9 @@ jobs:
           node-version: "22"
       - name: Shared domain rules
         working-directory: packages/shared
+        run: node --test "src/**/*.test.js"
+      - name: Agent policy
+        working-directory: packages/policy-engine
         run: node --test "src/**/*.test.js"
       - name: API (no dependencies)
         working-directory: apps/api

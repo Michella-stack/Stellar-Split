@@ -46,6 +46,10 @@ export function createMemoryRepository() {
       return copy(t.intents.at(-1));
     },
     getIntent: async (id) => copy(t.intents.find((i) => i.id === id)),
+    listIntentsByPayer: async (address, since) => {
+      const ids = new Set(t.members.filter((m) => m.address === address).map((m) => m.id));
+      return t.intents.filter((i) => ids.has(i.from) && i.reservedAt >= since).map(copy);
+    },
     expireIntents: async (groupId, now) => {
       for (const i of byGroup('intents', groupId)) {
         if (i.status === 'reserved' && i.expiresAt < now) Object.assign(i, { status: 'expired', closedAt: now });
@@ -142,6 +146,12 @@ export function createSupabaseRepository({ url, serviceKey, fetchImpl = globalTh
       }
     },
     getIntent: (id) => one('settlement_intents', `id=${eq(id)}`),
+    // Every intent paid from this address, in any group, reserved since `since`.
+    listIntentsByPayer: async (address, since) => {
+      const ids = (await select('members', `address=${eq(address)}`)).map((m) => m.id);
+      if (!ids.length) return [];
+      return select('settlement_intents', `from=in.(${ids.map(encodeURIComponent).join(',')})&reserved_at=gte.${encodeURIComponent(since)}`);
+    },
     expireIntents: (groupId, now) =>
       req('PATCH', `/settlement_intents?group_id=${eq(groupId)}&status=eq.reserved&expires_at=lt.${encodeURIComponent(now)}`, { status: 'expired' }, 'return=minimal'),
     updateIntent: async (id, patch) =>

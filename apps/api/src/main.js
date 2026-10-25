@@ -35,7 +35,7 @@ export function handlerFromEnv(env = process.env) {
   const config = loadConfig(env);
   const repo = config.supabase ? createSupabaseRepository(config.supabase) : createMemoryRepository();
   const stellar = createStellar({ horizonUrl: config.horizonUrl, usdcIssuer: config.usdcIssuer });
-  const ledger = createLedger({ repo, stellar, appUrl: config.appUrl });
+  const ledger = createLedger({ repo, stellar, appUrl: config.appUrl, log: (line) => console.log(JSON.stringify(line)) });
   const auth = createAuth({ secret: config.sessionSecret, repo, agentTokens: config.agentTokens });
   return { config, handler: createHandler({ auth, ledger, allowedOrigins: config.allowedOrigins }) };
 }

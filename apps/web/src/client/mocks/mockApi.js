@@ -72,6 +72,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
   const idempotent = new Map();
   // Kept in the saved state, like the API's table, so a reservation survives a reload and is shared by tabs.
   const intents = (state.intents ??= []);
+  const agentLinks = (state.agentLinks ??= []);
 
   /** Mock only: the signed-in wallet takes the place of "you" in the fixtures, so the demo data is yours. */
   function becomeMe(address) {
@@ -402,6 +403,41 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
     async listAgentActivity(agentId) {
       if (agentId !== state.agent.id) return fail('NOT_FOUND', 'Agent not found', 404);
       return reply({ items: [...state.agentActivity].sort((a, b) => b.createdAt.localeCompare(a.createdAt)) });
+    },
+
+    // Agent links (ADR 0005). Mock only: any non-empty signature is accepted, and any valid address is a known agent.
+    async createAgentLinkChallenge({ agentAddress }) {
+      if (!isValidStellarAddress(agentAddress)) return fail('INVALID_ADDRESS', 'Not a Stellar address', 400);
+      const nonce = `${newId('link')}-mocknonce`;
+      const expiresAt = new Date(now().getTime() + 5 * 60_000).toISOString();
+      const message = `Stellar Split agent link\nOwner: ${state.me.address}\nAgent: ${agentAddress}\nNonce: ${nonce}\nExpires: ${expiresAt}`;
+      pendingChallenges.add(message);
+      return reply({ message, nonce, expiresAt });
+    },
+
+    async linkAgent({ agentAddress, message, signature }) {
+      if (!pendingChallenges.delete(message) || !message.includes(`\nAgent: ${agentAddress}\n`) || !signature) {
+        return fail('UNAUTHORIZED', 'Signature or message is not valid', 401);
+      }
+      if (agentAddress === state.me.address) return fail('VALIDATION', 'An agent cannot be its own owner', 400);
+      if (agentLinks.some((l) => l.address === agentAddress && !l.revokedAt)) {
+        return fail('AGENT_ALREADY_LINKED', 'This agent is already linked', 409);
+      }
+      const link = { address: agentAddress, ownerAddress: state.me.address, linkedAt: now().toISOString(), revokedAt: null };
+      agentLinks.push(link);
+      return reply({ agent: { address: link.address, ownerAddress: link.ownerAddress, linkedAt: link.linkedAt } });
+    },
+
+    async listMyAgents() {
+      const mine = agentLinks.filter((l) => l.ownerAddress === state.me.address);
+      return reply({ agents: mine.map(({ address, linkedAt, revokedAt }) => ({ address, linkedAt, revokedAt })) });
+    },
+
+    async revokeAgent(address) {
+      const link = agentLinks.find((l) => l.address === address && l.ownerAddress === state.me.address && !l.revokedAt);
+      if (!link) return fail('NOT_FOUND', 'Agent link not found', 404);
+      link.revokedAt = now().toISOString();
+      return reply(null);
     },
 
     async approve(approvalId) {

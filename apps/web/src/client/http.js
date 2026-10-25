@@ -9,7 +9,7 @@ const TIMEOUT_MS = 15_000;
  */
 export function createHttpApi({ baseUrl, getToken }) {
   /**
-   * @param {'GET' | 'POST' | 'PATCH'} method
+   * @param {'GET' | 'POST' | 'PATCH' | 'DELETE'} method
    * @param {string} path
    * @param {unknown} [body]
    * @param {Record<string, string>} [extraHeaders]
@@ -70,6 +70,11 @@ export function createHttpApi({ baseUrl, getToken }) {
     getAgent: (agentId) => request('GET', `/v1/agents/${enc(agentId)}`),
     updateAgent: (agentId, patch) => request('PATCH', `/v1/agents/${enc(agentId)}`, patch),
     listAgentActivity: (agentId) => request('GET', `/v1/agents/${enc(agentId)}/activity`),
+    // Linking an agent to your account: the owner signs the challenge message with their wallet.
+    createAgentLinkChallenge: (input) => request('POST', '/v1/agents/link/challenge', input),
+    linkAgent: (input) => request('POST', '/v1/agents/link', input),
+    listMyAgents: () => request('GET', '/v1/me/agents'),
+    revokeAgent: (address) => request('DELETE', `/v1/me/agents/${enc(address)}`),
     approve: (approvalId) => request('POST', `/v1/approvals/${enc(approvalId)}/approve`),
     reject: (approvalId) => request('POST', `/v1/approvals/${enc(approvalId)}/reject`),
   };

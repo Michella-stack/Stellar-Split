@@ -150,3 +150,25 @@ describe('signMessage (SEP-53 sign-in)', () => {
     expect(await codeOf(signMessage(message, intentIn))).toBe('USER_REJECTED');
   });
 });
+
+describe('signMessage (agent link)', () => {
+  const nonce = 'abcdefghijklmnopqrstuv.1792932162000';
+  const msg = (owner, agent) => `Stellar Split agent link\nOwner: ${owner}\nAgent: ${agent}\nNonce: ${nonce}\nExpires: 2026-10-25T16:00:00.000Z`;
+  const intentIn = { kind: 'agent-link', signer: payer, agent: creditor };
+
+  it('signs a link message for this owner and agent', async () => {
+    ext.signMessage.mockResolvedValue({ signedMessage: 'c2lnbmF0dXJl', signerAddress: payer });
+    expect(await signMessage(msg(payer, creditor), intentIn)).toEqual({ signature: 'c2lnbmF0dXJl', signer: payer });
+    expect(ext.signMessage).toHaveBeenCalledWith(msg(payer, creditor), { networkPassphrase: TESTNET.networkPassphrase, address: payer });
+  });
+
+  it('refuses another owner, another agent, a sign-in message, a wrong intent kind and self-linking', async () => {
+    expect(await codeOf(signMessage(msg(creditor, creditor), intentIn))).toBe('INTENT_MISMATCH');
+    expect(await codeOf(signMessage(msg(payer, ISSUER), intentIn))).toBe('INTENT_MISMATCH');
+    expect(await codeOf(signMessage(msg(payer, payer), { ...intentIn, agent: payer }))).toBe('INTENT_MISMATCH');
+    const signIn = `Stellar-Split sign-in\nAddress: ${payer}\nNonce: ${nonce}\nExpires: 2026-10-25T16:00:00.000Z`;
+    expect(await codeOf(signMessage(signIn, intentIn))).toBe('INTENT_MISMATCH');
+    expect(await codeOf(signMessage(msg(payer, creditor), { kind: 'sign-in', signer: payer }))).toBe('INTENT_MISMATCH');
+    expect(ext.signMessage).not.toHaveBeenCalled();
+  });
+});

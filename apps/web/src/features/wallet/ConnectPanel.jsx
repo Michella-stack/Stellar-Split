@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { Button } from '../../components/Button.jsx';
 import { IconExternal } from '../../components/icons.jsx';
 import { FREIGHTER_INSTALL_URL } from '../../config/env.js';
+import { enterDemo } from '../../lib/demoMode.js';
 import { useWallet } from '../../hooks/useWallet.js';
 import { WalletProblem } from './WalletProblem.jsx';
 
@@ -32,6 +33,12 @@ export function ConnectPanel() {
         New to Freighter? Get it free <IconExternal size={16} />
         <span className="sr-only">(opens in a new tab)</span>
       </a>
+      <div className="flex flex-col gap-2 border-t border-line pt-4">
+        <Button block variant="outline" onClick={enterDemo}>
+          Explore with sample data
+        </Button>
+        <p className="text-center text-sm text-muted">No wallet needed. Sample groups and payments: nothing is sent to Stellar.</p>
+      </div>
     </div>
   );
 }

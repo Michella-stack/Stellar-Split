@@ -14,6 +14,7 @@ import { useCopy } from '../hooks/useCopy.js';
 import { useRates } from '../hooks/useRates.js';
 import { useTheme } from '../hooks/useTheme.js';
 import { useWallet } from '../hooks/useWallet.js';
+import { DEMO } from '../lib/demoMode.js';
 import { formatDate, shortAddress } from '../lib/format.js';
 import { RATES_ATTRIBUTION_URL } from '../lib/rates.js';
 import { ACCENTS } from '../lib/theme.js';
@@ -88,6 +89,7 @@ export default function Wallet() {
           <Balances balances={balances} error={loadError} onRetry={refresh} onFund={fund} funding={funding} />
         </section>
 
+        {!DEMO && (
         <section aria-labelledby="usdc-title" className="flex flex-col gap-2">
           <h2 id="usdc-title" className="text-lg font-semibold">
             Get testnet USDC
@@ -106,6 +108,7 @@ export default function Wallet() {
             <span className="sr-only">(opens in a new tab)</span>
           </a>
         </section>
+        )}
 
         <section aria-labelledby="rates-title" className="flex flex-col gap-2">
           <h2 id="rates-title" className="text-lg font-semibold">
@@ -159,7 +162,7 @@ export default function Wallet() {
             navigate('/', { replace: true });
           }}
         >
-          Disconnect
+          {DEMO ? 'Exit demo' : 'Disconnect'}
         </Button>
       </div>
     </>

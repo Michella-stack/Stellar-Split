@@ -1,12 +1,14 @@
 // The one API client for the web app. VITE_USE_MOCKS=true serves in-memory mock data with the same
 // shapes as the real API (documented in client/README.md); otherwise requests go to VITE_API_URL.
 
+import { DEMO, DEMO_STATE_KEY } from '../lib/demoMode.js';
 import { createHttpApi } from './http.js';
 import { createMockApi } from './mocks/mockApi.js';
 
 export { ApiError } from './errors.js';
 
-export const USING_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
+// Sample data comes from the build (VITE_USE_MOCKS, for development) or from the person's choice (demo mode).
+export const USING_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true' || DEMO;
 
 let sessionToken = /** @type {string | null} */ (null);
 
@@ -24,9 +26,11 @@ function browserStorage() {
   }
 }
 
-const impl = USING_MOCKS
-  ? createMockApi({ storage: browserStorage(), addresses: { 'm-mateo': import.meta.env.VITE_MOCK_MATEO_ADDRESS } })
-  : createHttpApi({ baseUrl: import.meta.env.VITE_API_URL ?? '', getToken: () => sessionToken });
+const impl = DEMO
+  ? createMockApi({ storage: browserStorage(), storageKey: DEMO_STATE_KEY, demo: true })
+  : USING_MOCKS
+    ? createMockApi({ storage: browserStorage(), addresses: { 'm-mateo': import.meta.env.VITE_MOCK_MATEO_ADDRESS } })
+    : createHttpApi({ baseUrl: import.meta.env.VITE_API_URL ?? '', getToken: () => sessionToken });
 
 export const {
   addMember,

@@ -440,7 +440,7 @@ The repository contains both implemented code and placeholders for the applicati
 └── .github/                          # CI and dependency automation
 ```
 
-`mcp-server/`, `database/`, `deploy/`, and `openapi/` are older or future scaffolding and are not current runtime components. `apps/workers/` is explicitly deferred scaffolding. Do not build new integrations against these directories unless the team deliberately promotes and reconciles them. Long-term workers, webhooks, OAuth, and production indexing remain deferred.
+`database/migrations/` holds the Supabase SQL (`001_ledger.sql`, `002_settlement_intents.sql`) and `database/tests/` its tests. `deploy/` and `openapi/` are future scaffolding and are not current runtime components. The MCP server lives in `mcp/` (the empty `mcp-server/` placeholder was removed). `apps/workers/` is explicitly deferred scaffolding. Do not build new integrations against these directories unless the team deliberately promotes and reconciles them. Long-term workers, webhooks, OAuth, and production indexing remain deferred.
 
 ## 13. Demo acceptance path
 

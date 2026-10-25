@@ -67,6 +67,11 @@ function SettlementRow({ item, detail }) {
       }
       title={`${from} paid ${to === 'You' ? 'you' : to}`}
       subtitle={
+        item.demo ? (
+          <span>
+            Demo payment · {formatDate(item.createdAt)}
+          </span>
+        ) : (
         <a
           href={`${EXPLORER_TX_URL}${item.txHash}`}
           target="_blank"
@@ -76,6 +81,7 @@ function SettlementRow({ item, detail }) {
           {shortAddress(item.txHash)} · {formatDate(item.createdAt)} <IconExternal size={14} />
           <span className="sr-only">(view transaction on Stellar Expert, opens in a new tab)</span>
         </a>
+        )
       }
       trailing={<Amount value={item.amount} size="sm" />}
     />

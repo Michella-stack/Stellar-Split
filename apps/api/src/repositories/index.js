@@ -101,7 +101,15 @@ export function createSupabaseRepository({ url, serviceKey, fetchImpl = globalTh
   }
   const eq = (v) => `eq.${encodeURIComponent(v)}`;
   const select = async (table, filter) => (await req('GET', `/${table}?select=*&${filter}`)).map((r) => mapKeys(r, camel));
-  const one = async (table, filter) => (await select(table, `${filter}&limit=1`))[0] ?? null;
+  // 22P02: the id is not a valid uuid, so no such row exists. The memory repository answers null the same way.
+  const one = async (table, filter) => {
+    try {
+      return (await select(table, `${filter}&limit=1`))[0] ?? null;
+    } catch (err) {
+      if (err.pgCode === '22P02') return null;
+      throw err;
+    }
+  };
   const insert = async (table, row, prefer = 'return=representation') =>
     mapKeys((await req('POST', `/${table}`, mapKeys(row, snake), prefer))?.[0], camel);
 

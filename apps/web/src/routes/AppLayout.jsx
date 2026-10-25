@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { BottomNav } from '../components/BottomNav.jsx';
+import { DemoBanner } from '../components/DemoBanner.jsx';
 import { Loading } from '../components/LoadState.jsx';
 
 // Top-level sections show the bottom navigation; flows inside them (forms, settle up) do not.
@@ -29,6 +30,7 @@ export default function AppLayout() {
       >
         Skip to content
       </a>
+      <DemoBanner />
       <main id="main" ref={mainRef} tabIndex={-1} className="flex flex-1 flex-col focus:outline-none">
         <Suspense fallback={<Loading />}>
           <Outlet />

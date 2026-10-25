@@ -67,3 +67,37 @@ Checked against `main` after `docs/ARCHITECTURE.md`, the repository skeleton and
 | N6 | The PRD says the verifier checks that the payer is the debtor. The delegated payment design lets an agent linked to the debtor be the payer | Decide in review of ADR 0004, then align the PRD |
 | N7 | `database/migrations/` exists but ARCHITECTURE says `database/` is future scaffolding, and no migration location is chosen | Decide where the SQL goes (see `docs/schema/README.md`) |
 | N8 | `.github/dependabot.yml` still has npm for `/` while the only `package.json` is in `mcp/`, and `apps/web` will add another | Add entries per directory |
+
+## Status for issue #47 (25 October 2026)
+
+Every item above is either fixed or explicitly deferred. "Fixed here" means the pull request that closes #47.
+
+| # | Status | Where |
+|---|---|---|
+| 1 | Fixed earlier | Agent x402 is a stretch goal in BUILD-FOCUS, ARCHITECTURE, the PRD roadmap and the stories |
+| 2 | Fixed here | PRD HA-1 now says Hermes holds only `MCP_AUTH_TOKEN` and the API credential stays in the MCP server, matching story 14 |
+| 3, N1 | Fixed earlier | Hermes (story 14) and OpenClaw (story 17) are both Phase 1a and "must", and so are issues #15 and #18 |
+| 4, N8 | Fixed earlier, completed here | #58 set Dependabot npm entries per package. This PR adds `/scripts/demo-accounts` |
+| 5 | Fixed earlier | BUILD-FOCUS and README describe the deployed contract and the plain-payment-first decision |
+| 6 | Partly fixed here, rest deferred | `.env.example` exists, `docs/LITERATURE.md` is no longer cited, the README's wallet network check is now real, and `apps/web/.nvmrc` exists. `SECURITY.md` now has the trust assumptions the PRD points to. **Deferred:** `PRIVACY.md` and `CONTRIBUTING.md` (Phase 0 and MVP exit criteria), the fuzz target and the contract upgrade function (PRD 9.2 targets, post-hackathon), and the section 10 workflows that do not exist yet (Scorecard, Trivy, Release) |
+| 7 | Fixed here | The PRD names `approved-versions.json` (since #33) and now states the guard's real rule. A dependency missing from the list is not a failure |
+| 8 | Fixed here, one part deferred | PRD FR-22 now describes the two-step settlement (intent with memo, then the payment) and `?dry_run=true`. **Deferred:** an endpoint to read a settlement by intent id, for safe retries |
+| 8b | Fixed earlier | The MCP server dropped `ledgerly_get_approval` (#57). PRD 7.2 now says which tools are built |
+| 9 | Fixed here | PRD 7.1 step 10 uses the deployed contract's `record_x402_settlement(group, from, to, amount, tx_hash)` |
+| 10 | Deferred to the PRD owner | The indexer is post-hackathon in every document: the PRD "Phase 1: MVP" comes after the Phase 1a hackathon build, and story 21 says Phase 2. Pick one of the two labels when the roadmap is next reviewed |
+| 11 | Fixed earlier | No document says v0.2 any more |
+| 12 | Fixed here | The BUILD-FOCUS owner table is filled in. The PRD "Owner" is the product owner (Victor), while the repository belongs to Michella's account. Both are correct |
+| 13 | Fixed earlier | `docs/AGENTS.md`: administration over Tailscale, dashboards through a Cloudflare tunnel behind Authentik, images pinned by digest, and no keys in the containers |
+| 14 | Fixed earlier | The README says the PRD was written under the working name Ledgerly |
+| 15 | Fixed here | The PRD 7.1 example now settles 4.50 USDC, under the 5 USDC approval threshold |
+| 16 | Fixed here | PRD G1 keeps 2 to 20 as the target size and says the contract and API accept up to 50 |
+| 17 | Fixed here | PRD 7.2 lists the four tools built today. `ledgerly_settle` and `ledgerly_get_approval` come later, matching story 14 |
+| 18 | Fixed here | The PRD names the OpenZeppelin facilitator first and Coinbase's as the fallback, like BUILD-FOCUS, JUDGING and story 11 |
+| 19 | Partly fixed, rest deferred | Group 1 is documented as an XLM smoke test (README and `contracts/README.md`). **Deferred:** the 200 USDC monthly cap has no story; add it to issue #13 (agent spend policy) if kept |
+| N2 | Fixed here | The empty `mcp-server/` placeholder is removed. ARCHITECTURE says the MCP server is `mcp/` |
+| N3 | Fixed earlier | ARCHITECTURE and AGENTS say that no container can reach a key |
+| N4 | Fixed earlier | ARCHITECTURE section 9 records the confirmed Circle Testnet USDC: issuer `GBBD47…LFLA5` and SAC `CBIELTK6…DAMA`. Re-checked: the SDK derives the same contract id from the asset, and stellar.expert lists it as `USDC-GBBD47…` |
+| N5 | Deferred | A USDC group on the contract is only needed when the web app switches to `settle`. That work is issue #88; issue #46 tracks the redeploy |
+| N6 | Deferred | ADR 0004 is accepted as the stretch path. Align the PRD's "payer is the debtor" rule when agent payments are built |
+| N7 | Fixed here | ARCHITECTURE says `database/migrations/` holds the Supabase SQL (`001`, `002`) and `database/tests/` its tests |
+| New | Fixed here | Two ADRs were numbered 0001. The web SPA record is renumbered to 0007 and added to the ADR index |

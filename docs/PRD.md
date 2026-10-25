@@ -46,7 +46,7 @@ The project is built by a single maintainer using an AI coding assistant (Claude
 
 | ID | Goal |
 |---|---|
-| G1 | Let a small group (2 to 20 members) record shared expenses, see balances and settle up. |
+| G1 | Let a small group (2 to 20 members) record shared expenses, see balances and settle up. The contract and the API accept up to 50 members, so this is the target size, not a limit. |
 | G2 | Execute settlements as real Stellar transactions, first on testnet, then on mainnet behind an explicit gate. |
 | G3 | Let AI agents join groups, create expenses, read balances and settle through MCP and HTTP, paying via x402. |
 | G4 | Prove agent support with two independent self-hosted agents: OpenClaw and Hermes Agent. |
@@ -57,7 +57,7 @@ The project is built by a single maintainer using an AI coding assistant (Claude
 
 | ID | Non-goal |
 |---|---|
-| NG1 | Fiat on-ramps, card payments or bank integrations. Users bring their own USDC. |
+| NG1 | Fiat on-ramps, card payments or bank integrations in v1. Users bring their own USDC. Fiat on- and off-ramps through Stellar anchors are on the roadmap for Phases 3 and 4 (section 13). |
 | NG2 | Native mobile apps. The web app is responsive, that is enough for v1. |
 | NG3 | Receipt OCR, currency conversion or multi-currency balances in v1. Each group has one settlement asset. |
 | NG4 | Custody of user keys. Ledgerly never holds a human user's private key. |
@@ -113,7 +113,7 @@ Agents are members of a group like humans are, but they are always sponsored by 
 | Indexer | Reads Soroban contract events and keeps a queryable copy for fast balance views. Reconciles against the contract on a schedule. | Worker process, PostgreSQL (Supabase). |
 | Database | Groups, members, expense metadata, agent identities, policies, approvals, webhook subscriptions, idempotency keys. Never the source of truth for balances. No private keys. | PostgreSQL hosted on Supabase, behind a repository layer. |
 | Group contract | Non-custodial Soroban contract holding groups, expense hashes, balance deltas and settlement records. `settle` calls the SEP-41 token to transfer directly from debtor to creditor and records it in the same transaction. `record_x402_settlement` records an agent settlement already verified on-chain. The contract never holds a token balance. | Rust, `soroban-sdk`. |
-| Facilitator | Verifies and settles x402 payments, submits the transaction and pays the fee. Testnet: Coinbase x402 facilitator or the OpenZeppelin facilitator. Mainnet: OpenZeppelin facilitator (supports both networks) or the self-hosted `relayer-plugin-x402-facilitator` once its mainnet support is confirmed in Phase 3. | External service, endpoints `/verify`, `/settle`, `/supported`. |
+| Facilitator | Verifies and settles x402 payments, submits the transaction and pays the fee. Testnet: the OpenZeppelin facilitator (Coinbase's x402 facilitator is the fallback). Mainnet: OpenZeppelin facilitator (supports both networks) or the self-hosted `relayer-plugin-x402-facilitator` once its mainnet support is confirmed in Phase 3. | External service, endpoints `/verify`, `/settle`, `/supported`. |
 | Stellar network | Testnet for development and the MVP acceptance test, mainnet behind the gate in section 12. | Soroban RPC, Horizon for account lookups. |
 
 ### Diagram
@@ -210,7 +210,7 @@ Priority follows MoSCoW: M = Must, S = Should, C = Could, W = Won't (this versio
 |---|---|---|
 | FR-20 | Any member can view per-pair balances and their own net position. | M |
 | FR-21 | A member can view simplified debts. The simplification is deterministic and documented. | S |
-| FR-22 | A human debtor can settle from the web app by signing a call to the group contract's `settle`, which transfers the asset directly to the creditor and records the settlement in one transaction. | M |
+| FR-22 | A human debtor can settle from the web app by signing a call to the group contract's `settle`, which transfers the asset directly to the creditor and records the settlement in one transaction. Hackathon build: a plain USDC payment in two steps instead. The API reserves a settlement intent (a memo and an expiry), the payment carries it as a `MEMO_HASH`, and the API records it after verifying it on Horizon. `?dry_run=true` returns the terms without reserving anything (used by the MCP server). See `apps/api/README.md` and ADR 0003. | M |
 | FR-23 | Partial settlements are allowed. | M |
 | FR-24 | The indexed balance view is reconciled against contract state at least every 10 minutes. Mismatches raise an alert and freeze settlement for that group until resolved. | M |
 | FR-25 | Settlement records show the Stellar transaction hash with a link to a block explorer. | M |
@@ -251,7 +251,7 @@ Priority follows MoSCoW: M = Must, S = Should, C = Could, W = Won't (this versio
 
 ### 7.1 x402 settlement flow, step by step
 
-1. The agent calls `POST /v1/groups/{groupId}/settlements` with `{ "to": "<creditor member id>", "amount": "25.00" }` and its API credential.
+1. The agent calls `POST /v1/groups/{groupId}/settlements` with `{ "to": "<creditor member id>", "amount": "4.50" }` and its API credential. The amount is below the default 5 USDC approval threshold, so this example needs no human approval.
 2. The API checks the credential, the agent's spend policy and the current balance. If the amount exceeds the per-transaction or daily cap, it returns `403` with a policy error. If it exceeds the approval threshold, it returns `202` with an approval id (see 7.4).
 3. If the policy allows the payment, the x402 middleware responds `402 Payment Required` with a `PAYMENT-REQUIRED` header describing the requirements: scheme `exact`, network `stellar:testnet` or `stellar:pubnet`, the SEP-41 asset contract, the amount in the token's smallest unit, `payTo` set to the creditor's verified Stellar address, and a resource description that carries the settlement intent id.
 4. The Ledgerly MCP server on the agent host compares the requirements with the intent it requested. Any mismatch in amount, asset, network or `payTo` aborts the payment (FR-38).
@@ -260,7 +260,7 @@ Priority follows MoSCoW: M = Must, S = Should, C = Could, W = Won't (this versio
 7. The API calls the facilitator's `/verify`. The facilitator checks that the authorization entry is present, signed by the payer, matches the requirements, and that the payer is not the relayer account.
 8. The API calls `/settle`. The facilitator submits the transaction and pays the fee from its relayer or channel account. The API returns `PAYMENT-RESPONSE` with the transaction hash and marks the settlement `submitted`.
 9. The chain verifier confirms the transfer on Soroban RPC (asset, amount, payer, payee, network) and only then marks the settlement `settled`.
-10. The API calls `record_x402_settlement` on the group contract with the intent id and transaction hash. The contract rejects a transaction hash it has already recorded. The API emits `settlement.completed` and the agent receives the receipt.
+10. The API calls `record_x402_settlement(group, from, to, amount, tx_hash)` on the group contract, the signature of the deployed contract (it takes no intent id; the API keeps the link between intent and transaction hash). The contract rejects a transaction hash it has already recorded. The API emits `settlement.completed` and the agent receives the receipt.
 11. If `/settle` fails, the API returns `402` again with a fresh challenge. Nothing is recorded, because no transfer happened.
 
 The facilitator and Ledgerly never hold the funds. Soroban authorization entries carry a nonce and a ledger-based expiry, so a captured `PAYMENT-SIGNATURE` cannot be replayed.
@@ -279,6 +279,8 @@ The MCP server exposes a small, explicit tool set. Tool descriptions state wheth
 | `ledgerly_propose_settlement` | No | Returns the settlement intent and the 402 requirements without paying. |
 | `ledgerly_settle` | Yes | Pays the settlement via x402 using the agent's key. Subject to policy. |
 | `ledgerly_get_approval` | No | Status of a pending approval. |
+
+Built today in `mcp/`: `ledgerly_list_groups`, `ledgerly_get_balances`, `ledgerly_create_expense` and `ledgerly_propose_settlement`. `ledgerly_settle` comes with the agent signer, and `ledgerly_get_approval` with approvals (Phase 2): the API has no approvals route yet.
 
 The server is published with an MCP manifest, and each tool carries annotations (`readOnlyHint`, `destructiveHint`) so hosts that respect them prompt correctly.
 
@@ -305,7 +307,7 @@ Hermes defines MCP servers in `~/.hermes/config.yaml` under `mcp_servers`, suppo
 
 | Step | Action | Expected result |
 |---|---|---|
-| HA-1 | Run the Ledgerly MCP server container next to Hermes and add it under `mcp_servers` over HTTP with `trust: untrusted`. The API credential lives in `~/.hermes/.env`, referenced as `${LEDGERLY_TOKEN}`. The signer stays in the MCP server container. | Tools listed. Write tools prompt before running. |
+| HA-1 | Run the Ledgerly MCP server container next to Hermes and add it under `mcp_servers` over HTTP with `trust: untrusted`. Hermes holds only `MCP_AUTH_TOKEN` for the MCP server; the API credential (`LEDGERLY_TOKEN`) stays in the MCP server process, never in the agent. The signer stays in the MCP server container. | Tools listed. Write tools prompt before running. |
 | HA-2 | Set `tool_costs` for `ledgerly_settle` on the server and `spend_limit` for the chat. Request a settlement above the limit. | Hermes prompts before calling, even with `trust: full`. |
 | HA-3 | From Telegram: "What do I owe in the flat group?" | Correct balance read, no payment. |
 | HA-4 | Request a settlement at or below the approval threshold. Approve on the Telegram button. | Testnet transaction hash returned, balance updated, `settlement.completed` webhook fired. |
@@ -443,7 +445,7 @@ This policy exists because an LLM writing code will suggest the versions it reme
 
 | Rule | Detail |
 |---|---|
-| Approved versions list | `supply-chain/approved-versions.json` lists every direct dependency with its approved version, the date approved, and the person who approved it. CI fails if a manifest references a version not in the list. |
+| Approved versions list | `supply-chain/approved-versions.json` lists direct dependencies with their approved version, the date approved, and the person who approved it. The version guard does not fail a dependency missing from the list. It fails a version that is older than the approved one, a pre-release, deprecated, inside its cooldown, behind a newer stable release that has passed its cooldown, or with a high or critical advisory (see `supply-chain/README.md`). |
 | Latest stable, with cooldown | A new version becomes eligible 7 days (patch), 14 days (minor) or 30 days (major) after publication, and never less than 14 days for the payment and signing path. "Latest stable at time of pinning" is the target. Pre-releases, release candidates and nightly builds are rejected. |
 | No older than the latest stable minor line | A dependency pinned to a version behind the latest stable minor line for more than 90 days fails a weekly check unless it has an exemption with an expiry date in the approved list. |
 | Known vulnerabilities | Any version with an open OSV or GitHub Advisory entry at high or critical severity is rejected at PR time. Medium severity requires an exemption with an expiry. |
@@ -454,7 +456,7 @@ This policy exists because an LLM writing code will suggest the versions it reme
 
 ### 9.7 Transaction verification tiers (draft)
 
-A settlement is irreversible, so the one moment to stop a wrong or fraudulent payment is before the payer signs. Draft policy, for team review: up to 2 USD-equivalent, server policy only; over 2, a payee check carried by Hermes on Telegram and decided by the API; over 40, a second-channel step-up with a wallet signature on the exact intent, plus a payee confirmation and cooling-off when a risk signal is present. Rolling 24 hour totals count toward the tier. New members are bound once (Telegram ID, address, username). Hermes asks and the API decides, so the agent cannot approve its own question, which follows 7.4. The reasoning, the numbers, the open decisions (including whether Tier 2 should be the equivalent of EUR 30) and the tests are in [`docs/security/verification-policy.md`](security/verification-policy.md). Sources are in [`docs/security/references/`](security/references/README.md). This is not KYC and must not be described as compliance.
+A settlement is irreversible, so the one moment to stop a wrong or fraudulent payment is before the payer signs. Draft policy, for team review: up to 2 USD-equivalent, server policy only; over 2, a payee check carried by Stellar Assist on Telegram and decided by the API; over 40, a second-channel step-up with a wallet signature on the exact intent, plus a payee confirmation and cooling-off when a risk signal is present. Rolling 24 hour totals count toward the tier. New members are bound once (Telegram ID, address, username). Hermes asks and the API decides, so the agent cannot approve its own question, which follows 7.4. The reasoning, the numbers, the open decisions (including whether Tier 2 should be the equivalent of EUR 30) and the tests are in [`docs/security/verification-policy.md`](security/verification-policy.md). Sources are in [`docs/security/references/`](security/references/README.md). This is not KYC and must not be described as compliance.
 
 ## 10. Automated GitHub controls
 
@@ -766,8 +768,8 @@ Mainnet deployment happens only after all of the following:
 | Phase 1a: Hackathon build | Non-custodial group contract implemented and deployed on testnet, with demo integration after the required plain-transfer path works. Minimal Node.js API for groups, expenses and balances, with Supabase PostgreSQL as the off-chain ledger. One Vite + React page styled with Tailwind CSS connects Freighter and settles a plain Testnet USDC payment first. The existing non-paying MCP tools are connected to Hermes Agent and OpenClaw if time permits; signer-backed x402 settlement remains a stretch goal. Security baseline: actions pinned by SHA, Dependabot cooldown, dependency review, OSV-Scanner, CodeQL and the version guard. | Required live demo: a human settles from the web page and the verified transaction is visible on a Testnet explorer. Stretch exit: Hermes and OpenClaw use the MCP/x402 path within server-enforced limits. All applicable checks green. |
 | Phase 1: MVP | Group contract on testnet with tests, fuzzing, Scout. API and web app for groups, expenses, balances, settlement. Indexer and reconciliation. Agent identity model and 402 middleware present. Hermes Agent and OpenClaw settlements. | All MVP acceptance criteria met. Demo video of a testnet settlement. Submission-ready build. |
 | Phase 2: Agents | MCP server with full tool set and annotations. Spend policies, approvals, velocity checks, audit log, kill switch. Full OpenClaw and Hermes test plans. Agent smart accounts built on OpenZeppelin's Stellar smart account contracts with a spending-limit policy, so per-agent caps also hold on-chain. Metered endpoints via x402. Optional cosign provenance added to releases. | Both test plans pass. Prompt injection tests OC-6 and HA-6 pass. Approval flow works via web and Telegram. Komet run on settlement logic. |
-| Phase 3: Integrations | Public OpenAPI, API keys with scopes, OAuth 2.1 PKCE, webhooks with HMAC and retries, rate limits with headers, CSV export, sandbox docs. At least one external integration built as a reference (for example a budgeting sheet sync). | Reference integration consumes webhooks end to end. OpenAPI document validated in CI. Rate limit tests pass. Mainnet gate review started. |
-| Phase 4: Scale and mainnet | Mainnet deployment behind the gate. Multisig admin, timelock, external audit, self-hosted facilitator option, 99.5 percent availability target, status page, backup restore drills, multi-admin groups, recurring expenses. | Mainnet gate complete. First 10 mainnet groups settled without incident for 30 days. Availability target met for one month. |
+| Phase 3: Integrations | Public OpenAPI, API keys with scopes, OAuth 2.1 PKCE, webhooks with HMAC and retries, rate limits with headers, CSV export, sandbox docs. More wallets than Freighter through Stellar Wallets Kit, after the spike in [`docs/WALLETS.md`](WALLETS.md) (paused, [ADR 0008](adr/0008-more-wallets-after-freighter-is-roadmap.md)). At least one external integration built as a reference (for example a budgeting sheet sync). Fiat on- and off-ramps through Stellar anchors (SEP-24 interactive deposit and withdrawal, SEP-38 quotes), so a member can pay in with local currency and a creditor can cash out USDC to a bank account. The anchor handles KYC and holds the fiat; Ledgerly stays non-custodial. | Reference integration consumes webhooks end to end. A deposit and a withdrawal complete end to end against the SDF test anchor on Testnet. OpenAPI document validated in CI. Rate limit tests pass. Mainnet gate review started. |
+| Phase 4: Scale and mainnet | Mainnet deployment behind the gate. Multisig admin, timelock, external audit, self-hosted facilitator option, 99.5 percent availability target, status page, backup restore drills, multi-admin groups, recurring expenses. Fiat ramps live on mainnet with at least one licensed anchor. | Mainnet gate complete. First 10 mainnet groups settled without incident for 30 days. Availability target met for one month. |
 
 ## 14. Success metrics
 

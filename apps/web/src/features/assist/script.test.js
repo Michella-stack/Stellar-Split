@@ -13,6 +13,7 @@ describe('parseIntent', () => {
   it('reads the suggestion chips', () => {
     expect(parseIntent('What do I owe?')).toEqual({ kind: 'what-owe' });
     expect(parseIntent('Pay my internet share')).toEqual({ kind: 'pay-internet' });
+    expect(parseIntent('Check a payment on Telegram')).toEqual({ kind: 'telegram-check' });
   });
 
   it('refuses secret keys before anything else', () => {

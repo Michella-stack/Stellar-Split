@@ -6,7 +6,7 @@ import { containsSecretKey } from '@shared/validation.js';
 
 /**
  * @typedef {{ kind: 'secret' } | { kind: 'add-expense', amount: string, description: string, ways: number | null }
- *   | { kind: 'pay', amount: string, to: string } | { kind: 'what-owe' } | { kind: 'pay-internet' } | { kind: 'unknown' }} Intent
+ *   | { kind: 'pay', amount: string, to: string } | { kind: 'what-owe' } | { kind: 'pay-internet' } | { kind: 'telegram-check' } | { kind: 'unknown' }} Intent
  */
 
 const AMOUNT = '(\\d+(?:[.,]\\d{1,7})?)';
@@ -19,6 +19,7 @@ export function parseIntent(text) {
   if (containsSecretKey(text)) return { kind: 'secret' };
   const t = text.trim().toLowerCase();
   if (/what do i owe|how much do i owe|my balance/.test(t)) return { kind: 'what-owe' };
+  if (/telegram/.test(t)) return { kind: 'telegram-check' };
   if (/internet share/.test(t)) return { kind: 'pay-internet' };
 
   const pay = new RegExp(`\\bpay\\s+([a-z]+)\\s+\\$?${AMOUNT}`).exec(t);

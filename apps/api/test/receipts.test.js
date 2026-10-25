@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { after, before, test } from 'node:test';
 import { createGeminiExtractor, DEFAULT_MODEL } from '../src/receipts/gemini.js';
 import { toDraft } from '../src/receipts/draft.js';
@@ -116,7 +117,8 @@ test('the request: endpoint, key in a header and not in the body, text before th
   assert.equal(url, 'https://generativelanguage.googleapis.com/v1beta/interactions');
   assert.equal(init.headers['x-goog-api-key'], API_KEY);
   assert.doesNotMatch(init.body, /AIzaFAKE/);
-  assert.equal(body.model, 'gemini-3.8-flash');
+  assert.equal(body.model, 'gemini-3.6-flash');
+  assert.equal(seen.length, 1, 'a good answer needs one request');
   assert.equal(body.store, false);
   assert.deepEqual(body.input, [{ type: 'text', text: 'Read this receipt.' }, { type: 'image', data: '/9j/AAAA', mime_type: 'image/jpeg' }]);
   assert.equal(body.response_format.mime_type, 'application/json');
@@ -128,9 +130,10 @@ test('the request: endpoint, key in a header and not in the body, text before th
 test('RECEIPT_MODEL overrides the model, and a bad model id or a missing key is refused at start', async () => {
   const seen = [];
   const fetchImpl = async (_, init) => (seen.push(JSON.parse(init.body)), new Response(JSON.stringify(interaction('{}'))));
-  await createGeminiExtractor({ apiKey: API_KEY, model: 'gemini-3.6-flash', fetchImpl }).extract({ mimeType: 'image/png', data: 'AAAA' });
-  assert.equal(seen[0].model, 'gemini-3.6-flash');
+  await createGeminiExtractor({ apiKey: API_KEY, model: 'gemini-3.8-flash', fetchImpl }).extract({ mimeType: 'image/png', data: 'AAAA' });
+  assert.equal(seen[0].model, 'gemini-3.8-flash');
   assert.throws(() => createGeminiExtractor({ apiKey: API_KEY, model: 'x"; drop' }), /RECEIPT_MODEL/);
+  assert.throws(() => createGeminiExtractor({ apiKey: API_KEY, fallbackModel: 'x"; drop' }), /RECEIPT_FALLBACK_MODEL/);
   assert.throws(() => createGeminiExtractor({ apiKey: '' }), /GEMINI_API_KEY/);
 });
 
@@ -156,6 +159,89 @@ test('when the reader fails the error says so without any body, and never contai
       return true;
     });
   }
+});
+
+// ---- the fallback ------------------------------------------------------------------------------------------------
+
+const MAIN = 'gemini-3.6-flash';
+const BACKUP = 'gemini-3.5-flash-lite';
+const good = async () => new Response(JSON.stringify(interaction(JSON.stringify(receipt()))));
+const busy = async () => new Response(JSON.stringify({ error: { message: 'high demand', code: 'service_unavailable' } }), { status: 503 });
+const garbage = async () => new Response(JSON.stringify(interaction('not json')));
+
+/** An extractor whose fake Gemini answers per model, and a list of the models it was asked, in order. */
+function withAnswers(answers, options = {}) {
+  const asked = [];
+  const fetchImpl = async (url, init) => {
+    const model = JSON.parse(init.body).model;
+    asked.push(model);
+    return answers[model](init);
+  };
+  return { asked, extractor: createGeminiExtractor({ apiKey: API_KEY, fetchImpl, ...options }) };
+}
+const photo = { mimeType: 'image/jpeg', data: 'AAAA' };
+
+test('when the main model is busy, the fallback model answers instead and the caller never notices', async () => {
+  const { asked, extractor } = withAnswers({ [MAIN]: busy, [BACKUP]: good });
+  assert.deepEqual(await extractor.extract(photo), receipt());
+  assert.deepEqual(asked, [MAIN, BACKUP]);
+  assert.deepEqual([extractor.model, extractor.fallbackModel], [MAIN, BACKUP]);
+});
+
+test('the fallback is not used when the main model answers, or when its answer is unusable', async () => {
+  const fine = withAnswers({ [MAIN]: good, [BACKUP]: good });
+  await fine.extractor.extract(photo);
+  assert.deepEqual(fine.asked, [MAIN]);
+
+  const broken = withAnswers({ [MAIN]: garbage, [BACKUP]: good });
+  await assert.rejects(broken.extractor.extract(photo), { code: 'SCAN_UNREADABLE' });
+  assert.deepEqual(broken.asked, [MAIN], 'an unreadable answer is not retried');
+});
+
+test('when both are down it fails once with SCAN_UNAVAILABLE, after exactly two requests', async () => {
+  const { asked, extractor } = withAnswers({ [MAIN]: busy, [BACKUP]: busy });
+  await assert.rejects(extractor.extract(photo), { code: 'SCAN_UNAVAILABLE' });
+  assert.deepEqual(asked, [MAIN, BACKUP]);
+});
+
+test('an empty fallback, or the same model twice, means a single try', async () => {
+  for (const fallbackModel of ['', MAIN]) {
+    const { asked, extractor } = withAnswers({ [MAIN]: busy }, { fallbackModel });
+    await assert.rejects(extractor.extract(photo), { code: 'SCAN_UNAVAILABLE' });
+    assert.deepEqual(asked, [MAIN], JSON.stringify(fallbackModel));
+    assert.equal(extractor.fallbackModel, null);
+  }
+});
+
+test('a model that never answers is cut off by its own timeout and the fallback still gets its turn', async () => {
+  const hangs = (init) => new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason)));
+  const started = Date.now();
+  const { asked, extractor } = withAnswers({ [MAIN]: hangs, [BACKUP]: good }, { timeoutMs: 30, fallbackTimeoutMs: 500 });
+  assert.deepEqual(await extractor.extract(photo), receipt());
+  assert.deepEqual(asked, [MAIN, BACKUP]);
+  assert.ok(Date.now() - started < 400, 'the main model was not waited for beyond its timeout');
+
+  const bothHang = withAnswers({ [MAIN]: hangs, [BACKUP]: hangs }, { timeoutMs: 20, fallbackTimeoutMs: 20 });
+  await assert.rejects(bothHang.extractor.extract(photo), { code: 'SCAN_UNAVAILABLE' });
+});
+
+test('the fallback has its own, longer timeout: an answer that arrives after the main timeout is still accepted from it', async () => {
+  const slowGood = (init) =>
+    new Promise((resolve, reject) => {
+      const timer = setTimeout(() => resolve(new Response(JSON.stringify(interaction(JSON.stringify(receipt()))))), 100);
+      init.signal.addEventListener('abort', () => (clearTimeout(timer), reject(init.signal.reason)));
+    });
+  const busyAtOnce = async () => new Response('busy', { status: 503 });
+  const { extractor } = withAnswers({ [MAIN]: busyAtOnce, [BACKUP]: slowGood }, { timeoutMs: 30, fallbackTimeoutMs: 1000 });
+  assert.deepEqual(await extractor.extract(photo), receipt());
+  const { extractor: tight } = withAnswers({ [MAIN]: busyAtOnce, [BACKUP]: slowGood }, { timeoutMs: 1000, fallbackTimeoutMs: 30 });
+  await assert.rejects(tight.extract(photo), { code: 'SCAN_UNAVAILABLE' });
+});
+
+test('the default timeouts leave room inside the 15 seconds the serverless host allows', () => {
+  const source = readFileSync(new URL('../src/receipts/gemini.js', import.meta.url), 'utf8');
+  const [main, backup] = [/timeoutMs = (\d[\d_]*)/, /fallbackTimeoutMs = (\d[\d_]*)/].map((re) => Number(re.exec(source)[1].replaceAll('_', '')));
+  assert.ok(main + backup <= 12_000, `${main} + ${backup} ms`);
 });
 
 // ---- the route ---------------------------------------------------------------------------------------------------
@@ -315,14 +401,21 @@ const ENV = {
 };
 
 test('the reader is optional: no GEMINI_API_KEY means off, and RECEIPT_MODEL defaults to the current Flash model', () => {
-  assert.deepEqual([loadConfig(ENV).geminiApiKey, loadConfig(ENV).receiptModel], [null, 'gemini-3.8-flash']);
+  assert.deepEqual([loadConfig(ENV).geminiApiKey, loadConfig(ENV).receiptModel], [null, 'gemini-3.6-flash']);
   assert.equal(loadConfig({ ...ENV, GEMINI_API_KEY: '' }).geminiApiKey, null);
-  const on = loadConfig({ ...ENV, GEMINI_API_KEY: API_KEY, RECEIPT_MODEL: 'gemini-3.6-flash' });
-  assert.deepEqual([on.geminiApiKey, on.receiptModel], [API_KEY, 'gemini-3.6-flash']);
+  const on = loadConfig({ ...ENV, GEMINI_API_KEY: API_KEY, RECEIPT_MODEL: 'gemini-3.8-flash' });
+  assert.deepEqual([on.geminiApiKey, on.receiptModel], [API_KEY, 'gemini-3.8-flash']);
+});
+
+test('RECEIPT_FALLBACK_MODEL: left out uses the default, empty turns it off, a value replaces it', () => {
+  assert.equal(loadConfig(ENV).receiptFallbackModel, 'gemini-3.5-flash-lite');
+  assert.equal(loadConfig({ ...ENV, RECEIPT_FALLBACK_MODEL: '' }).receiptFallbackModel, '');
+  assert.equal(loadConfig({ ...ENV, RECEIPT_FALLBACK_MODEL: 'gemini-3.1-flash-lite' }).receiptFallbackModel, 'gemini-3.1-flash-lite');
 });
 
 test('the handler builds with and without the reader, and a bad RECEIPT_MODEL stops the start without echoing the key', () => {
   assert.equal(typeof handlerFromEnv(ENV).handler, 'function');
   assert.equal(typeof handlerFromEnv({ ...ENV, GEMINI_API_KEY: API_KEY }).handler, 'function');
   assert.throws(() => handlerFromEnv({ ...ENV, GEMINI_API_KEY: API_KEY, RECEIPT_MODEL: 'bad model!' }), (err) => /RECEIPT_MODEL/.test(err.message) && !err.message.includes(API_KEY));
+  assert.throws(() => handlerFromEnv({ ...ENV, GEMINI_API_KEY: API_KEY, RECEIPT_FALLBACK_MODEL: 'bad model!' }), /RECEIPT_FALLBACK_MODEL/);
 });

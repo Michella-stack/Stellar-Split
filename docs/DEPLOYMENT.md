@@ -84,7 +84,8 @@ Names only. Never commit values and never put a secret in a variable that starts
 | `SUPABASE_SERVICE_ROLE_KEY` | API | Server only. Sensitive. It bypasses row level security |
 | `APP_URL` | API | The public URL above, used for invite links |
 | `GEMINI_API_KEY` | API | Optional. Reads receipt photos (issue #87). Server only. Sensitive. Without it the scan answers 503 and the web app shows a labelled sample |
-| `RECEIPT_MODEL` | API | Optional. Defaults to `gemini-3.8-flash` |
+| `RECEIPT_MODEL` | API | Optional. Defaults to `gemini-3.6-flash` |
+| `RECEIPT_FALLBACK_MODEL` | API | Optional. Tried once when the main model does not answer. Defaults to `gemini-3.5-flash-lite`. Empty turns it off |
 | `AGENT_TOKENS` | API | Optional. SHA-256 hashes of agent tokens mapped to their addresses. See `apps/api/README.md` |
 
 Production needs Supabase: serverless instances do not share memory, so the in-memory store (`ALLOW_MEMORY_STORE`) must not be used there. The names and meaning come from `apps/api/README.md` and `apps/api/.env.example`. Whether each variable is set in the project has not been checked.

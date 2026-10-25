@@ -4,7 +4,7 @@ import { createAuth, parseAgentTokens } from './auth/index.js';
 import { createMemoryRepository, createSupabaseRepository } from './repositories/index.js';
 import { createLedger } from './services/ledger.js';
 import { createReceipts } from './services/receipts.js';
-import { createGeminiExtractor, DEFAULT_MODEL } from './receipts/gemini.js';
+import { createGeminiExtractor, DEFAULT_FALLBACK_MODEL, DEFAULT_MODEL } from './receipts/gemini.js';
 import { createStellar } from './stellar/index.js';
 import { createServer } from 'node:http';
 import { createHandler } from './server.js';
@@ -32,6 +32,8 @@ export function loadConfig(env = process.env) {
     // The receipt reader is optional: without a key the scan route answers 503 and the web app shows its sample result.
     geminiApiKey: env.GEMINI_API_KEY || null,
     receiptModel: env.RECEIPT_MODEL || DEFAULT_MODEL,
+    // An empty RECEIPT_FALLBACK_MODEL turns the fallback off; leaving it out uses the default.
+    receiptFallbackModel: env.RECEIPT_FALLBACK_MODEL ?? DEFAULT_FALLBACK_MODEL,
   };
 }
 
@@ -43,7 +45,7 @@ export function handlerFromEnv(env = process.env) {
   const log = (line) => console.log(JSON.stringify(line));
   const ledger = createLedger({ repo, stellar, appUrl: config.appUrl, log });
   const auth = createAuth({ secret: config.sessionSecret, repo, agentTokens: config.agentTokens });
-  const extractor = config.geminiApiKey ? createGeminiExtractor({ apiKey: config.geminiApiKey, model: config.receiptModel }) : null;
+  const extractor = config.geminiApiKey ? createGeminiExtractor({ apiKey: config.geminiApiKey, model: config.receiptModel, fallbackModel: config.receiptFallbackModel }) : null;
   const receipts = createReceipts({ extractor, ledger, log });
   return { config, handler: createHandler({ auth, ledger, receipts, allowedOrigins: config.allowedOrigins }) };
 }
@@ -52,7 +54,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     const { config, handler } = handlerFromEnv();
     createServer(handler).listen(config.port, config.host, () =>
-      console.log(JSON.stringify({ msg: 'stellar-split api listening', host: config.host, port: config.port, store: config.supabase ? 'supabase' : 'memory', receiptReader: config.geminiApiKey ? config.receiptModel : 'off' })),
+      console.log(JSON.stringify({ msg: 'stellar-split api listening', host: config.host, port: config.port, store: config.supabase ? 'supabase' : 'memory', receiptReader: config.geminiApiKey ? [config.receiptModel, config.receiptFallbackModel].filter(Boolean).join(' then ') : 'off' })),
     );
   } catch (err) {
     console.error(err.message);

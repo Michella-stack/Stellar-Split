@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router';
-import { getAgent, getGroup, listAgentActivity, updateAgent } from '../client/api.js';
+import { assist } from '../client/api.js';
+import { PreviewNote } from '../features/assist/PreviewNote.jsx';
 import { AgentAvatar } from '../components/Avatar.jsx';
 import { Button, ButtonLink } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
@@ -17,9 +18,9 @@ import { formatDate, formatUsd } from '../lib/format.js';
 
 export default function Assist() {
   const [version, setVersion] = useState(0);
-  const agent = useApi(() => getAgent('assist'), `agent#${version}`);
-  const activity = useApi(() => listAgentActivity('assist'), `agent-activity#${version}`);
-  const group = useApi(() => getGroup('casa-alfama'), 'group:casa-alfama');
+  const agent = useApi(() => assist.getAgent('assist'), `agent#${version}`);
+  const activity = useApi(() => assist.listAgentActivity('assist'), `agent-activity#${version}`);
+  const group = useApi(() => assist.getGroup('casa-alfama'), 'group:casa-alfama');
   const refresh = () => setVersion((v) => v + 1);
 
   if (agent.data?.agent.status === 'inactive') return <Navigate to="/assist/intro" replace />;
@@ -47,7 +48,7 @@ function Dashboard({ data, activity, members, onChange }) {
   async function togglePause() {
     setToggling(true);
     try {
-      await updateAgent(agent.id, { status: paused ? 'active' : 'paused' });
+      await assist.updateAgent(agent.id, { status: paused ? 'active' : 'paused' });
       toast(paused ? 'Stellar Assist resumed' : 'Stellar Assist paused. It will not add or pay anything.', { tone: 'success' });
       onChange();
     } catch {
@@ -59,6 +60,7 @@ function Dashboard({ data, activity, members, onChange }) {
 
   return (
     <div className="flex flex-col gap-6 pb-8">
+      <PreviewNote />
       <div className="flex items-center gap-4">
         <AgentAvatar size="lg" />
         <div className="flex flex-col gap-1">

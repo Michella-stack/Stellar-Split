@@ -14,6 +14,7 @@ import { AmountInput } from '../features/expenses/AmountInput.jsx';
 import { PaidCard } from '../features/settlement/PaidCard.jsx';
 import { PaymentProblem } from '../features/settlement/PaymentProblem.jsx';
 import { useApi } from '../hooks/useApi.js';
+import { DEMO } from '../lib/demoMode.js';
 import { useToast } from '../hooks/useToast.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { formatUsd, shortAddress } from '../lib/format.js';
@@ -117,6 +118,7 @@ function SettleFlow({ detail, memberId }) {
     const intentEpoch = wallet.epoch;
     let intentId = null;
     let submitted = false;
+    if (DEMO) return confirmDemo();
     try {
       setStep('checking');
       await checkPayment({ from, to: recipient.address, amount });
@@ -157,6 +159,27 @@ function SettleFlow({ detail, memberId }) {
       // unknown (timeout, lost connection) it stays: the payment may still land and match it.
       const outcomeUnknown = submitted && (error?.code === 'TIMEOUT' || error?.code === 'NETWORK');
       if (!outcomeUnknown) release(intentId);
+      fail(error);
+    }
+  }
+
+  /** Demo mode: the same steps and screens, but nothing is signed or sent. */
+  async function confirmDemo() {
+    const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    try {
+      setStep('checking');
+      await pause(500);
+      const { intent } = await createSettlementIntent(group.id, { to: recipient.id, amount });
+      setStep('signing');
+      await pause(900);
+      setStep('submitting');
+      await pause(700);
+      const hash = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
+      setPaid({ hash, amount });
+      setPaidIntent(intent.id);
+      setStep('paid');
+      await saveRecord(hash, intent.id);
+    } catch (error) {
       fail(error);
     }
   }
@@ -242,7 +265,11 @@ function SettleFlow({ detail, memberId }) {
 
   const busy = step === 'checking' || step === 'signing' || step === 'submitting';
   const available = availability(balances.data, check.ok ? amount : null, debt);
-  const busyLabel = { checking: 'Checking balances…', signing: 'Confirm in Freighter…', submitting: 'Sending to Stellar…' }[step];
+  const busyLabel = {
+    checking: 'Checking balances…',
+    signing: DEMO ? 'Confirming (demo)…' : 'Confirm in Freighter…',
+    submitting: DEMO ? 'Sending (demo)…' : 'Sending to Stellar…',
+  }[step];
   const myMember = members.find((m) => m.id === me);
 
   return (
@@ -314,7 +341,7 @@ function SettleFlow({ detail, memberId }) {
 
         <div className="flex flex-col gap-3" aria-live="polite">
           <Button block loading={busy} disabled={!check.ok || busy || available.blocking} onClick={confirm}>
-            {busy ? busyLabel : 'Confirm in Freighter'}
+            {busy ? busyLabel : DEMO ? 'Confirm payment (demo)' : 'Confirm in Freighter'}
           </Button>
           {!editing && (
             <Button block variant="outline" disabled={busy} onClick={() => setEditing(true)}>
@@ -323,7 +350,9 @@ function SettleFlow({ detail, memberId }) {
           )}
         </div>
         <p className="text-center text-sm text-muted">
-          Freighter will show these same details before you approve. Money goes straight to {recipient.displayName}; Stellar Split never holds it.
+          {DEMO
+            ? `Demo: this payment is simulated and nothing is sent to Stellar. In the real app, Freighter shows these same details before you approve and the money goes straight to ${recipient.displayName}.`
+            : `Freighter will show these same details before you approve. Money goes straight to ${recipient.displayName}; Stellar Split never holds it.`}
         </p>
       </div>
     </>

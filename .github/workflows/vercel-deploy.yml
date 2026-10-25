@@ -59,3 +59,15 @@ jobs:
         env:
           URL: ${{ steps.deploy.outputs.url }}
         run: curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "$URL/v1/health"
+      # TEMPORARY diagnosis, prints only lengths, matches and HTTP status codes. Remove after use.
+      - name: Diagnose
+        if: failure() && steps.secrets.outputs.enabled == 'true'
+        run: |
+          echo "token length: ${#VERCEL_TOKEN}"
+          echo "org id length: ${#VERCEL_ORG_ID}, matches expected: $([ "$VERCEL_ORG_ID" = "team_mBzhC3YpoNFezzITJmlHxkGW" ] && echo yes || echo NO)"
+          echo "project id length: ${#VERCEL_PROJECT_ID}, matches expected: $([ "$VERCEL_PROJECT_ID" = "prj_Pd2Kqezcg8u9hRV2GtwTASyFXIcG" ] && echo yes || echo NO)"
+          api() { curl -s -o /tmp/out.json -w '%{http_code}' -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com$1"; }
+          echo "GET /v2/user: $(api /v2/user) user=$(jq -r '.user.username // .error.code' /tmp/out.json)"
+          echo "GET /v2/teams: $(api /v2/teams) ids=$(jq -r '[.teams[]?.id] | join(",")' /tmp/out.json)"
+          echo "GET project with team: $(api "/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID") $(jq -r '.error.code // "ok"' /tmp/out.json)"
+          echo "GET project without team: $(api "/v9/projects/$VERCEL_PROJECT_ID") $(jq -r '.error.code // "ok"' /tmp/out.json)"

@@ -203,6 +203,11 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       return detail({ ...(await load(group.id)), me });
     },
 
+    /** Resolves when the caller is a member of the group, and answers 404 otherwise (same as a missing group). */
+    async requireMember(principal, groupId) {
+      await forMember(principal, groupId);
+    },
+
     async getGroup(principal, groupId) {
       return detail(await forMember(principal, groupId));
     },

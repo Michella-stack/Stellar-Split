@@ -1,13 +1,14 @@
 // /v1 routes. Shapes follow apps/web/src/client/README.md. Errors: { error: { code, message, details? } }.
 
 import { ApiError } from '../../services/ledger.js';
+import { SCAN_BODY_LIMIT } from '../../services/receipts.js';
 
 const unauthorized = () => new ApiError(401, 'UNAUTHORIZED', 'Sign in first');
 
 /**
  * @returns {Array<[method: string, pattern: RegExp, handler: (ctx: object) => Promise<[number, object]>]>}
  */
-export function routes({ auth, ledger }) {
+export function routes({ auth, ledger, receipts }) {
   const need = (ctx) => ctx.principal ?? (() => { throw unauthorized(); })();
   const ok = (body) => [200, body];
   const created = (body) => [201, body];
@@ -49,6 +50,8 @@ export function routes({ auth, ledger }) {
       created(await ledger.reserveSettlement(need(ctx), ctx.params[0], ctx.body))],
     ['POST', /^\/v1\/groups\/([\w-]{1,64})\/settlements\/intents\/([\w-]{1,64})\/cancel$/, async (ctx) =>
       ok(await ledger.cancelSettlement(need(ctx), ctx.params[0], ctx.params[1]))],
+    // A photo is far bigger than any other body, so this route has its own limit (the fourth element).
+    ['POST', /^\/v1\/groups\/([\w-]{1,64})\/receipts\/scan$/, async (ctx) => ok(await receipts.scan(need(ctx), ctx.params[0], ctx.body)), { maxBody: SCAN_BODY_LIMIT }],
     ['GET', /^\/v1\/groups\/([\w-]{1,64})\/activity$/, async (ctx) => ok(await ledger.activity(need(ctx), ctx.params[0]))],
   ];
 }

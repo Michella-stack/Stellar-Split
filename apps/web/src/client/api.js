@@ -45,6 +45,7 @@ export const {
   acceptInvite,
   listExpenses,
   createExpense,
+  scanReceipt,
   createSettlementIntent,
   cancelSettlementIntent,
   recordSettlement,

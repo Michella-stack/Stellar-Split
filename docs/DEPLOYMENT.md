@@ -83,6 +83,9 @@ Names only. Never commit values and never put a secret in a variable that starts
 | `SUPABASE_URL` | API | The Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | API | Server only. Sensitive. It bypasses row level security |
 | `APP_URL` | API | The public URL above, used for invite links |
+| `GEMINI_API_KEY` | API | Optional. Reads receipt photos (issue #87). Server only. Sensitive. Without it the scan answers 503 and the web app shows a labelled sample |
+| `RECEIPT_MODEL` | API | Optional. Defaults to `gemini-3.6-flash` |
+| `RECEIPT_FALLBACK_MODEL` | API | Optional. Tried once when the main model does not answer. Defaults to `gemini-3.5-flash-lite`. Empty turns it off |
 | `AGENT_TOKENS` | API | Optional. SHA-256 hashes of agent tokens mapped to their addresses. See `apps/api/README.md` |
 | `ALLOW_MEMORY_STORE` | API | Local development and Preview only. The API refuses to start with it when `VERCEL_ENV` is `production` |
 

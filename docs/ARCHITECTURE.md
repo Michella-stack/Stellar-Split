@@ -374,6 +374,7 @@ The root `.env.example` documents variable names and safe Testnet defaults. The 
 | `SUPABASE_URL` | Server; public only if RLS permits | Selected Supabase project endpoint. |
 | `SUPABASE_ANON_KEY` | Browser only if RLS permits | Public client credential; not a replacement for authorization rules. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server secret | Privileged database credential; never exposed to browser code. |
+| `GEMINI_API_KEY` / `RECEIPT_MODEL` / `RECEIPT_FALLBACK_MODEL` | Server secret / server / server | Optional receipt scan (demo, issue #87). Never exposed to browser code. Without the key the scan route answers 503. |
 | `X402_FACILITATOR_URL` | Server, stretch | Testnet-capable facilitator endpoint. |
 | `X402_FACILITATOR_API_KEY` | Server secret, stretch | Facilitator credential; never exposed to browser code. |
 

@@ -1,0 +1,94 @@
+@import 'tailwindcss';
+
+/*
+ * Theme tokens. Components use the Tailwind names from @theme below (bg-surface, text-muted, ...),
+ * never raw hex values. The theme is chosen by data-theme on <html>; the accent by data-accent.
+ */
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0b0b0d;
+  --surface: #17171b;
+  --surface-2: #222228;
+  --line: #3a3a42;
+  --text: #f5f5f2;
+  --muted: #a3a3ad;
+  --owe: #ff7aa2;
+  --owed: #4be3a0;
+  --primary-bg: var(--accent);
+  --primary-fg: #0b0b0d;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f4f3ee;
+  --surface-2: #e9e8e1;
+  --line: #d6d4cc;
+  --text: #0b0b0d;
+  --muted: #5c5c64;
+  --owe: #c8104f;
+  --owed: #0b7a4b;
+  --primary-bg: #0b0b0d;
+  --primary-fg: #ffffff;
+}
+
+/* One accent variable, swappable. Text on an accent fill is always --on-accent. */
+:root {
+  --accent: #d4ff3f;
+  --on-accent: #0b0b0d;
+}
+:root[data-accent='cyan'] {
+  --accent: #7cf5ff;
+}
+:root[data-accent='orange'] {
+  --accent: #ff9f5a;
+}
+:root[data-accent='violet'] {
+  --accent: #c9a8ff;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-owe: var(--owe);
+  --color-owed: var(--owed);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-primary: var(--primary-bg);
+  --color-on-primary: var(--primary-fg);
+
+  --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-input: 16px;
+  --radius-card: 24px;
+}
+
+@layer base {
+  html {
+    background-color: var(--bg);
+  }
+  body {
+    @apply bg-bg font-sans text-text antialiased;
+    min-height: 100dvh;
+  }
+  :focus-visible {
+    outline: 3px solid var(--text);
+    outline-offset: 3px;
+  }
+}
+
+@utility font-display-wide {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 115%;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}

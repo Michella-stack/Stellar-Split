@@ -141,3 +141,24 @@ describe('isolation', () => {
     expect((await api.getGroup('casa-alfama')).members).toHaveLength(5);
   });
 });
+
+describe('mock sign-in', () => {
+  it('accepts a challenge signed by the wallet and makes that wallet "me"', async () => {
+    const { Keypair, TransactionBuilder, Networks } = await import('@stellar/stellar-sdk');
+    const wallet = Keypair.random();
+    const { challengeXdr } = await api.requestChallenge({ address: wallet.publicKey() });
+    const tx = TransactionBuilder.fromXDR(challengeXdr, Networks.TESTNET);
+    tx.sign(wallet);
+    const { session } = await api.verifyChallenge({ signedXdr: tx.toXDR() });
+    expect(session.address).toBe(wallet.publicKey());
+    expect((await api.getGroup('casa-alfama')).me).toBe('m-you');
+  });
+
+  it('refuses a challenge signed by another key', async () => {
+    const { Keypair, TransactionBuilder, Networks } = await import('@stellar/stellar-sdk');
+    const { challengeXdr } = await api.requestChallenge({ address: Keypair.random().publicKey() });
+    const tx = TransactionBuilder.fromXDR(challengeXdr, Networks.TESTNET);
+    tx.sign(Keypair.random());
+    await expect(api.verifyChallenge({ signedXdr: tx.toXDR() })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+  });
+});

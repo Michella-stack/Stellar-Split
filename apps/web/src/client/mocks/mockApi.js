@@ -6,6 +6,7 @@ import { fromStroops, toStroops, validateAmount } from '@shared/money.js';
 import { checkExactSplit } from '@shared/splits.js';
 import { containsSecretKey, looksLikeStellarAddress } from '@shared/validation.js';
 import { ApiError } from '../errors.js';
+import { buildChallenge, verifyChallenge } from './challenge.js';
 import { initialState } from './data.js';
 
 const dec = (stroops) => fromStroops(stroops, { minDecimals: 2 });
@@ -23,6 +24,19 @@ export function createMockApi({ delayMs = 300, now = () => new Date() } = {}) {
   const reply = (value) => new Promise((resolve) => setTimeout(() => resolve(structuredClone(value)), delayMs));
   const fail = (code, message, status, details) =>
     new Promise((_, reject) => setTimeout(() => reject(new ApiError(code, message, { status, details })), delayMs));
+
+  let pendingAddress = /** @type {string | null} */ (null);
+
+  /** Mock only: the signed-in wallet takes the place of "you" in the fixtures, so the demo data is yours. */
+  function becomeMe(address) {
+    const previous = state.me.address;
+    if (previous === address) return;
+    state.me.address = address;
+    for (const group of state.groups) {
+      for (const member of group.members) if (member.address === previous) member.address = address;
+    }
+    if (state.agent.ownerAddress === previous) state.agent.ownerAddress = address;
+  }
 
   const findGroup = (groupId) => state.groups.find((g) => g.id === groupId);
   const myMemberId = (group) => group.members.find((m) => m.address === state.me.address)?.id ?? null;
@@ -67,12 +81,16 @@ export function createMockApi({ delayMs = 300, now = () => new Date() } = {}) {
   return {
     async requestChallenge({ address }) {
       if (!looksLikeStellarAddress(address)) return fail('INVALID_ADDRESS', 'Not a Stellar address', 400);
-      // The real API returns a SEP-10 challenge transaction. The wallet phase builds a signable one locally.
-      return reply({ challengeXdr: `MOCK_CHALLENGE:${address}` });
+      pendingAddress = address;
+      return reply({ challengeXdr: buildChallenge(address) });
     },
 
     async verifyChallenge({ signedXdr }) {
-      if (typeof signedXdr !== 'string' || signedXdr.length === 0) return fail('VALIDATION', 'Missing signed challenge', 400);
+      if (!pendingAddress || !verifyChallenge(signedXdr, pendingAddress)) {
+        return fail('UNAUTHORIZED', 'Challenge signature is not valid', 401);
+      }
+      becomeMe(pendingAddress);
+      pendingAddress = null;
       const expiresAt = new Date(now().getTime() + 24 * 3600 * 1000).toISOString();
       return reply({ session: { token: `mock-session-${nextId++}`, address: state.me.address, expiresAt } });
     },

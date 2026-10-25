@@ -36,7 +36,8 @@ const algarve = ['m-you', 'm-ana', 'm-ben', 'm-carla', 'm-dani', 'm-eva'];
 
 export function initialState() {
   return {
-    me: { ...PEOPLE.you, email: null },
+    // No profile yet, so the first sign-in goes through onboarding.
+    me: { address: ME, displayName: null, homeCurrency: null, email: null },
     groups: [
       {
         id: 'casa-alfama',

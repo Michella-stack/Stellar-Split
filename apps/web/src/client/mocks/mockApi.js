@@ -330,7 +330,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
         from,
         to,
         amount: dec(check.stroops),
-        asset: USDC,
+        asset: assetOf(group),
         network: 'stellar:testnet',
         payFrom: group.members.find((m) => m.id === from).address,
         payTo: recipient.address,

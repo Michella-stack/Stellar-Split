@@ -35,6 +35,19 @@ export function settlementAsset(code = 'USDC') {
 }
 
 /**
+ * Whether the asset the API says it will check on Horizon is the one this build is about to pay in. Compared before anything
+ * is signed: a web build and an API configured with different issuers would otherwise move the money in an asset the API
+ * then refuses to record. The issuer is compared only when the API states one (the sample-data API does not).
+ * @param {{ code?: string, issuer?: string | null } | null | undefined} named `intent.asset` from the API
+ * @param {{ getCode: () => string, getIssuer: () => string }} asset the Stellar asset this build would pay in
+ */
+export function sameSettlementAsset(named, asset) {
+  if (!named) return true;
+  if (named.code !== asset.getCode()) return false;
+  return !named.issuer || named.issuer === asset.getIssuer();
+}
+
+/**
  * The balance of one settlement asset, or null when there is no trustline.
  * @param {AccountBalances} balances
  * @param {string} [code]

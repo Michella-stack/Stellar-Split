@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { toStroops, validateAmount } from '@shared/money.js';
 import { cancelSettlementIntent, createSettlementIntent, getGroup, recordSettlement } from '../client/api.js';
-import { assetBalance, buildPayment, buildTrustline, checkPayment, loadBalances, settlementAsset, submitSigned } from '../client/stellar.js';
+import { assetBalance, buildPayment, buildTrustline, checkPayment, loadBalances, sameSettlementAsset, settlementAsset, submitSigned } from '../client/stellar.js';
 import { AddressLink } from '../components/AddressLink.jsx';
 import { Amount } from '../components/Amount.jsx';
 import { AssetProvider } from '../components/AssetProvider.jsx';
@@ -153,6 +153,9 @@ function SettleFlow({ detail, memberId, queue }) {
       intentId = intent.id;
       if (intent.payTo !== recipient.address || toStroops(intent.amount) !== toStroops(amount)) {
         throw Object.assign(new Error('The reservation does not match what you reviewed'), { code: 'INTENT_MISMATCH' });
+      }
+      if (!sameSettlementAsset(intent.asset, settlementAsset(code))) {
+        throw Object.assign(new Error('The reservation names another asset than this app would pay in'), { code: 'INTENT_MISMATCH' });
       }
       const { xdr } = await buildPayment({ from, to: intent.payTo, amount: intent.amount, memoHash: intent.memo.value, notAfter: intent.expiresAt, asset: code });
       setStep('signing');

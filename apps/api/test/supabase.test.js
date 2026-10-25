@@ -74,3 +74,10 @@ test('a database that is down or overloaded is reported as unavailable, other re
     await assert.rejects(() => repoFor(status).getGroup('g'), (err) => err.code === undefined, String(status));
   }
 });
+
+test('an id that is not a uuid is a missing row, not a server error', async () => {
+  const fetchImpl = async () => new Response(JSON.stringify({ code: '22P02', message: 'invalid input syntax for type uuid: "undefined"' }), { status: 400 });
+  const repo = createSupabaseRepository({ url: 'https://x.supabase.co', serviceKey: 'k', fetchImpl });
+  assert.equal(await repo.getGroup('undefined'), null);
+  await assert.rejects(createSupabaseRepository({ url: 'https://x.supabase.co', serviceKey: 'k', fetchImpl: async () => new Response('{"code":"XX000"}', { status: 400 }) }).getGroup('g'));
+});

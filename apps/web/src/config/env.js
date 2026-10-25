@@ -6,6 +6,7 @@ export const NETWORK = 'testnet';
 // Same value as Networks.TESTNET in @stellar/stellar-sdk (kept literal so the SDK is not needed at startup).
 export const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015';
 export const EXPLORER_TX_URL = 'https://stellar.expert/explorer/testnet/tx/';
+export const EXPLORER_ACCOUNT_URL = 'https://stellar.expert/explorer/testnet/account/';
 export const FREIGHTER_INSTALL_URL = 'https://www.freighter.app/';
 export const FRIENDBOT_URL = 'https://friendbot.stellar.org';
 export const USDC_FAUCET_URL = 'https://faucet.circle.com/';

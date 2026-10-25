@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { AddressLink } from '../components/AddressLink.jsx';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { Chip } from '../components/Chip.jsx';
@@ -15,7 +16,7 @@ import { useRates } from '../hooks/useRates.js';
 import { useTheme } from '../hooks/useTheme.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { DEMO } from '../lib/demoMode.js';
-import { formatDate, shortAddress } from '../lib/format.js';
+import { formatDate } from '../lib/format.js';
 import { RATES_ATTRIBUTION_URL } from '../lib/rates.js';
 import { ACCENTS } from '../lib/theme.js';
 
@@ -68,9 +69,7 @@ export default function Wallet() {
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-col">
               <span className="text-sm text-muted">{wallet.profile?.displayName ?? 'Your wallet'}</span>
-              <span className="font-mono text-lg" title={wallet.address ?? ''}>
-                {wallet.address ? shortAddress(wallet.address) : '—'}
-              </span>
+              {wallet.address ? <AddressLink address={wallet.address} className="text-lg" /> : <span className="font-mono text-lg">—</span>}
             </div>
             <IconButton label="Copy full address" onClick={() => copy(wallet.address, 'Address')}>
               <IconCopy size={20} />

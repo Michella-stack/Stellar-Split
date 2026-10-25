@@ -107,9 +107,14 @@ export async function checkPayment({ from, to, amount }) {
  * @returns {Promise<{ xdr: string, feeXlm: string }>}
  */
 export async function buildUsdcPayment({ from, to, amount, memoHash, notAfter }) {
+  // An unparsable date would give NaN and silently fall back to a timeout past the reservation.
+  const reservedUntil = Math.floor(Date.parse(notAfter) / 1000);
+  if (!Number.isFinite(reservedUntil)) throw new SettlementError('UNKNOWN', 'The reservation has no valid expiry');
+  const now = Math.floor(Date.now() / 1000);
+  if (reservedUntil <= now) throw new SettlementError('EXPIRED', 'The reservation has already expired');
   return build(from, Operation.payment({ destination: to, asset: usdcAsset(), amount }), {
     memo: Memo.hash(memoHash),
-    maxTime: Math.min(Math.floor(Date.parse(notAfter) / 1000), Math.floor(Date.now() / 1000) + TX_TIMEOUT_SECONDS),
+    maxTime: Math.min(reservedUntil, now + TX_TIMEOUT_SECONDS),
   });
 }
 

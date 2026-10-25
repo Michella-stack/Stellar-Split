@@ -115,7 +115,7 @@ describe('settlements (two steps, like the API)', () => {
     expect((await api.getGroup('casa-alfama')).myPosition).toEqual({ net: '0.00', owes: [], owed: [] });
     const { items } = await api.listActivity('casa-alfama');
     expect(items[0]).toMatchObject({ type: 'settlement', from: 'm-you', to: 'm-mateo', txHash, intentId: intent.id });
-    await expect(api.recordSettlement('casa-alfama', { intentId: intent.id, txHash })).rejects.toMatchObject({ code: 'DUPLICATE_TX' });
+    await expect(api.recordSettlement('casa-alfama', { intentId: intent.id, txHash })).rejects.toMatchObject({ code: 'INTENT_NOT_OPEN', status: 409 });
   });
 
   it('blocks a second payment with the same person while one is reserved', async () => {
@@ -203,6 +203,21 @@ describe('mock persistence', () => {
     await first.updateMe({ displayName: 'Damaris', homeCurrency: 'EUR' });
     const second = createMockApi({ delayMs: 0, storage });
     expect((await second.getMe()).displayName).toBe('Damaris');
+  });
+});
+
+describe('mock settlement intents persistence', () => {
+  it('keeps a reservation across instances that share a storage, and shows what the API shows', async () => {
+    const store = new Map();
+    const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+    const first = createMockApi({ delayMs: 0, storage });
+    const { intent } = await first.createSettlementIntent('casa-alfama', { to: 'm-mateo', amount: '50' });
+    expect(intent).toMatchObject({ reservedAt: expect.any(String), payFrom: expect.any(String), network: 'stellar:testnet' });
+    const second = createMockApi({ delayMs: 0, storage });
+    await expect(second.createSettlementIntent('casa-alfama', { to: 'm-mateo', amount: '50' })).rejects.toMatchObject({ code: 'INTENT_IN_PROGRESS' });
+    await expect(second.cancelSettlementIntent('casa-alfama', 'si-missing')).rejects.toMatchObject({ code: 'INTENT_NOT_FOUND', status: 404 });
+    await second.cancelSettlementIntent('casa-alfama', intent.id);
+    await expect(second.cancelSettlementIntent('casa-alfama', intent.id)).rejects.toMatchObject({ code: 'INTENT_NOT_OPEN' });
   });
 });
 

@@ -1,6 +1,6 @@
 # Stellar Split web app
 
-React single-page app for Stellar Split, built with Vite and Tailwind CSS v4. Stellar Testnet only. See [ADR 0001](../../docs/adr/0001-web-vite-spa.md) for why it is an SPA.
+React single-page app for Stellar Split, built with Vite and Tailwind CSS v4. Stellar Testnet only. See [ADR 0007](../../docs/adr/0007-web-vite-spa.md) for why it is an SPA.
 
 ## Run it
 

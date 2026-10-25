@@ -82,6 +82,7 @@ Design rules the code must follow (enforced as each part lands):
 - [Product requirements](docs/PRD.md) (written under the working name Ledgerly)
 - [Judging criteria](docs/JUDGING.md)
 - [Build focus](docs/BUILD-FOCUS.md)
+- [Agents: setup and access](docs/AGENTS.md)
 - [Group contract](contracts/README.md)
 - [Security policy](SECURITY.md)
 - [Supply chain checks](supply-chain/README.md)

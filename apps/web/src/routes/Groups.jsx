@@ -9,11 +9,13 @@ import { LoadError, Loading } from '../components/LoadState.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { GroupTypePill } from '../features/groups/GroupTypePill.jsx';
 import { useApi } from '../hooks/useApi.js';
+import { useT } from '../hooks/useT.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { signOf } from '../lib/format.js';
 import { useEstimate } from '../hooks/useRates.js';
 
 export default function Groups() {
+  const { t } = useT();
   const { profile } = useWallet();
   const { data, error, loading, reload } = useApi(listGroups, 'groups');
 
@@ -21,23 +23,23 @@ export default function Groups() {
     <>
       <TopBar />
       <div className="flex flex-col gap-6 pb-8">
-        <h1 className="font-display-wide text-4xl">Your groups</h1>
-        {loading && <Loading label="Loading your groups" />}
-        {error && <LoadError title="Could not load your groups" error={error} onRetry={reload} />}
+        <h1 className="font-display-wide text-4xl">{t('groups.title')}</h1>
+        {loading && <Loading label={t('groups.loading')} />}
+        {error && <LoadError title={t('groups.loadError')} error={error} onRetry={reload} />}
         {data && (
           <>
             {data.groups.length > 0 && <Summary totals={data.totals} homeCurrency={profile?.homeCurrency} />}
             {data.groups.length === 0 ? (
               <EmptyState
                 icon={<IconUsers />}
-                title="No groups yet"
+                title={t('groups.emptyTitle')}
                 action={
                   <ButtonLink to="/groups/new" icon={<IconPlus size={20} />}>
-                    New group
+                    {t('groups.new')}
                   </ButtonLink>
                 }
               >
-                Create a group for your flat or trip and invite your friends.
+                {t('groups.emptyBody')}
               </EmptyState>
             ) : (
               <>
@@ -49,7 +51,7 @@ export default function Groups() {
                   ))}
                 </ul>
                 <ButtonLink to="/groups/new" block icon={<IconPlus size={20} />}>
-                  New group
+                  {t('groups.new')}
                 </ButtonLink>
               </>
             )}
@@ -62,16 +64,17 @@ export default function Groups() {
 
 /** @param {{ totals: { youOwe: string, youAreOwed: string }, homeCurrency?: string | null }} props */
 function Summary({ totals, homeCurrency }) {
+  const { t } = useT();
   const estimate = useEstimate();
   const est = (v) => (homeCurrency && signOf(v) !== 0 ? (estimate(v, homeCurrency) ?? undefined) : undefined);
   return (
-    <section aria-label="Across all groups" className="grid grid-cols-2 gap-3">
+    <section aria-label={t('groups.acrossAll')} className="grid grid-cols-2 gap-3">
       <div className="flex flex-col gap-1 rounded-card border-2 border-owe/40 bg-owe/10 p-4">
-        <span className="text-sm font-semibold">You owe</span>
+        <span className="text-sm font-semibold">{t('groups.youOwe')}</span>
         <Amount value={totals.youOwe} size="md" tone={signOf(totals.youOwe) ? 'owe' : 'default'} estimate={est(totals.youOwe)} />
       </div>
       <div className="flex flex-col gap-1 rounded-card border-2 border-owed/40 bg-owed/10 p-4">
-        <span className="text-sm font-semibold">You’re owed</span>
+        <span className="text-sm font-semibold">{t('groups.youAreOwed')}</span>
         <Amount value={totals.youAreOwed} size="md" tone={signOf(totals.youAreOwed) ? 'owed' : 'default'} estimate={est(totals.youAreOwed)} />
       </div>
     </section>
@@ -80,6 +83,7 @@ function Summary({ totals, homeCurrency }) {
 
 /** @param {{ group: any }} props */
 function GroupCard({ group }) {
+  const { t } = useT();
   const sign = signOf(group.myNet);
   return (
     <Link to={`/groups/${group.id}`} className="flex items-center gap-4 rounded-card bg-surface p-5 hover:bg-surface-2">
@@ -88,15 +92,15 @@ function GroupCard({ group }) {
         <span className="truncate text-lg font-semibold">{group.name}</span>
         <span className="flex items-center gap-2 text-sm text-muted">
           <GroupTypePill type={group.type} />
-          {group.memberCount} members
+          {t('groups.members', { count: group.memberCount })}
         </span>
       </span>
       <span className="flex flex-col items-end">
         {sign === 0 ? (
-          <span className="text-sm text-muted">all square</span>
+          <span className="text-sm text-muted">{t('groups.allSquare')}</span>
         ) : (
           <>
-            <span className="text-sm text-muted">{sign < 0 ? 'you owe' : 'owes you'}</span>
+            <span className="text-sm text-muted">{sign < 0 ? t('groups.cardOwe') : t('groups.cardOwed')}</span>
             <Amount value={group.myNet} size="sm" tone={sign < 0 ? 'owe' : 'owed'} />
           </>
         )}

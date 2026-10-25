@@ -6,11 +6,13 @@ import { Card } from '../components/Card.jsx';
 import { IconCamera, IconReceipt } from '../components/icons.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { mockReceiptResult } from '../features/expenses/mockReceipt.js';
+import { useT } from '../hooks/useT.js';
 import { formatDate } from '../lib/format.js';
 
 const SCAN_MS = 1800;
 
 export default function ExpenseScan() {
+  const { t } = useT();
   const { id } = useParams();
   const navigate = useNavigate();
   const cameraRef = useRef(/** @type {HTMLInputElement | null} */ (null));
@@ -38,27 +40,27 @@ export default function ExpenseScan() {
   function applyDetails() {
     navigate(`/groups/${id}/expenses/new`, {
       replace: true,
-      state: { prefill: { amount: result.usdc, description: `Groceries · ${result.merchant.split(',')[0]}`, source: 'scan' } },
+      state: { prefill: { amount: result.usdc, description: t('scan.description', { merchant: result.merchant.split(',')[0] }), source: 'scan' } },
     });
   }
 
   return (
     <>
-      <TopBar backTo={`/groups/${id}`} title="Scan a receipt" />
+      <TopBar backTo={`/groups/${id}`} title={t('scan.title')} />
       <div className="flex flex-1 flex-col gap-6 pt-2 pb-8">
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onFile} />
         <input ref={uploadRef} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onFile} />
 
         {step === 'choose' && (
           <>
-            <h1 className="font-display-wide text-4xl">Scan a receipt</h1>
-            <p className="text-muted">Take a photo of a paper receipt or upload a screenshot. We read the total and the items.</p>
+            <h1 className="font-display-wide text-4xl">{t('scan.title')}</h1>
+            <p className="text-muted">{t('scan.intro')}</p>
             <div className="flex flex-col gap-3">
               <Button block icon={<IconCamera size={20} />} onClick={() => cameraRef.current?.click()}>
-                Take photo
+                {t('scan.takePhoto')}
               </Button>
               <Button block variant="secondary" icon={<IconReceipt size={20} />} onClick={() => uploadRef.current?.click()}>
-                Upload screenshot
+                {t('scan.upload')}
               </Button>
             </div>
           </>
@@ -70,13 +72,13 @@ export default function ExpenseScan() {
               <IconReceipt size={96} />
               <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 animate-[scan_1.8s_ease-in-out_infinite] bg-accent shadow-[0_0_24px_var(--accent)]" />
             </div>
-            <p className="text-lg font-semibold">Reading your receipt…</p>
+            <p className="text-lg font-semibold">{t('scan.reading')}</p>
           </div>
         )}
 
         {step === 'result' && result && (
           <>
-            <h1 className="font-display-wide text-4xl">Here’s what we found</h1>
+            <h1 className="font-display-wide text-4xl">{t('scan.found')}</h1>
             <Card className="flex flex-col gap-4">
               <div className="flex flex-col">
                 <span className="text-lg font-semibold">{result.merchant}</span>
@@ -84,24 +86,24 @@ export default function ExpenseScan() {
               </div>
               <dl className="grid grid-cols-2 gap-3">
                 <div>
-                  <dt className="text-sm text-muted">Total on receipt</dt>
+                  <dt className="text-sm text-muted">{t('scan.totalOnReceipt')}</dt>
                   <dd className="font-mono text-lg">
                     {result.localCurrency} {result.localTotal}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-muted">In USDC</dt>
+                  <dt className="text-sm text-muted">{t('scan.inUsdc')}</dt>
                   <dd>
                     <Amount value={result.usdc} size="md" />
                   </dd>
                 </div>
               </dl>
               <div className="flex flex-col gap-1">
-                <h2 className="text-sm font-medium">Items found</h2>
+                <h2 className="text-sm font-medium">{t('scan.items')}</h2>
                 <ul className="flex flex-col divide-y divide-line text-sm">
                   {result.items.map((item) => (
-                    <li key={item.name} className="flex justify-between py-2">
-                      <span>{item.name}</span>
+                    <li key={item.nameKey} className="flex justify-between py-2">
+                      <span>{t(item.nameKey)}</span>
                       <span className="font-mono">€{item.amount}</span>
                     </li>
                   ))}
@@ -109,16 +111,16 @@ export default function ExpenseScan() {
               </div>
             </Card>
             <Button block onClick={applyDetails}>
-              Use these details
+              {t('scan.use')}
             </Button>
             <Button block variant="outline" onClick={() => setStep('choose')}>
-              Scan another
+              {t('scan.another')}
             </Button>
           </>
         )}
 
         <p className="mt-auto text-sm text-muted">
-          Your photo stays private and off-chain. The USDC amount uses an estimated exchange rate; check it before saving.
+          {t('scan.privacy')}
         </p>
       </div>
     </>

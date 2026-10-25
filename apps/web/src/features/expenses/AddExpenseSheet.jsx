@@ -1,17 +1,19 @@
 import { Link } from 'react-router';
 import { Sheet } from '../../components/Sheet.jsx';
+import { useT } from '../../hooks/useT.js';
 import { IconCamera, IconChevronRight, IconPencil, IconRobot } from '../../components/icons.jsx';
 import { cx } from '../../lib/cx.js';
 
 /** @param {{ open: boolean, onClose: () => void, groupId: string }} props */
 export function AddExpenseSheet({ open, onClose, groupId }) {
+  const { t } = useT();
   const options = [
-    { to: `/groups/${groupId}/expenses/scan`, title: 'Scan a receipt', body: 'We read the total for you', Icon: IconCamera, highlight: true },
-    { to: `/groups/${groupId}/expenses/new`, title: 'Enter it yourself', body: 'Amount, who paid, how to split', Icon: IconPencil },
-    { to: '/assist/chat', title: 'Tell Stellar Assist', body: 'Say it in your own words', Icon: IconRobot },
+    { to: `/groups/${groupId}/expenses/scan`, title: t('sheet.scan'), body: t('sheet.scanBody'), Icon: IconCamera, highlight: true },
+    { to: `/groups/${groupId}/expenses/new`, title: t('sheet.manual'), body: t('sheet.manualBody'), Icon: IconPencil },
+    { to: '/assist/chat', title: t('sheet.assist'), body: t('sheet.assistBody'), Icon: IconRobot },
   ];
   return (
-    <Sheet open={open} onClose={onClose} title="Add an expense">
+    <Sheet open={open} onClose={onClose} title={t('sheet.addTitle')}>
       <ul className="flex flex-col gap-2">
         {options.map(({ to, title, body, Icon, highlight }) => (
           <li key={to}>
@@ -26,7 +28,7 @@ export function AddExpenseSheet({ open, onClose, groupId }) {
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">
                   {title}
-                  {highlight && <span className="sr-only"> (recommended)</span>}
+                  {highlight && <span className="sr-only"> {t('sheet.recommended')}</span>}
                 </span>
                 <span className={cx('text-sm', highlight ? 'opacity-80' : 'text-muted')}>{body}</span>
               </span>

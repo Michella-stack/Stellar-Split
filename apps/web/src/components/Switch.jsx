@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { useT } from '../hooks/useT.js';
 import { cx } from '../lib/cx.js';
 
 /**
@@ -7,6 +8,7 @@ import { cx } from '../lib/cx.js';
  *   disabled?: boolean, className?: string }} props
  */
 export function Switch({ label, description, checked, onChange, disabled = false, className }) {
+  const { t } = useT();
   const id = useId();
   return (
     <div className={cx('flex min-h-14 items-center justify-between gap-4', className)}>
@@ -41,7 +43,7 @@ export function Switch({ label, description, checked, onChange, disabled = false
             checked ? 'left-2.5 text-bg' : 'right-2.5 text-muted',
           )}
         >
-          {checked ? 'On' : 'Off'}
+          {checked ? t('common.on') : t('common.off')}
         </span>
         <span
           aria-hidden="true"

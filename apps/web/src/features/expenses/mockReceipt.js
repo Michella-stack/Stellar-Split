@@ -11,11 +11,11 @@ export function mockReceiptResult(now = new Date()) {
     // 58.14 EUR ÷ 0.92 EUR per USD (mock rate) = 63.195… → 63.20 USDC.
     usdc: '63.20',
     items: [
-      { name: 'Fruit and vegetables', amount: '14.32' },
-      { name: 'Bread and pastries', amount: '6.85' },
-      { name: 'Dairy and eggs', amount: '11.47' },
-      { name: 'Pasta, rice, tins', amount: '9.90' },
-      { name: 'Cleaning products', amount: '15.60' },
+      { nameKey: 'scan.item.produce', amount: '14.32' },
+      { nameKey: 'scan.item.bakery', amount: '6.85' },
+      { nameKey: 'scan.item.dairy', amount: '11.47' },
+      { nameKey: 'scan.item.pantry', amount: '9.90' },
+      { nameKey: 'scan.item.cleaning', amount: '15.60' },
     ],
   };
 }

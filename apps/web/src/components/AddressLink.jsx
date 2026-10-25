@@ -1,4 +1,5 @@
 import { EXPLORER_ACCOUNT_URL } from '../config/env.js';
+import { useT } from '../hooks/useT.js';
 import { DEMO } from '../lib/demoMode.js';
 import { shortAddress } from '../lib/format.js';
 import { cx } from '../lib/cx.js';
@@ -10,6 +11,7 @@ import { IconExternal } from './icons.jsx';
  * @param {{ address: string, className?: string }} props
  */
 export function AddressLink({ address, className }) {
+  const { t } = useT();
   const classes = cx('font-mono', className);
   if (DEMO) {
     return (
@@ -27,7 +29,7 @@ export function AddressLink({ address, className }) {
       className={cx(classes, 'inline-flex min-h-11 items-center gap-1 underline underline-offset-4')}
     >
       {shortAddress(address)} <IconExternal size={14} />
-      <span className="sr-only">(view account on Stellar Expert, opens in a new tab)</span>
+      <span className="sr-only">{t('common.viewAccount')}</span>
     </a>
   );
 }

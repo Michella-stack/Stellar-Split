@@ -4,13 +4,12 @@ import { containsSecretKey } from '@shared/validation.js';
 import { Button } from '../components/Button.jsx';
 import { SelectField, TextField } from '../components/TextField.jsx';
 import { TopBar } from '../components/TopBar.jsx';
+import { useT } from '../hooks/useT.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { HOME_CURRENCIES } from '../lib/rates.js';
 
-const CURRENCY_NAMES = { EUR: 'Euro', USD: 'US dollar', MXN: 'Mexican peso', COP: 'Colombian peso', BRL: 'Brazilian real', GBP: 'British pound' };
-const SECRET_WARNING = 'This looks like a secret key. Never share it: Stellar Split will never ask for it.';
-
 export default function Onboarding() {
+  const { t } = useT();
   const wallet = useWallet();
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,8 +19,8 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState(/** @type {string | null} */ (null));
 
-  const nameError = containsSecretKey(displayName) ? SECRET_WARNING : null;
-  const emailError = containsSecretKey(email) ? SECRET_WARNING : null;
+  const nameError = containsSecretKey(displayName) ? t('secret.warning') : null;
+  const emailError = containsSecretKey(email) ? t('secret.warning') : null;
   const canSave = displayName.trim().length > 0 && !nameError && !emailError;
 
   async function handleSubmit(event) {
@@ -33,7 +32,7 @@ export default function Onboarding() {
       await wallet.saveProfile({ displayName: displayName.trim(), homeCurrency, email: email.trim() || null });
       navigate(location.state?.from ?? '/groups', { replace: true });
     } catch {
-      setSubmitError('Could not save your profile. Check your connection and try again.');
+      setSubmitError(t('onboarding.saveError'));
     } finally {
       setSaving(false);
     }
@@ -44,11 +43,11 @@ export default function Onboarding() {
       <TopBar />
       <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-6 py-6" noValidate>
         <div className="flex flex-col gap-2">
-          <h1 className="font-display-wide text-4xl">About you</h1>
-          <p className="text-muted">Your friends see your name. No passwords, no bank details.</p>
+          <h1 className="font-display-wide text-4xl">{t('onboarding.title')}</h1>
+          <p className="text-muted">{t('onboarding.intro')}</p>
         </div>
         <TextField
-          label="Display name"
+          label={t('onboarding.displayName')}
           autoComplete="nickname"
           maxLength={40}
           required
@@ -57,18 +56,18 @@ export default function Onboarding() {
           error={nameError}
         />
         <SelectField
-          label="Home currency"
-          hint="We show estimates in this currency next to USDC amounts."
+          label={t('onboarding.homeCurrency')}
+          hint={t('onboarding.homeCurrencyHint')}
           value={homeCurrency}
           onChange={(e) => setHomeCurrency(e.target.value)}
-          options={HOME_CURRENCIES.map((code) => ({ value: code, label: `${code} · ${CURRENCY_NAMES[code] ?? code}` }))}
+          options={HOME_CURRENCIES.map((code) => ({ value: code, label: `${code} · ${t(`currency.${code}`)}` }))}
         />
         <TextField
-          label="Email"
+          label={t('onboarding.email')}
           optional
           type="email"
           autoComplete="email"
-          hint="Only to tell you when Stellar Assist needs your OK."
+          hint={t('onboarding.emailHint')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={emailError}
@@ -79,7 +78,7 @@ export default function Onboarding() {
           </p>
         )}
         <Button type="submit" block loading={saving} disabled={!canSave} className="mt-auto">
-          Continue
+          {t('onboarding.continue')}
         </Button>
       </form>
     </>

@@ -3,11 +3,13 @@ import { Button } from '../../components/Button.jsx';
 import { IconExternal } from '../../components/icons.jsx';
 import { FREIGHTER_INSTALL_URL } from '../../config/env.js';
 import { enterDemo } from '../../lib/demoMode.js';
+import { useT } from '../../hooks/useT.js';
 import { useWallet } from '../../hooks/useWallet.js';
 import { WalletProblem } from './WalletProblem.jsx';
 
 /** Connect button plus the wallet states (not installed, locked, rejected, wrong network). */
 export function ConnectPanel() {
+  const { t } = useT();
   const wallet = useWallet();
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,7 +23,7 @@ export function ConnectPanel() {
       {wallet.error && <WalletProblem code={wallet.error} onRetry={wallet.error === 'WRONG_NETWORK' ? wallet.recheckNetwork : handleConnect} />}
       {wallet.error !== 'NOT_INSTALLED' && (
         <Button block loading={wallet.status === 'connecting'} onClick={handleConnect}>
-          {wallet.status === 'connecting' ? 'Waiting for Freighter…' : 'Connect Freighter wallet'}
+          {wallet.status === 'connecting' ? t('connect.waiting') : t('connect.button')}
         </Button>
       )}
       <a
@@ -30,14 +32,14 @@ export function ConnectPanel() {
         rel="noreferrer"
         className="inline-flex min-h-11 items-center justify-center gap-1 text-sm font-medium underline underline-offset-4"
       >
-        New to Freighter? Get it free <IconExternal size={16} />
-        <span className="sr-only">(opens in a new tab)</span>
+        {t('connect.getFreighter')} <IconExternal size={16} />
+        <span className="sr-only">{t('common.opensNewTab')}</span>
       </a>
       <div className="flex flex-col gap-2 border-t border-line pt-4">
         <Button block variant="outline" onClick={enterDemo}>
-          Explore with sample data
+          {t('connect.explore')}
         </Button>
-        <p className="text-center text-sm text-muted">No wallet needed. Sample groups and payments: nothing is sent to Stellar.</p>
+        <p className="text-center text-sm text-muted">{t('connect.exploreNote')}</p>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import { Navigate, useLocation } from 'react-router';
+import { LanguagePicker } from '../components/LanguagePicker.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { ConnectPanel } from '../features/wallet/ConnectPanel.jsx';
+import { useT } from '../hooks/useT.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { WalletChecking } from './guards.jsx';
 
@@ -11,9 +13,10 @@ const CURRENCIES = [
   { code: 'USD', className: 'right-6 bottom-3' },
 ];
 
-const BENEFITS = ['Split with friends abroad', 'Pay in digital dollars', 'See it in your currency'];
+const BENEFITS = ['welcome.benefit1', 'welcome.benefit2', 'welcome.benefit3'];
 
 export default function Welcome() {
+  const { t } = useT();
   const wallet = useWallet();
   const location = useLocation();
 
@@ -42,21 +45,23 @@ export default function Welcome() {
         </div>
 
         <div className="flex flex-col gap-3">
-          <h1 className="font-display-wide text-5xl">Different currencies. One balance.</h1>
-          <p className="text-lg text-muted">Share costs with your flat or trip and settle up in digital dollars, straight to each other.</p>
+          <h1 className="font-display-wide text-5xl">{t('welcome.title')}</h1>
+          <p className="text-lg text-muted">{t('welcome.subtitle')}</p>
         </div>
 
-        <ul className="flex flex-wrap gap-2" aria-label="Why Stellar Split">
+        <ul className="flex flex-wrap gap-2" aria-label={t('welcome.benefitsLabel')}>
           {BENEFITS.map((b) => (
             <li key={b} className="rounded-full bg-surface-2 px-4 py-2 text-sm font-medium">
-              {b}
+              {t(b)}
             </li>
           ))}
         </ul>
 
         <ConnectPanel />
 
-        <p className="mt-auto text-center text-sm text-muted">Runs on Stellar Testnet. No real money is used.</p>
+        <LanguagePicker className="justify-center" />
+
+        <p className="mt-auto text-center text-sm text-muted">{t('welcome.testnetNote')}</p>
       </div>
     </>
   );

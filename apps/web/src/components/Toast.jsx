@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useT } from '../hooks/useT.js';
 import { cx } from '../lib/cx.js';
 import { ToastContext } from './toast-context.js';
 import { IconAlert, IconCheck, IconClose } from './icons.jsx';
@@ -36,6 +37,7 @@ export function ToastProvider({ children }) {
 
 /** @param {{ toast: { id: number, message: string, tone: string }, onDismiss: (id: number) => void }} props */
 function ToastItem({ toast, onDismiss }) {
+  const { t } = useT();
   useEffect(() => {
     const timer = setTimeout(() => onDismiss(toast.id), DURATION_MS);
     return () => clearTimeout(timer);
@@ -54,7 +56,7 @@ function ToastItem({ toast, onDismiss }) {
       <p className="flex-1 text-sm font-medium">{toast.message}</p>
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={t('common.dismiss')}
         onClick={() => onDismiss(toast.id)}
         className="inline-flex size-11 items-center justify-center rounded-full focus-visible:outline-bg"
       >

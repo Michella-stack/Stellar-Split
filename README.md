@@ -4,7 +4,9 @@ Split shared expenses and settle them in USDC on Stellar, built for families and
 
 Built at HackMeridian (Lisbon, 25 to 26 October 2026). Track: Genesis, with Stellar Composed.
 
-> **Status: early stage.** The plan and design are written. Application code is being built during the event, and this README will be updated as it lands. Everything runs on **Stellar Testnet only**. No real money is involved and nothing here is financial advice.
+> **Status: hackathon build, Stellar Testnet only.** The web app, the group contract, the MCP server for agents and the API run today; see [What works today](#what-works-today). No real money is involved and nothing here is financial advice.
+
+**Live:** https://stellar-split-sooty.vercel.app (API health: [`/v1/health`](https://stellar-split-sooty.vercel.app/v1/health))
 
 ## Summary
 
@@ -20,23 +22,40 @@ Context from public sources (to be checked before the pitch; see `docs/BUILD-FOC
 - A 1% US tax on remittances funded by cash, money orders or cashier's cheques started on 1 January 2026. Transfers funded from a bank account or card are exempt ([BBVA Research](https://www.bbvaresearch.com/en/publicaciones/mexico-2026-begins-with-new-remittance-tax/)).
 - Stablecoin remittance flows on Stellar already exist, for example Felix Pago with Bitso using USDC ([Stellar case study](https://stellar.org/felix-bitso)).
 
-## Planned scope for the hackathon
+## What works today
 
-1. Create a group and connect a Freighter wallet.
-2. Record expenses with equal or exact splits.
-3. Show each member's balance.
-4. Settle one real Testnet USDC payment, with the transaction hash shown.
-5. Stretch: an agent settles through x402 within a spend cap.
+| Part | Where | Status |
+|---|---|---|
+| Web app: Freighter sign-in, groups, equal and exact splits, balances, settle in Testnet USDC with the tx on Stellar Expert | [`apps/web`](apps/web/README.md) | Merged. Runs on mock data until it is switched to the API ([#55](https://github.com/Michella-stack/Stellar-Split/pull/55)) |
+| API: sign-in with a signed message, groups, members, expenses, balances, settlements recorded only after Horizon confirms the payment | [`apps/api`](apps/api/README.md) | In review ([#51](https://github.com/Michella-stack/Stellar-Split/pull/51)), deployed at the live URL above |
+| Shared money, split and balance rules used by both | [`packages/shared`](packages/shared/README.md) | Merged |
+| Non-custodial Soroban group contract | [`contracts/group`](contracts/README.md) | Deployed on Testnet (below) |
+| MCP server for agents: groups, balances, expenses, settlement proposals. It cannot move money | [`mcp`](docs/AGENT-INTERFACE.md) | Merged, not yet connected to the agents |
+| Hermes Agent and OpenClaw on Telegram | [`docs/AGENTS.md`](docs/AGENTS.md) | Running for the team; payments are the stretch goal |
 
-The full plan, what is deferred, and the submission checklist are in [`docs/BUILD-FOCUS.md`](docs/BUILD-FOCUS.md).
+Testnet evidence: two USDC payments sent by the web app, [7e15141b…](https://stellar.expert/explorer/testnet/tx/7e15141b4fa3484aa319efcc783a81df6e35ab5d77dfb0576d8c38e80af576de) (1.50 USDC) and [fee0d278…](https://stellar.expert/explorer/testnet/tx/fee0d278e996b207c1998a60959bf85d2bf7dd0621b0b0e6376d9dd2d24d4099) (1.00 USDC).
 
-## Architecture (planned)
+The plan, what is deferred and the submission checklist are in [`docs/BUILD-FOCUS.md`](docs/BUILD-FOCUS.md). The design is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-- Web app with Freighter for signing, so the app never sees a secret key.
-- API for groups, expenses and balances.
-- Settlement as a plain USDC transfer on Stellar Testnet first. A Soroban group contract is written in [`contracts/group`](contracts/README.md); settling through its `settle` function comes after the plain transfer works.
-- x402 on Stellar (the `exact` scheme with a facilitator) for agent payments (stretch).
-- Stack: JavaScript (ES modules, JSDoc), a Vite + React web app with Tailwind CSS, a Node.js API, and Supabase (PostgreSQL) for the off-chain ledger.
+## Architecture
+
+```mermaid
+flowchart LR
+  H[Person + Freighter] --> W[Web app]
+  W --> A[API /v1]
+  T[Telegram] --> AG[Hermes / OpenClaw]
+  AG --> M[MCP server] --> A
+  A --> DB[(Supabase ledger)]
+  A --> HZ[Horizon Testnet]
+  W -- signed USDC payment --> S[Stellar Testnet]
+  HZ --- S
+```
+
+- Freighter signs everything a person sends, so the app never sees a secret key. The payment goes straight from the debtor to the creditor.
+- The API records a settlement only after Horizon shows a successful USDC payment with the right payer, payee and amount.
+- The off-chain ledger is Supabase (PostgreSQL). The Soroban group contract is deployed; settling through its `settle` function comes after the plain transfer.
+- Agents reach the ledger only through the MCP server. Agent payments through x402 are the stretch goal.
+- Stack: JavaScript (ES modules, JSDoc), Vite + React + Tailwind CSS, Node.js with no runtime dependencies in the API, Supabase.
 
 ### Deployed on Stellar Testnet
 
@@ -51,38 +70,44 @@ Group 1 on this contract is a smoke test that uses native XLM, not USDC. The Tes
 
 ## Setup
 
-The Soroban contract can be built and tested now; see [`contracts/README.md`](contracts/README.md). Install and run steps for the web app and API will be added with their first code.
+Node.js 24 for the web app, 22 or later for the API and the MCP server.
 
-### Environment variables (planned)
+```sh
+cd apps/web && npm ci --ignore-scripts && cp .env.example .env && npm run dev   # http://localhost:5173
+cd apps/api && cp .env.example .env && node --env-file=.env src/main.js         # http://localhost:8080
+cd mcp && npm ci --ignore-scripts && npm test
+cd contracts && cargo test
+```
 
-Copy `.env.example` to `.env` when it exists. Never commit `.env`.
-
-| Variable | Purpose |
-|---|---|
-| `STELLAR_NETWORK` | `testnet` |
-| `HORIZON_URL` / `SOROBAN_RPC_URL` | Testnet endpoints |
-| `X402_FACILITATOR_URL` | x402 facilitator for Testnet |
-| `X402_FACILITATOR_API_KEY` | Facilitator key. Server-side only, never in the browser |
+Each part documents its own variables: [`apps/web`](apps/web/README.md#environment-variables), [`apps/api`](apps/api/README.md) (`apps/api/.env.example`) and [`mcp`](docs/AGENT-INTERFACE.md#run). Copy `.env.example` to `.env` and never commit `.env`. `VITE_` variables end up in the browser bundle, so they never hold a secret.
 
 ## Demo
 
-Demo steps, the live URL and Testnet transaction evidence will be added here.
+The three-minute demo script is in [`apps/web/README.md`](apps/web/README.md#demo-script-about-3-minutes). It needs two funded Testnet accounts with a USDC trustline in Freighter.
 
 ## Security
 
-Design rules the code must follow (enforced as each part lands):
+Enforced in code and CI today:
 
-- Testnet only. The app refuses to act if the wallet is on another network.
-- No secret keys are collected, stored or logged.
-- Amounts are validated: positive, at most seven decimals, and within balance.
-- Secrets live only in a local `.env`, which is ignored by git.
+- **Testnet only.** The web app refuses another network, and the API refuses to start or verify against anything but Testnet.
+- **No secret keys.** Freighter signs. The API and the MCP server refuse any input shaped like a Stellar secret seed before it is stored or logged.
+- **Money as integers.** Amounts are decimal strings checked with BigInt stroops: positive, at most seven decimals, splits that add up.
+- **Payments are verified.** A settlement is recorded once per transaction hash, after Horizon confirms it, and never for more than is owed.
+- **Supply chain.** Every GitHub Action is pinned by commit SHA; Dependabot waits out a cooldown; dependency review, OSV-Scanner, CodeQL and a version guard against outdated or vulnerable versions run on every PR.
+- **Agents** run in pinned containers, answer only the team on Telegram, and hold no keys. See [`docs/AGENTS.md`](docs/AGENTS.md).
+
+Threat model and policies: [`docs/security`](docs/security/README.md).
 
 ## Docs
 
 - [Product requirements](docs/PRD.md) (written under the working name Ledgerly)
 - [Judging criteria](docs/JUDGING.md)
 - [Build focus](docs/BUILD-FOCUS.md)
+- [Architecture](docs/ARCHITECTURE.md)
 - [Agents: setup and access](docs/AGENTS.md)
+- [Agent interface (MCP)](docs/AGENT-INTERFACE.md) and [agent wallets](docs/AGENT-WALLETS.md)
+- [Security: threat model and policies](docs/security/README.md)
+- [Testing status](docs/TESTING.md)
 - [Group contract](contracts/README.md)
 - [Security policy](SECURITY.md)
 - [Supply chain checks](supply-chain/README.md)

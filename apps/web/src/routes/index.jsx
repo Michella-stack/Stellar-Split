@@ -3,6 +3,7 @@ import AppLayout from './AppLayout.jsx';
 import RouteError from './RouteError.jsx';
 import Welcome from './Welcome.jsx';
 import { RequireWallet } from './guards.jsx';
+import { Loading } from '../components/LoadState.jsx';
 
 /**
  * Loads a screen module on first visit, so the first page does not download every screen.
@@ -17,6 +18,8 @@ export const routes = [
     path: '/',
     element: <AppLayout />,
     errorElement: <RouteError />,
+    // Shown while a lazy screen loads on the very first page view.
+    hydrateFallbackElement: <Loading />,
     children: [
       { index: true, element: <Welcome /> },
       { path: 'connect', lazy: screen(() => import('./Connect.jsx')) },

@@ -41,6 +41,10 @@
 :root {
   --accent: #d4ff3f;
   --on-accent: #0b0b0d;
+  --swatch-lime: #d4ff3f;
+  --swatch-cyan: #7cf5ff;
+  --swatch-orange: #ff9f5a;
+  --swatch-violet: #c9a8ff;
 }
 [data-accent='cyan'] {
   --accent: #7cf5ff;

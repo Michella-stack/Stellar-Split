@@ -20,6 +20,7 @@ import AssistSetup from './AssistSetup.jsx';
 import Assist from './Assist.jsx';
 import AssistChat from './AssistChat.jsx';
 import UiKit from './UiKit.jsx';
+import { RequireWallet } from './guards.jsx';
 
 // The add-expense sheet (screen 10) opens over the group screen; the paid and problem
 // states (15, 16) are steps inside the settle route, so none of them has its own path.
@@ -31,22 +32,27 @@ export const routes = [
     children: [
       { index: true, element: <Welcome /> },
       { path: 'connect', element: <Connect /> },
-      { path: 'verify', element: <Verify /> },
-      { path: 'onboarding', element: <Onboarding /> },
-      { path: 'wallet', element: <Wallet /> },
-      { path: 'groups', element: <Groups /> },
-      { path: 'groups/new', element: <GroupNew /> },
-      { path: 'groups/:id', element: <Group /> },
-      { path: 'groups/:id/invite', element: <GroupInvite /> },
-      { path: 'groups/:id/expenses/new', element: <ExpenseNew /> },
-      { path: 'groups/:id/expenses/scan', element: <ExpenseScan /> },
-      { path: 'groups/:id/activity', element: <Activity /> },
-      { path: 'groups/:id/settle/:memberId', element: <Settle /> },
-      { path: 'join/:code', element: <Join /> },
-      { path: 'assist', element: <Assist /> },
-      { path: 'assist/intro', element: <AssistIntro /> },
-      { path: 'assist/setup', element: <AssistSetup /> },
-      { path: 'assist/chat', element: <AssistChat /> },
+      { element: <RequireWallet needs="wallet" />, children: [{ path: 'verify', element: <Verify /> }] },
+      { element: <RequireWallet needs="session" />, children: [{ path: 'onboarding', element: <Onboarding /> }] },
+      {
+        element: <RequireWallet />,
+        children: [
+          { path: 'wallet', element: <Wallet /> },
+          { path: 'groups', element: <Groups /> },
+          { path: 'groups/new', element: <GroupNew /> },
+          { path: 'groups/:id', element: <Group /> },
+          { path: 'groups/:id/invite', element: <GroupInvite /> },
+          { path: 'groups/:id/expenses/new', element: <ExpenseNew /> },
+          { path: 'groups/:id/expenses/scan', element: <ExpenseScan /> },
+          { path: 'groups/:id/activity', element: <Activity /> },
+          { path: 'groups/:id/settle/:memberId', element: <Settle /> },
+          { path: 'join/:code', element: <Join /> },
+          { path: 'assist', element: <Assist /> },
+          { path: 'assist/intro', element: <AssistIntro /> },
+          { path: 'assist/setup', element: <AssistSetup /> },
+          { path: 'assist/chat', element: <AssistChat /> },
+        ],
+      },
     ],
   },
   // Development page with every UI primitive in both themes. Full width, so outside AppLayout.

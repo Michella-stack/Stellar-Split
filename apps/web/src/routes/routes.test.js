@@ -17,4 +17,12 @@ describe('routes', () => {
     const match = matchRoutes(routes, '/groups/new');
     expect(match.at(-1).route.path).toBe('groups/new');
   });
+
+  it('puts every app screen behind the wallet guard', () => {
+    for (const path of ['/groups', '/wallet', '/assist', '/groups/g1/settle/m2', '/join/abc']) {
+      const guard = matchRoutes(routes, path).find((m) => m.route.element?.type?.name === 'RequireWallet');
+      expect(guard, path).toBeDefined();
+      expect(guard.route.element.props.needs ?? 'profile').toBe('profile');
+    }
+  });
 });

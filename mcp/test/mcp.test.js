@@ -113,6 +113,28 @@ test("rejects bad input before calling the API", async () => {
   mock.close();
 });
 
+test("rejects a Stellar secret key in every text-like field", async () => {
+  const mock = await mockApi({});
+  const client = await connect(createApi({ baseUrl: mock.url, token: TOKEN }));
+  const rejected = (call) => call.then((r) => r.isError === true, () => true);
+  const expense = { group_id: "g1", payer: "victor", amount: "10", description: "x", split: { rule: "equal", participants: ["victor"] } };
+  const attempts = [
+    ["ledgerly_create_expense", { ...expense, payer: FAKE_SECRET }],
+    ["ledgerly_create_expense", { ...expense, group_id: FAKE_SECRET }],
+    ["ledgerly_create_expense", { ...expense, split: { rule: "equal", participants: [FAKE_SECRET] } }],
+    ["ledgerly_create_expense", { ...expense, split: { rule: "exact", shares: [{ member: FAKE_SECRET, amount: "10" }] } }],
+    ["ledgerly_create_expense", { ...expense, idempotency_key: FAKE_SECRET }],
+    ["ledgerly_get_balances", { group_id: FAKE_SECRET }],
+    ["ledgerly_propose_settlement", { group_id: "g1", to: FAKE_SECRET, amount: "5" }],
+    ["ledgerly_get_approval", { approval_id: FAKE_SECRET }],
+  ];
+  for (const [name, args] of attempts) {
+    assert.ok(await rejected(client.callTool({ name, arguments: args })), `${name} accepted a secret key in ${JSON.stringify(args).slice(0, 80)}`);
+  }
+  assert.equal(mock.seen.length, 0);
+  mock.close();
+});
+
 test("surfaces API policy errors without leaking the token", async () => {
   const mock = await mockApi({ "POST /v1/groups/g1/settlements": { status: 403, body: { code: "policy_daily_cap", message: "daily cap exceeded" } } });
   const client = await connect(createApi({ baseUrl: mock.url, token: TOKEN }));

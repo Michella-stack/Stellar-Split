@@ -5,12 +5,13 @@ import { z } from "zod";
 // Stellar secret keys must never pass through the model or the API (docs/BUILD-FOCUS.md).
 const SECRET_KEY = /S[A-Z2-7]{55}/;
 
-const id = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "invalid id");
+const noSecret = (v) => !SECRET_KEY.test(v);
+const id = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "invalid id").refine(noSecret, "looks like a Stellar secret key");
 const amount = z
   .string()
   .regex(/^\d{1,12}(\.\d{1,7})?$/, "amount must be a positive decimal with at most 7 decimals")
   .refine((v) => toUnits(v) > 0n, "amount must be greater than zero");
-const text = (max) => z.string().min(1).max(max).refine((v) => !SECRET_KEY.test(v), "looks like a Stellar secret key");
+const text = (max) => z.string().min(1).max(max).refine(noSecret, "looks like a Stellar secret key");
 
 // 7 decimals, like USDC on Stellar. BigInt avoids float rounding in the sum check.
 export function toUnits(v) {
@@ -66,7 +67,7 @@ export function buildServer(api) {
         amount,
         description: text(200),
         split,
-        idempotency_key: z.string().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/).optional(),
+        idempotency_key: z.string().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/).refine(noSecret, "looks like a Stellar secret key").optional(),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },

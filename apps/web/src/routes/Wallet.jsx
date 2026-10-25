@@ -127,6 +127,10 @@ export default function Wallet() {
           </div>
         </section>
 
+        <p className="text-sm text-muted">
+          To use another wallet, switch the account in Freighter: Stellar Split notices and asks you to sign in again. Or disconnect
+          here and connect again with the account you want.
+        </p>
         <Button
           variant="outline"
           block

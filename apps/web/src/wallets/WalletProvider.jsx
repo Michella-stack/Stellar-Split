@@ -19,6 +19,27 @@ function readSavedSession() {
   }
 }
 
+// Set when the person presses Disconnect, so the app does not silently reconnect on the next visit
+// (Freighter keeps the site allowed). Cleared by the next explicit Connect.
+const DISCONNECTED_KEY = 'stellar-split.disconnected';
+
+function setDisconnectedFlag(on) {
+  try {
+    if (on) window.localStorage.setItem(DISCONNECTED_KEY, '1');
+    else window.localStorage.removeItem(DISCONNECTED_KEY);
+  } catch {
+    // Storage blocked: Disconnect lasts until reload.
+  }
+}
+
+function wasDisconnected() {
+  try {
+    return window.localStorage.getItem(DISCONNECTED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 function writeSavedSession(session) {
   try {
     if (session) window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -65,6 +86,7 @@ export function WalletProvider({ children }) {
     let cancelled = false;
     (async () => {
       try {
+        if (wasDisconnected()) return setStatus('disconnected');
         const existing = await freighter.getConnectedAddress();
         if (cancelled) return;
         if (!existing) return setStatus('disconnected');
@@ -116,6 +138,7 @@ export function WalletProvider({ children }) {
     setStatus('connecting');
     try {
       const result = await freighter.connect();
+      setDisconnectedFlag(false);
       if (result.address !== addressRef.current) forgetSession();
       setAddress(result.address);
       setNetwork(result.network);
@@ -168,7 +191,9 @@ export function WalletProvider({ children }) {
   }, []);
 
   const disconnect = useCallback(() => {
-    // Freighter has no programmatic disconnect; the app forgets the account and session.
+    // Freighter has no programmatic disconnect; the app forgets the account and session and stays
+    // disconnected until the person presses Connect again.
+    setDisconnectedFlag(true);
     forgetSession();
     setAddress(null);
     setNetwork(null);

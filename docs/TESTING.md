@@ -74,6 +74,10 @@ Missing: OSV critical, OSV medium or low passes, fail-closed on registry or OSV 
 | Version guard | Skips a PR entirely if the guard is missing on the base branch |
 | `scripts/deploy-testnet.sh` | Swallows funding failures (`|| true`), hard-coded wasm path, no mainnet guard, recorder defaults to the admin, no check that `stellar` is installed |
 
+### Delegated payment schema (`docs/schema/`)
+
+Proposal only, not applied to any database. `docs/schema/delegated-payments.test.sql` has 21 checks that a statement must be refused and 4 result checks, run in a throwaway PostgreSQL 15 with a stub of Supabase's `auth` schema, and all passed on 2026-10-25. A manual race with 30 parallel connections for the same debt gave 1 success and 29 failures on `one_open_intent_per_debt`. Not covered: the real Supabase environment and anything that needs the API. The remaining cases (DP-10 to DP-16, LK, RK) are listed in `docs/DELEGATED-PAYMENTS.md` section 8.
+
 ## Priority list of missing tests and jobs
 
 1. CI job: `npm ci && npm test` in `mcp/` on Node 22 for PRs touching `mcp/**`.

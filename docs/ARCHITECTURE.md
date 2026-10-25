@@ -240,7 +240,7 @@ The future paying flow remains isolated from the required human flow:
 
 The facilitator API key is server-side only. Failure of the facilitator must not affect human expense and balance features.
 
-`ledgerly_settle`, agent key custody and x402 signing are not built. The proposed signer remains inside one MCP process per agent and outside the agent container/model context. See `docs/AGENT-INTERFACE.md` and `docs/AGENT-WALLETS.md`.
+`ledgerly_settle`, agent key custody and x402 signing are not built. How a person and their agent pay the same debt, with a lock against double payment, is designed in `docs/DELEGATED-PAYMENTS.md` (ADRs 0001 to 0006). The proposed signer remains inside one MCP process per agent and outside the agent container/model context. See `docs/AGENT-INTERFACE.md` and `docs/AGENT-WALLETS.md`.
 
 ### 4.8 Hosted agent runtimes
 

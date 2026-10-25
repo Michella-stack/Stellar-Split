@@ -65,6 +65,18 @@ Demo steps, the live URL and Testnet transaction evidence will be added here.
 - Amounts are validated: positive, at most seven decimals, and within balance.
 - Secrets live only in a local `.env`, which is ignored by git.
 
+## Docs
+
+- [Product requirements](docs/PRD.md)
+- [Judging criteria](docs/JUDGING.md)
+- [Build focus](docs/BUILD-FOCUS.md)
+- [Security policy](SECURITY.md)
+- [Supply chain checks](supply-chain/README.md)
+
+## Release signing key
+
+Release tags and artifacts will be signed with the owner's GPG key. The key fingerprint will be published here and in `SECURITY.md` with v0.1.0.
+
 ## Prior work disclosure
 
 Before the event the team wrote a product requirements document (v0.2, dated 25 October 2026) and reviewed public literature on remittances and stablecoins. No application code for this project was written before the event. A separate earlier Testnet prototype by Michella Warren, called Raven, is not part of this repository.

@@ -1,0 +1,65 @@
+name: LLM outdated version guard
+on:
+  pull_request:
+    paths:
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "contracts/**/Cargo.toml"
+      - "contracts/Cargo.lock"
+      - "supply-chain/**"
+      - ".github/workflows/version-guard.yml"
+permissions:
+  contents: read
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Load guard and policy from the base branch
+        id: load
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          mkdir -p .guard
+          if ! git cat-file -e "$BASE_SHA:supply-chain/version-guard.js" 2>/dev/null; then
+            echo "::notice::version-guard.js is not on the base branch yet, skipping the guard for this PR"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git show "$BASE_SHA:supply-chain/version-guard.js" > .guard/version-guard.js
+          git show "$BASE_SHA:supply-chain/approved-versions.json" > .guard/approved-versions.json
+      - name: Check changed versions
+        if: steps.load.outputs.skip != 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node .guard/version-guard.js --base "$BASE_SHA" --head "$HEAD_SHA" --policy .guard/approved-versions.json --report report.md
+      - name: Report in job summary
+        if: failure() && steps.load.outputs.skip != 'true'
+        run: cat report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment on failure
+        if: failure() && steps.load.outputs.skip != 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: version-guard
+          path: report.md
+  guard-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Test the guard from the PR head
+        run: node --test "supply-chain/*.test.js"

@@ -35,6 +35,10 @@ These shapes are the web team's proposal until the API team confirms them. If th
 | `getAgent(id)` | `GET /v1/agents/:id` | `{ agent: Agent, pendingApprovals: Approval[] }` |
 | `updateAgent(id, patch)` | `PATCH /v1/agents/:id` `{ status?, policy? }` | `{ agent: Agent }` |
 | `listAgentActivity(id)` | `GET /v1/agents/:id/activity` | `{ items: AgentActivity[] }` |
+| `createAgentLinkChallenge({ agentAddress })` | `POST /v1/agents/link/challenge` | `{ message, nonce, expiresAt }`. The owner signs `message` (SEP-53) with Freighter |
+| `linkAgent({ agentAddress, message, signature })` | `POST /v1/agents/link` | `201 { agent: { address, ownerAddress, linkedAt } }`. `409 AGENT_ALREADY_LINKED` when another owner holds an active link |
+| `listMyAgents()` | `GET /v1/me/agents` | `{ agents: { address, linkedAt, revokedAt }[] }` |
+| `revokeAgent(address)` | `DELETE /v1/me/agents/:address` | `204`, no body |
 | `approve(id)` / `reject(id)` | `POST /v1/approvals/:id/approve` or `/reject` | `{ approval: Approval, agent: Agent }` |
 
 ## Stellar Assist

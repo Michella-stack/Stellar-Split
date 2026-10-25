@@ -17,6 +17,15 @@ Other scripts: `npm test` (Vitest), `npm run lint` (ESLint), `npm run build`, `n
 
 In development, http://localhost:5173/ui shows every UI component in the dark and light themes side by side. It is not part of production builds.
 
+## Demo mode (no wallet needed)
+
+The welcome screen has **Explore with sample data**. It runs the whole app on the sample groups (Casa Alfama, Algarve trip, Stellar Assist) without Freighter and without touching Stellar, so anyone can try it from the live URL. It is the same deployment, switched by a flag in `localStorage` (`stellar-split.demo`); the page reloads when it changes.
+
+- A fixed banner on every screen says it is a demo, with **Exit demo**. Leaving forgets what was done in it.
+- Payments are simulated: the same review, steps and paid screen, but nothing is signed or sent. They are marked `demo: true`, so no screen links them to an explorer, and the receipt says "DEMO".
+- Balances on Wallet and Settle up are sample values. Stellar Assist runs on its sample data without the "Preview" note.
+- The real mode is unchanged: connect Freighter on Testnet and sign in.
+
 ## Against the real API
 
 Run the API (`apps/api`, see its README) and set `VITE_USE_MOCKS=false` and `VITE_API_URL=http://localhost:8080` in `.env`. The API must allow the web origin (`APP_URL=http://localhost:5173`).

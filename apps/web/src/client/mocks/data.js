@@ -74,7 +74,8 @@ export function initialState() {
       address: AGENT_ADDRESS,
       ownerAddress: ME,
       groupIds: ['casa-alfama'],
-      status: 'active',
+      // Not set up yet: the first visit to Assist goes through the intro and the rules screen.
+      status: 'inactive',
       policy: {
         addBills: true,
         payBills: true,

@@ -31,7 +31,7 @@ These shapes are the web team's proposal until the API team confirms them. If th
 | `getAgent(id)` | `GET /v1/agents/:id` | `{ agent: Agent, pendingApprovals: Approval[] }` |
 | `updateAgent(id, patch)` | `PATCH /v1/agents/:id` `{ status?, policy? }` | `{ agent: Agent }` |
 | `listAgentActivity(id)` | `GET /v1/agents/:id/activity` | `{ items: AgentActivity[] }` |
-| `approve(id)` / `reject(id)` | `POST /v1/approvals/:id/approve` or `/reject` | `{ approval: Approval }` |
+| `approve(id)` / `reject(id)` | `POST /v1/approvals/:id/approve` or `/reject` | `{ approval: Approval, agent: Agent }` |
 
 ## Types
 
@@ -59,7 +59,7 @@ Expense = { id, groupId, description, amount, paidBy, split, shares: { memberId,
 
 Settlement = { id, groupId, from, to, amount, txHash, createdAt }
 
-Agent = { id, displayName, address, ownerAddress, groupIds, status: 'active' | 'paused',
+Agent = { id, displayName, address, ownerAddress, groupIds, status: 'inactive' | 'active' | 'paused',
           policy: { addBills, payBills, bills: string[], maxPerPayment, approvalAbove, dailyCap },
           wallet: { balance, asset }, spentToday }
 

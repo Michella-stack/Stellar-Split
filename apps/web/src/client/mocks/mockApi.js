@@ -315,6 +315,11 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
     approval.status = status;
     const item = state.agentActivity.find((a) => a.approvalId === approvalId);
     if (item) item.status = status;
-    return reply({ approval });
+    if (status === 'approved') {
+      // The real agent would now pay from its own wallet and report the transaction.
+      state.agent.spentToday = dec(toStroops(state.agent.spentToday) + toStroops(approval.amount));
+      state.agent.wallet.balance = dec(toStroops(state.agent.wallet.balance) - toStroops(approval.amount));
+    }
+    return reply({ approval, agent: state.agent });
   }
 }

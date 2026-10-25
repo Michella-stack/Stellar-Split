@@ -122,8 +122,13 @@ describe('Stellar Assist', () => {
     expect(pendingApprovals).toHaveLength(1);
   });
 
-  it('approves once and refuses a second decision', async () => {
-    await api.approve('ap-internet');
+  it('starts not set up, so the first visit shows the intro', async () => {
+    expect((await api.getAgent('assist')).agent.status).toBe('inactive');
+  });
+
+  it('approves once, counts it against today, and refuses a second decision', async () => {
+    const { agent } = await api.approve('ap-internet');
+    expect(agent.spentToday).toBe('19.50');
     expect((await api.getAgent('assist')).pendingApprovals).toHaveLength(0);
     await expect(api.reject('ap-internet')).rejects.toMatchObject({ status: 409 });
   });

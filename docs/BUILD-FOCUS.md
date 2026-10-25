@@ -20,6 +20,8 @@ Split shared costs, such as rent sent home by family, and settle them in USDC on
 
 Decision: settle with a plain USDC transfer plus an off-chain ledger first. The Soroban group contract in `contracts/group` is written; switching the human settlement to its `settle` function comes once the plain transfer works.
 
+Stack decision: JavaScript (ES modules, JSDoc) for the web app and API, a Vite + React single-page web app, and Supabase (PostgreSQL) for the off-chain ledger.
+
 ## Security basics we keep
 
 - No secret keys anywhere: reject anything matching `S[A-Z2-7]{55}`.

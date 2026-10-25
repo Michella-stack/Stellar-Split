@@ -10,7 +10,7 @@ Hermes and OpenClaw run as containers on the private agent host. The MCP server 
 ## Decision
 
 1. The MCP server runs as **one container per agent on the agent host**, in its own Docker Compose project, for example `ledgerly-mcp-hermes` and `ledgerly-mcp-openclaw`.
-2. Each agent has **its own API token, its own `MCP_AUTH_TOKEN` and its own Docker network** shared only with its MCP container. The MCP container also reaches the public API over HTTPS. The agent container holds `MCP_AUTH_TOKEN` only.
+2. Each agent has **its own API token, its own `MCP_AUTH_TOKEN` and its own internal Docker network** shared only with its MCP container. The agent container keeps its current network and also joins that one, because an internal network has no way out. The MCP container also reaches the public API over HTTPS. The agent container never holds the API token; it holds `MCP_AUTH_TOKEN`, which sits in its own configuration.
 3. The MCP server is not published on the LAN, through the tunnel or on the internet.
 4. The container runs non-root, with a read-only filesystem, `cap_drop: ALL` and `no-new-privileges`.
 5. When agent payments exist, the signer stays in this same container, as `docs/AGENT-WALLETS.md` proposes.
@@ -18,6 +18,7 @@ Hermes and OpenClaw run as containers on the private agent host. The MCP server 
 ## Consequences
 
 - The API credential and, later, the signing key are outside the agent container, so a prompt injection or a bad plugin cannot read them.
+- `MCP_AUTH_TOKEN` is readable by the agent, so approval prompts in Hermes and OpenClaw are advisory: an agent with a shell, file or HTTP tool could call the MCP server directly. The real limits are the API's membership checks and spend caps, and the absence of a pay tool until #14.
 - The API tells the two agents apart, caps them separately and can have one token replaced without touching the other.
 - The agent host needs an image for the MCP server. `mcp/` has no Dockerfile yet and the host has no Node, so one must be added and built there.
 - The MCP server depends on the agent host and the API both being up. If the host is down, the agents are down anyway.

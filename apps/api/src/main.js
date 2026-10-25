@@ -16,6 +16,9 @@ export function loadConfig(env = process.env) {
   if ((env.STELLAR_NETWORK ?? 'testnet') !== 'testnet') fail('STELLAR_NETWORK must be testnet');
   const usdcIssuer = env.USDC_ISSUER ?? fail('USDC_ISSUER is required');
   if (!/^G[A-Z2-7]{55}$/.test(usdcIssuer)) fail('USDC_ISSUER must be a G address');
+  // EURC is optional (#98): without an issuer the API offers USDC groups only. The Testnet issuer is in Circle's EURC address list.
+  const eurcIssuer = env.EURC_ISSUER || null;
+  if (eurcIssuer && !/^G[A-Z2-7]{55}$/.test(eurcIssuer)) fail('EURC_ISSUER must be a G address');
   if (env.ALLOW_MEMORY_STORE === 'true' && env.VERCEL_ENV === 'production') fail('ALLOW_MEMORY_STORE must not be set in production: serverless instances do not share memory');
   const supabase = env.SUPABASE_URL ? { url: env.SUPABASE_URL, serviceKey: env.SUPABASE_SERVICE_ROLE_KEY ?? fail('SUPABASE_SERVICE_ROLE_KEY is required with SUPABASE_URL') } : null;
   if (!supabase && env.ALLOW_MEMORY_STORE !== 'true') fail('set SUPABASE_URL, or ALLOW_MEMORY_STORE=true for local development');
@@ -25,6 +28,7 @@ export function loadConfig(env = process.env) {
     host: env.HOST ?? '127.0.0.1',
     horizonUrl: env.HORIZON_URL ?? 'https://horizon-testnet.stellar.org',
     usdcIssuer,
+    eurcIssuer,
     supabase,
     appUrl: env.APP_URL ?? 'http://localhost:5173',
     allowedOrigins: (env.ALLOWED_ORIGINS ?? env.APP_URL ?? 'http://localhost:5173').split(',').map((s) => s.trim()).filter(Boolean),
@@ -42,7 +46,7 @@ export function loadConfig(env = process.env) {
 export function handlerFromEnv(env = process.env) {
   const config = loadConfig(env);
   const repo = config.supabase ? createSupabaseRepository(config.supabase) : createMemoryRepository();
-  const stellar = createStellar({ horizonUrl: config.horizonUrl, usdcIssuer: config.usdcIssuer });
+  const stellar = createStellar({ horizonUrl: config.horizonUrl, usdcIssuer: config.usdcIssuer, eurcIssuer: config.eurcIssuer });
   const log = (line) => console.log(JSON.stringify(line));
   const ledger = createLedger({ repo, stellar, appUrl: config.appUrl, log });
   const auth = createAuth({ secret: config.sessionSecret, repo, agentTokens: config.agentTokens });

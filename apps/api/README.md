@@ -23,7 +23,7 @@ Agents use a token issued by the operator. The API stores only its SHA-256 in `A
 
 ## Deploy (Vercel)
 
-`vercel.json` serves the web app from `dist/` and sends `/v1/*` to the function in `api/index.mjs`, so the web app and the API share one origin and need no CORS. `scripts/vercel-build.sh` builds `apps/web` when it exists. Set `SESSION_SECRET`, `USDC_ISSUER`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `APP_URL` as project environment variables (secrets as sensitive). Serverless instances do not share memory, so production needs Supabase.
+`vercel.json` serves the web app from `dist/` and sends `/v1/*` to the function in `api/index.mjs`, so the web app and the API share one origin and need no CORS. `scripts/vercel-build.sh` builds `apps/web` when it exists. Set `SESSION_SECRET`, `USDC_ISSUER` (and optionally `EURC_ISSUER`, see below), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `APP_URL` as project environment variables (secrets as sensitive). Serverless instances do not share memory, so production needs Supabase.
 
 ## Endpoints
 
@@ -70,3 +70,7 @@ Not built: approvals (there is no `/v1/approvals` route), agent policies and the
 - Intents in `needs_review` have no route yet: an operator resolves them in the database. A reconciliation job for them is not built.
 - The receipt scan has no rate limit of its own. Anyone who can sign in can call it until the free quota runs out, and then it answers `503 SCAN_UNAVAILABLE`.
 - The web app must reserve an intent first and add its memo to the payment (follow-up in #55). Its current `setTimeout` already ends inside the intent when the payment is built right after the reservation. Until then, its payments are refused.
+
+## Settlement asset per group (#98)
+
+A group settles in one asset: `USDC` (the default) or `EURC`. `POST /v1/groups` takes an optional `asset`. The group, its settlement intents and its payment check all use that asset, and a payment in another asset is refused with `PAYMENT_MISMATCH`. EURC is offered only when `EURC_ISSUER` is set to Circle's Testnet EURC issuer (`GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO`, from Circle's EURC address list), and `database/migrations/003_group_asset.sql` has been run. Without the issuer, asking for `EURC` answers `400 ASSET_NOT_SUPPORTED`. Agent spend caps are still plain numbers, so for a EURC group they mean EURC.

@@ -45,6 +45,10 @@ export function routes({ auth, ledger }) {
       const result = await ledger.settle(need(ctx), ctx.params[0], ctx.body, { dryRun });
       return dryRun ? ok(result) : created(result);
     }],
+    ['POST', /^\/v1\/groups\/([\w-]{1,64})\/settlements\/intents$/, async (ctx) =>
+      created(await ledger.reserveSettlement(need(ctx), ctx.params[0], ctx.body))],
+    ['POST', /^\/v1\/groups\/([\w-]{1,64})\/settlements\/intents\/([\w-]{1,64})\/cancel$/, async (ctx) =>
+      ok(await ledger.cancelSettlement(need(ctx), ctx.params[0], ctx.params[1]))],
     ['GET', /^\/v1\/groups\/([\w-]{1,64})\/activity$/, async (ctx) => ok(await ledger.activity(need(ctx), ctx.params[0]))],
   ];
 }

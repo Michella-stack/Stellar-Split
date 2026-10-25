@@ -96,7 +96,33 @@ export function createAuth({ secret, repo, sessionTtlMs = 12 * 3600_000, challen
   const message = (address, nonce, expires) =>
     `Stellar-Split sign-in\nAddress: ${address}\nNonce: ${nonce}\nExpires: ${new Date(expires).toISOString()}`;
 
+  const linkMessage = (owner, agent, nonce, expires) =>
+    `Stellar Split agent link\nOwner: ${owner}\nAgent: ${agent}\nNonce: ${nonce}\nExpires: ${new Date(expires).toISOString()}`;
+  const knownAgents = new Set(agentTokens.values());
+
   return {
+    /** True when `address` is the address of a configured agent token. */
+    isAgent: (address) => knownAgents.has(address),
+
+    /** Agent link challenge (ADR 0005): the owner signs it with SEP-53. Same HMAC and single-use nonce as sign-in. */
+    linkChallenge(owner, agent) {
+      const expires = now() + challengeTtlMs;
+      const id = randomBytes(16).toString('base64url');
+      const nonce = `${id}.${expires}.${mac(`link|${owner}|${agent}|${id}|${expires}`)}`;
+      return { message: linkMessage(owner, agent, nonce, expires), nonce, expiresAt: new Date(expires).toISOString() };
+    },
+
+    /** True once per challenge: the message is ours, not expired, signed by `owner`, and its nonce is burned here. */
+    async verifyLink(owner, agent, message, signature) {
+      const m = /^Stellar Split agent link\nOwner: (G[A-Z2-7]{55})\nAgent: (G[A-Z2-7]{55})\nNonce: ([\w-]{22})\.(\d{13})\.([\w-]{43})\nExpires: /.exec(String(message));
+      if (!m || m[1] !== owner || m[2] !== agent) return false;
+      const [, , , id, exp, tag] = m;
+      const expires = Number(exp);
+      if (!same(tag, mac(`link|${owner}|${agent}|${id}|${expires}`)) || message !== linkMessage(owner, agent, `${id}.${exp}.${tag}`, expires)) return false;
+      if (expires < now() || !verifySignedMessage(owner, message, signature)) return false;
+      return repo.useNonce(id, new Date(expires).toISOString());
+    },
+
     challenge(address) {
       if (!decodeAddress(address)) return null;
       const expires = now() + challengeTtlMs;

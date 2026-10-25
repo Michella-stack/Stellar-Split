@@ -5,7 +5,7 @@ import { routes } from './index.jsx';
 const paths = [
   '/', '/connect', '/verify', '/onboarding', '/wallet', '/groups', '/groups/new', '/groups/g1',
   '/groups/g1/invite', '/groups/g1/expenses/new', '/groups/g1/expenses/scan', '/groups/g1/activity',
-  '/groups/g1/settle/m2', '/join/abc', '/assist', '/assist/intro', '/assist/setup', '/assist/chat',
+  '/groups/g1/settle/m2', '/join/abc', '/assist', '/assist/intro', '/assist/setup', '/assist/chat', '/ui',
 ];
 
 describe('routes', () => {

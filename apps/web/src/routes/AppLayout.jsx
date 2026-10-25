@@ -1,31 +1,17 @@
-import { Link, Outlet } from 'react-router';
-import { useTheme } from '../hooks/useTheme.js';
+import { Outlet, useLocation } from 'react-router';
+import { BottomNav } from '../components/BottomNav.jsx';
 
-// Phase 1 shell. TopBar, TestnetBadge and the theme controls move to components/ in the UI kit phase.
+// Top-level sections show the bottom navigation; flows inside them (forms, settle up) do not.
+const NAV_PATHS = new Set(['/groups', '/assist', '/wallet']);
+
 export default function AppLayout() {
-  const { theme, toggleTheme } = useTheme();
-  const nextTheme = theme === 'dark' ? 'light' : 'dark';
-
+  const { pathname } = useLocation();
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col px-4">
-      <header className="flex items-center justify-between gap-3 py-3">
-        <Link to="/" className="flex min-h-11 items-center font-display-wide text-lg">
-          Stellar Split
-        </Link>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full border border-line px-3 py-1 font-mono text-xs text-muted">Testnet</span>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="min-h-11 rounded-full bg-surface-2 px-4 text-sm font-medium"
-          >
-            Use {nextTheme} theme
-          </button>
-        </div>
-      </header>
-      <main className="flex-1">
+      <main className="flex flex-1 flex-col">
         <Outlet />
       </main>
+      {NAV_PATHS.has(pathname.replace(/\/$/, '')) && <BottomNav />}
     </div>
   );
 }

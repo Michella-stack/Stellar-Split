@@ -19,6 +19,7 @@ import AssistIntro from './AssistIntro.jsx';
 import AssistSetup from './AssistSetup.jsx';
 import Assist from './Assist.jsx';
 import AssistChat from './AssistChat.jsx';
+import UiKit from './UiKit.jsx';
 
 // The add-expense sheet (screen 10) opens over the group screen; the paid and problem
 // states (15, 16) are steps inside the settle route, so none of them has its own path.
@@ -48,6 +49,8 @@ export const routes = [
       { path: 'assist/chat', element: <AssistChat /> },
     ],
   },
+  // Development page with every UI primitive in both themes. Full width, so outside AppLayout.
+  { path: '/ui', element: <UiKit />, errorElement: <RouteError /> },
 ];
 
 export function createRouter() {

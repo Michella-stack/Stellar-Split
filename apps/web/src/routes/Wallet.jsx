@@ -10,7 +10,7 @@ import { Pill } from '../components/Pill.jsx';
 import { Segmented } from '../components/Segmented.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { fundWithFriendbot, loadBalances } from '../client/stellar.js';
-import { USDC_FAUCET_URL } from '../config/env.js';
+import { CONFIG, USDC_FAUCET_URL } from '../config/env.js';
 import { useCopy } from '../hooks/useCopy.js';
 import { useRates } from '../hooks/useRates.js';
 import { useTheme } from '../hooks/useTheme.js';
@@ -91,7 +91,7 @@ export default function Wallet() {
         {!DEMO && (
         <section aria-labelledby="usdc-title" className="flex flex-col gap-2">
           <h2 id="usdc-title" className="text-lg font-semibold">
-            Get testnet USDC
+            Get testnet USDC{CONFIG.ok && CONFIG.config.eurcIssuer ? ' and EURC' : ''}
           </h2>
           <p className="text-muted">
             Testnet USDC is free and has no value. First your account needs a USDC trustline (you can add it when you settle up), then
@@ -201,6 +201,7 @@ function Balances({ balances, error, onRetry, onFund, funding }) {
   return (
     <Card className="flex flex-col divide-y divide-line py-2">
       <BalanceRow code="USDC" value={balances.usdc} empty="No USDC trustline yet" />
+      {CONFIG.ok && CONFIG.config.eurcIssuer && <BalanceRow code="EURC" value={balances.eurc} empty="No EURC trustline yet" />}
       <BalanceRow code="XLM" value={balances.xlm} />
     </Card>
   );

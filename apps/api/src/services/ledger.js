@@ -189,18 +189,31 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       const groups = await repo.listGroupsByAddress(principal.address);
       let owe = 0n;
       let owed = 0n;
+      const other = new Map(); // totals of groups that settle in another asset, kept apart: dollars and euros never add up
       const out = [];
       const states = await Promise.all(groups.map((g) => load(g.id))); // one round trip per group at a time would not scale
       for (const [i, g] of groups.entries()) {
         const { members, expenses, settlements, net } = states[i];
         const me = members.find((m) => m.address === principal.address);
         const mine = net.get(me.id);
-        if (mine < 0n) owe -= mine;
-        else owed += mine;
+        const code = g.asset ?? stellar.asset.code;
+        if (code === stellar.asset.code) {
+          if (mine < 0n) owe -= mine;
+          else owed += mine;
+        } else {
+          const t = other.get(code) ?? { asset: code, youOwe: 0n, youAreOwed: 0n };
+          if (mine < 0n) t.youOwe -= mine;
+          else t.youAreOwed += mine;
+          other.set(code, t);
+        }
         const last = [...expenses, ...settlements].map((x) => x.createdAt).sort().pop();
-        out.push({ id: g.id, name: g.name, type: g.type, memberCount: members.length, myNet: fmt(mine), updatedAt: last ?? g.createdAt });
+        out.push({ id: g.id, name: g.name, type: g.type, asset: code, memberCount: members.length, myNet: fmt(mine), updatedAt: last ?? g.createdAt });
       }
-      return { groups: out, totals: { youOwe: fmt(owe), youAreOwed: fmt(owed) } };
+      return {
+        groups: out,
+        totals: { youOwe: fmt(owe), youAreOwed: fmt(owed) },
+        otherTotals: [...other.values()].map((t) => ({ asset: t.asset, youOwe: fmt(t.youOwe), youAreOwed: fmt(t.youAreOwed) })),
+      };
     },
 
     async createGroup(principal, input = {}) {

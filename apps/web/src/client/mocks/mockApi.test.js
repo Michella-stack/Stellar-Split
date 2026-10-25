@@ -289,3 +289,20 @@ describe('demo mode (sample data, nothing sent to Stellar)', () => {
     expect([...store.keys()]).toEqual(['demo-key']);
   });
 });
+
+describe('EURC groups', () => {
+  it('creates a group that settles in euros, with its own totals', async () => {
+    const { group } = await api.createGroup({ name: 'Lisbon euros', type: 'trip', asset: 'EURC' });
+    expect(group.asset).toMatchObject({ code: 'EURC' });
+    const { groups, totals, otherTotals } = await api.listGroups();
+    expect(groups.find((g) => g.name === 'Lisbon euros')).toMatchObject({ asset: 'EURC' });
+    expect(totals).toEqual({ youOwe: '364.60', youAreOwed: '36.00' });
+    expect(otherTotals).toEqual([{ asset: 'EURC', youOwe: '0.00', youAreOwed: '0.00' }]);
+  });
+
+  it('defaults to USDC and rejects an unknown asset', async () => {
+    const created = await api.createGroup({ name: 'Dollars', type: 'flat' });
+    expect(created.group.asset).toMatchObject({ code: 'USDC' });
+    await expect(api.createGroup({ name: 'Yen', type: 'flat', asset: 'JPY' })).rejects.toMatchObject({ code: 'ASSET_NOT_SUPPORTED' });
+  });
+});

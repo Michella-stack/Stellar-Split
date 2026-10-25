@@ -1,13 +1,15 @@
 import { Amount } from '../../components/Amount.jsx';
 import { ListRow } from '../../components/ListRow.jsx';
 import { IconReceipt, IconRobot } from '../../components/icons.jsx';
-import { formatDate, formatUsd, memberName } from '../../lib/format.js';
+import { useAssetCode } from '../../lib/asset.js';
+import { formatDate, formatMoney, memberName } from '../../lib/format.js';
 
 /**
  * One expense: what, who paid, my share.
  * @param {{ expense: any, members: any[], meId: string }} props
  */
 export function ExpenseRow({ expense, members, meId }) {
+  const code = useAssetCode();
   const payer = members.find((m) => m.id === expense.paidBy);
   const myShare = expense.shares?.find((s) => s.memberId === meId)?.amount;
   return (
@@ -18,7 +20,7 @@ export function ExpenseRow({ expense, members, meId }) {
         </span>
       }
       title={expense.description}
-      subtitle={`${memberName(payer, meId)} paid ${formatUsd(expense.amount)} · ${formatDate(expense.createdAt)}`}
+      subtitle={`${memberName(payer, meId)} paid ${formatMoney(expense.amount, code)} · ${formatDate(expense.createdAt)}`}
       trailing={
         myShare ? (
           <span className="flex flex-col items-end">

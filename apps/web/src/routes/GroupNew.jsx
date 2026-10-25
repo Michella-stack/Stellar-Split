@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { containsSecretKey } from '@shared/validation.js';
 import { createGroup } from '../client/api.js';
+import { supportedAssetCodes } from '../client/stellar.js';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { Segmented } from '../components/Segmented.jsx';
@@ -14,7 +15,9 @@ export default function GroupNew() {
   const toast = useToast();
   const [name, setName] = useState('');
   const [type, setType] = useState('flat');
+  const [asset, setAsset] = useState('USDC');
   const [saving, setSaving] = useState(false);
+  const assetCodes = supportedAssetCodes();
   const nameError = containsSecretKey(name) ? 'This looks like a secret key. Never share it.' : null;
 
   async function handleSubmit(event) {
@@ -22,7 +25,7 @@ export default function GroupNew() {
     if (!name.trim() || nameError) return;
     setSaving(true);
     try {
-      const detail = await createGroup({ name: name.trim(), type });
+      const detail = await createGroup({ name: name.trim(), type, ...(asset === 'EURC' ? { asset } : {}) });
       navigate(`/groups/${detail.group.id}/invite`, { replace: true });
     } catch {
       toast('Could not create the group. Try again.', { tone: 'error' });
@@ -46,8 +49,23 @@ export default function GroupNew() {
             { value: 'other', label: 'Other' },
           ]}
         />
+        {assetCodes.length > 1 && (
+          <Segmented
+            label="Settle up in"
+            value={asset}
+            onChange={setAsset}
+            options={[
+              { value: 'USDC', label: 'USDC · dollars' },
+              { value: 'EURC', label: 'EURC · euros' },
+            ]}
+          />
+        )}
         <Card className="flex flex-col divide-y divide-line py-2">
-          <FixedRow label="Settle up in" value="USDC" note="Digital dollars. Fixed for every group." />
+          {assetCodes.length > 1 ? (
+            <FixedRow label="Settle up in" value={asset} note="One asset per group. Chosen now, fixed after." />
+          ) : (
+            <FixedRow label="Settle up in" value="USDC" note="Digital dollars. Fixed for every group." />
+          )}
           <FixedRow label="Network" value="Stellar Testnet" note="Test money only. Fixed." />
         </Card>
         <Button type="submit" block loading={saving} disabled={!name.trim() || Boolean(nameError)} className="mt-auto">

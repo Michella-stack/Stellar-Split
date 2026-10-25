@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router';
 import { validateAmount } from '@shared/money.js';
 import { createExpense, getGroup } from '../client/api.js';
 import { Amount } from '../components/Amount.jsx';
+import { AssetProvider } from '../components/AssetProvider.jsx';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { Chip } from '../components/Chip.jsx';
@@ -16,7 +17,8 @@ import { AmountInput } from '../features/expenses/AmountInput.jsx';
 import { cleanAmountInput, descriptionError as describeProblem, equalPreview, exactStatus } from '../features/expenses/splitPreview.js';
 import { useApi } from '../hooks/useApi.js';
 import { useToast } from '../hooks/useToast.js';
-import { formatUsd, memberName } from '../lib/format.js';
+import { ASSETS, useAssetCode } from '../lib/asset.js';
+import { formatMoney, memberName } from '../lib/format.js';
 import { useEstimate } from '../hooks/useRates.js';
 
 const AMOUNT_ERRORS = {
@@ -33,7 +35,11 @@ export default function ExpenseNew() {
       <TopBar backTo={`/groups/${id}`} title="Add expense" />
       {group.loading && <Loading label="Loading group" />}
       {group.error && <LoadError title="Could not load this group" error={group.error} onRetry={group.reload} />}
-      {group.data && <ExpenseForm detail={group.data} />}
+      {group.data && (
+        <AssetProvider group={group.data.group}>
+          <ExpenseForm detail={group.data} />
+        </AssetProvider>
+      )}
     </>
   );
 }
@@ -41,6 +47,7 @@ export default function ExpenseNew() {
 /** @param {{ detail: any }} props */
 function ExpenseForm({ detail }) {
   const estimate = useEstimate();
+  const code = useAssetCode();
   const navigate = useNavigate();
   const toast = useToast();
   const prefill = useLocation().state?.prefill;
@@ -179,12 +186,12 @@ function ExpenseForm({ detail }) {
                   <MemberAvatar member={m} size="sm" />
                   <span>
                     {memberName(m, me)}
-                    <span className="sr-only"> share in USDC</span>
+                    <span className="sr-only"> share in {code}</span>
                   </span>
                 </span>
                 <span className="flex items-center gap-1 rounded-input border-2 border-line bg-bg px-3 focus-within:border-text">
                   <span aria-hidden="true" className="text-muted">
-                    $
+                    {ASSETS[code].symbol}
                   </span>
                   <input
                     inputMode="decimal"
@@ -217,6 +224,8 @@ function ExpenseForm({ detail }) {
 
 /** @param {{ status: ReturnType<typeof exactStatus>, amount: string }} props */
 function ExactSummary({ status, amount }) {
+  const code = useAssetCode();
+  const formatUsd = (v) => formatMoney(v, code);
   const total = validateAmount(amount).ok ? formatUsd(amount) : null;
   const text = {
     'no-amount': 'Enter the total amount first.',

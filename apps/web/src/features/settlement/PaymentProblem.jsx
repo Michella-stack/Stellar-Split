@@ -1,19 +1,19 @@
 import { Button, ButtonLink } from '../../components/Button.jsx';
 import { Card } from '../../components/Card.jsx';
 import { IconAlert, IconExternal } from '../../components/icons.jsx';
-import { EXPLORER_TX_URL, USDC_FAUCET_URL } from '../../config/env.js';
+import { EXPLORER_TX_URL, FAUCET_URL as USDC_FAUCET_URL } from '../../config/env.js';
 
 /**
  * Copy and next step for every way a payment can fail. `unknownOutcome` codes never offer "try again":
  * the payment may have gone through, so the person checks the explorer first.
  */
-const PROBLEMS = {
+const problems = (a) => ({
   USER_REJECTED: { title: 'Payment cancelled', body: 'You closed the request in Freighter. Nothing was sent.' },
-  INSUFFICIENT_BALANCE: { title: 'Not enough USDC', body: 'Your wallet does not hold enough testnet USDC for this payment. Pay a smaller amount or get more from the faucet.' },
-  NO_TRUSTLINE: { title: 'Your wallet can’t hold USDC yet', body: 'Add a USDC trustline first. It is a one-time approval in Freighter that lets your wallet hold USDC. It moves no money.' },
+  INSUFFICIENT_BALANCE: { title: `Not enough ${a}`, body: `Your wallet does not hold enough testnet ${a} for this payment. Pay a smaller amount or get more from the faucet.` },
+  NO_TRUSTLINE: { title: `Your wallet can’t hold ${a} yet`, body: `Add a ${a} trustline first. It is a one-time approval in Freighter that lets your wallet hold ${a}. It moves no money.` },
   NOT_FUNDED: { title: 'Your wallet isn’t on Testnet yet', body: 'Fund it with free test XLM from the Wallet screen, then come back.' },
   LOW_XLM: { title: 'Not enough XLM for the fee', body: 'Stellar needs a tiny amount of XLM to process the payment. Top up with Friendbot from the Wallet screen.' },
-  RECIPIENT_NOT_READY: { title: 'They can’t receive USDC yet', body: 'Their wallet needs to exist on Testnet and have a USDC trustline. Ask them to open Stellar Split once and add it.' },
+  RECIPIENT_NOT_READY: { title: `They can’t receive ${a} yet`, body: `Their wallet needs to exist on Testnet and have a ${a} trustline. Ask them to open Stellar Split once and add it.` },
   SAME_ACCOUNT: { title: 'That’s your own wallet', body: 'The recipient uses the same Freighter account as you, so there is nothing to send.' },
   EXPIRED: { title: 'The payment expired', body: 'It waited too long before being sent, so nothing moved. Review it again.' },
   NETWORK: { title: 'We couldn’t reach Stellar', body: 'Check your connection.', unknownBody: 'We lost the connection while sending. Check the transaction before paying again: it may have gone through.' },
@@ -29,13 +29,14 @@ const PROBLEMS = {
   UPSTREAM_UNAVAILABLE: { title: 'Stellar Split is busy', body: 'We could not reach Stellar or our database just now. Nothing was sent. Try again in a moment.' },
   NOT_INSTALLED: { title: 'Freighter is not available', body: 'Open this page in the browser where Freighter is installed.' },
   UNKNOWN: { title: 'Something went wrong', body: 'Nothing was sent as far as we know. Review the payment and try again.' },
-};
+});
 
 /**
  * @param {{ code: string, txHash?: string, groupId: string, onReview: () => void, onAddTrustline?: () => void,
- *   addingTrustline?: boolean }} props
+ *   addingTrustline?: boolean, asset?: string }} props
  */
-export function PaymentProblem({ code, txHash, groupId, onReview, onAddTrustline, addingTrustline }) {
+export function PaymentProblem({ code, txHash, groupId, onReview, onAddTrustline, addingTrustline, asset = 'USDC' }) {
+  const PROBLEMS = problems(asset);
   const problem = PROBLEMS[code] ?? PROBLEMS.UNKNOWN;
   const unknownOutcome = code === 'TIMEOUT' || (code === 'NETWORK' && txHash);
   const body = code === 'NETWORK' && txHash ? problem.unknownBody : problem.body;
@@ -63,12 +64,12 @@ export function PaymentProblem({ code, txHash, groupId, onReview, onAddTrustline
       )}
       {code === 'NO_TRUSTLINE' && onAddTrustline && (
         <Button block loading={addingTrustline} onClick={onAddTrustline}>
-          Add USDC trustline
+          Add {asset} trustline
         </Button>
       )}
       {code === 'INSUFFICIENT_BALANCE' && (
         <a href={USDC_FAUCET_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-1 font-medium underline underline-offset-4">
-          Get testnet USDC <IconExternal size={16} />
+          Get testnet {asset} <IconExternal size={16} />
           <span className="sr-only">(opens in a new tab)</span>
         </a>
       )}

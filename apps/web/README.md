@@ -70,6 +70,7 @@ All `VITE_` variables are compiled into the browser bundle, so none of them may 
 | `VITE_API_URL` | Base URL of the Stellar-Split API. |
 | `VITE_HORIZON_URL` | Stellar Testnet Horizon. |
 | `VITE_USDC_ISSUER` | Issuer of Circle Testnet USDC, `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
+| `VITE_EURC_ISSUER` | Optional. Issuer of Circle Testnet EURC (`GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO`). When set, **New group** offers USDC or EURC. Leave empty for USDC only. The API needs the same `EURC_ISSUER`. |
 | `VITE_NETWORK` | Must be `testnet`. |
 | `VITE_MOCK_MATEO_ADDRESS` | Mock mode only: a real Testnet account that plays Mateo, so a demo payment can reach it. |
 
@@ -107,11 +108,11 @@ src/
 
 ## Settle up (Stellar Testnet)
 
-The first settlement path is a plain USDC payment from the person who owes to the person owed (`src/client/stellar.js`, the only Horizon code). The Soroban contract `settle` can replace it later behind the same functions.
+The first settlement path is a plain payment (USDC, or EURC for a euro group) from the person who owes to the person owed (`src/client/stellar.js`, the only Horizon code). The Soroban contract `settle` can replace it later behind the same functions.
 
 1. **Review:** amount (or a smaller partial amount, never more than the debt), recipient with short address, group, asset, network, fee and home-currency estimates.
 2. **Reserve:** the API reserves a settlement intent and returns a reference (memo) and an expiry. Nobody else can settle with you or the creditor in this group until it is used, cancelled or expires (10 minutes).
-3. **Checks before Freighter opens:** your account exists and has a USDC trustline, enough USDC and enough XLM for the fee; the recipient exists and has a USDC trustline; you are not paying yourself.
+3. **Checks before Freighter opens:** your account exists and has a trustline for the group's asset (USDC or EURC), enough of it and enough XLM for the fee; the recipient exists and has the same trustline; you are not paying yourself.
 4. **Signing:** the adapter re-reads the network and the account and checks that the transaction matches the review, including the intent's memo (a `MEMO_HASH`) and an expiry no later than the intent's.
 5. **Submit once** to Horizon, never retried. On success the hash links to Stellar Expert, and the settlement is recorded with `{ intentId, txHash }`. If nothing was sent (rejected, a failed check), the intent is cancelled so nobody stays blocked.
 6. **Problems** each have their own next step: cancelled, not enough USDC, no trustline (adds one as its own signed transaction), recipient not ready, network error, timeout. A timeout or a dropped connection shows the transaction to check instead of "try again", because the payment may have gone through.

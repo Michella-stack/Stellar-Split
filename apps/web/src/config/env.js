@@ -9,14 +9,16 @@ export const EXPLORER_TX_URL = 'https://stellar.expert/explorer/testnet/tx/';
 export const EXPLORER_ACCOUNT_URL = 'https://stellar.expert/explorer/testnet/account/';
 export const FREIGHTER_INSTALL_URL = 'https://www.freighter.app/';
 export const FRIENDBOT_URL = 'https://friendbot.stellar.org';
+// One Circle faucet hands out both testnet USDC and EURC.
 export const USDC_FAUCET_URL = 'https://faucet.circle.com/';
+export const FAUCET_URL = USDC_FAUCET_URL;
 
 const TESTNET_HORIZONS = ['https://horizon-testnet.stellar.org'];
 
 /**
  * Reads and checks the environment.
  * @param {Record<string, string | undefined>} env usually import.meta.env
- * @returns {{ ok: true, config: { horizonUrl: string, usdcIssuer: string, apiUrl: string, useMocks: boolean } }
+ * @returns {{ ok: true, config: { horizonUrl: string, usdcIssuer: string, eurcIssuer: string | null, apiUrl: string, useMocks: boolean } }
  *   | { ok: false, problems: string[] }}
  */
 export function readConfig(env) {
@@ -28,10 +30,13 @@ export function readConfig(env) {
   }
   const usdcIssuer = env.VITE_USDC_ISSUER ?? '';
   if (!isValidStellarAddress(usdcIssuer)) problems.push('VITE_USDC_ISSUER must be the Testnet USDC issuer address (G...).');
+  // EURC is optional: without VITE_EURC_ISSUER the app offers USDC only, exactly as before.
+  const eurcIssuer = env.VITE_EURC_ISSUER ? env.VITE_EURC_ISSUER : null;
+  if (eurcIssuer && !isValidStellarAddress(eurcIssuer)) problems.push('VITE_EURC_ISSUER must be the Testnet EURC issuer address (G...), or left empty.');
   if (problems.length > 0) return { ok: false, problems };
   return {
     ok: true,
-    config: { horizonUrl, usdcIssuer, apiUrl: env.VITE_API_URL ?? '', useMocks: env.VITE_USE_MOCKS === 'true' },
+    config: { horizonUrl, usdcIssuer, eurcIssuer, apiUrl: env.VITE_API_URL ?? '', useMocks: env.VITE_USE_MOCKS === 'true' },
   };
 }
 

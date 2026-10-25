@@ -96,3 +96,13 @@ test('EURC_ISSUER is optional and must be a G address when set', () => {
   assert.equal(loadConfig({ ...env, EURC_ISSUER }).eurcIssuer, EURC_ISSUER);
   assert.throws(() => loadConfig({ ...env, EURC_ISSUER: 'nope' }), /EURC_ISSUER must be a G address/);
 });
+
+test('the group list names each group’s asset and totals euros apart from dollars', async () => {
+  const { ledger, id } = await setup({ asset: 'EURC' });
+  await ledger.createGroup(human(A), { name: 'Dollars' });
+  const list = await ledger.listGroups(human(B));
+  assert.deepEqual(list.groups.map((x) => x.asset), ['EURC']);
+  assert.deepEqual(list.totals, { youOwe: '0.00', youAreOwed: '0.00' });
+  assert.deepEqual(list.otherTotals, [{ asset: 'EURC', youOwe: '10.00', youAreOwed: '0.00' }]);
+  assert.ok(id[A]);
+});

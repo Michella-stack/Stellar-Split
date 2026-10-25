@@ -3,7 +3,8 @@ import { Amount } from '../../components/Amount.jsx';
 import { ButtonLink } from '../../components/Button.jsx';
 import { Card } from '../../components/Card.jsx';
 import { totalOwed } from '../settlement/queue.js';
-import { formatUsd, memberName } from '../../lib/format.js';
+import { useAssetCode } from '../../lib/asset.js';
+import { formatMoney, memberName } from '../../lib/format.js';
 import { useEstimate } from '../../hooks/useRates.js';
 
 /**
@@ -12,6 +13,7 @@ import { useEstimate } from '../../hooks/useRates.js';
  */
 export function BalanceCard({ detail, homeCurrency }) {
   const estimate = useEstimate();
+  const code = useAssetCode();
   const { myPosition, members, me, group } = detail;
   const byId = new Map(members.map((m) => [m.id, m]));
   const [first, ...rest] = myPosition.owes;
@@ -33,7 +35,7 @@ export function BalanceCard({ detail, homeCurrency }) {
             to={`/groups/${group.id}/settle/${first.to}`}
             state={{ queue: myPosition.owes.map((t) => t.to) }}
           >
-            Settle all · {formatUsd(totalOwed(myPosition.owes))}
+            Settle all · {formatMoney(totalOwed(myPosition.owes), code)}
           </ButtonLink>
         )}
         {rest.length > 0 && (

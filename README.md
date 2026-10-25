@@ -1,6 +1,6 @@
 # Stellar-Split
 
-Split shared expenses and settle them in USDC on Stellar, built for families and workers who send money across borders, with agent support via x402.
+Split shared expenses and settle them in USDC (or EURC, for euro groups) on Stellar, built for families and workers who send money across borders, with agent support via x402.
 
 Built at HackMeridian (Lisbon, 25 to 26 October 2026). Track: Genesis, with Stellar Composed.
 
@@ -26,7 +26,7 @@ Context from public sources (to be checked before the pitch; see `docs/BUILD-FOC
 
 | Part | Where | Status |
 |---|---|---|
-| Web app: Freighter sign-in, groups, equal and exact splits, balances, settle in Testnet USDC with the tx on Stellar Expert | [`apps/web`](apps/web/README.md) | Live at the URL above, talking to the API. Stellar Assist (the agent screens) runs on labelled sample data (“Preview”) until the agent API exists |
+| Web app: Freighter sign-in, groups, equal and exact splits, balances, settle in Testnet USDC (or EURC for a euro group) with the tx on Stellar Expert | [`apps/web`](apps/web/README.md) | Live at the URL above, talking to the API. Stellar Assist (the agent screens) runs on labelled sample data (“Preview”) until the agent API exists |
 | API: sign-in with a signed message, groups, members, expenses, balances, two-step settlements (a reserved intent, then the payment with its memo) recorded only after Horizon confirms it | [`apps/api`](apps/api/README.md) | Live at the URL above, with Supabase |
 | Shared money, split and balance rules used by both | [`packages/shared`](packages/shared/README.md) | Merged |
 | Non-custodial Soroban group contract | [`contracts/group`](contracts/README.md) | Deployed on Testnet (below) |
@@ -108,6 +108,18 @@ Three demo accounts are already set up in Freighter on Testnet, each with XLM fr
 | Demo user 3 | [`GDNTRR7T5BS22ULN2YHYIRPLYJWZ7EIPWG5BWBWN2TC52UVYGONEXXLC`](https://stellar.expert/explorer/testnet/account/GDNTRR7T5BS22ULN2YHYIRPLYJWZ7EIPWG5BWBWN2TC52UVYGONEXXLC) |
 
 Testnet USDC can also be requested at [faucet.circle.com](https://faucet.circle.com) (Stellar Testnet), with a cooldown of about two hours per address.
+
+### Settling in euros (EURC, #98)
+
+A group settles in one asset, chosen when it is created: USDC (the default, and what every existing group uses) or EURC, Circle's euro stablecoin. Euro groups show € and "EURC" throughout, the payment and the API's check on Horizon use EURC, and balances in euros are never added to balances in dollars (the group list totals them separately).
+
+EURC is off until it is configured, so nothing changes for the live demo until then:
+
+1. Set `EURC_ISSUER` for the API and `VITE_EURC_ISSUER` for the web app to Circle's **Testnet** EURC issuer (`GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO`; the mainnet issuer is a different address).
+2. Run [`database/migrations/003_group_asset.sql`](database/migrations/003_group_asset.sql) in Supabase (adds `groups.asset`; groups without a value stay USDC).
+3. Each wallet needs a EURC trustline (Settle up offers **Add EURC trustline**) and Testnet EURC from [faucet.circle.com](https://faucet.circle.com) (choose Stellar Testnet and EURC).
+
+Agent spend limits and the policy engine count in the group's own asset units. Settlement through the Soroban contract is unchanged.
 
 ## Security
 

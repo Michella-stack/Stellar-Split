@@ -1,6 +1,7 @@
 import { useParams } from 'react-router';
 import { getGroup, listActivity } from '../client/api.js';
 import { Amount } from '../components/Amount.jsx';
+import { AssetProvider } from '../components/AssetProvider.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
 import { IconCheck, IconExternal, IconInbox } from '../components/icons.jsx';
 import { ListRow } from '../components/ListRow.jsx';
@@ -30,7 +31,8 @@ export default function Activity() {
         {loading && !error && <Loading label="Loading activity" />}
         {error && <LoadError title="Could not load activity" error={error} onRetry={reload} />}
         {group.data && activity.data && (
-          activity.data.items.length === 0 ? (
+          <AssetProvider group={group.data.group}>
+          {activity.data.items.length === 0 ? (
             <EmptyState icon={<IconInbox />} title="Nothing yet">
               Expenses and payments in this group will show up here.
             </EmptyState>
@@ -46,7 +48,8 @@ export default function Activity() {
                 </li>
               ))}
             </ul>
-          )
+          )}
+          </AssetProvider>
         )}
       </div>
     </>

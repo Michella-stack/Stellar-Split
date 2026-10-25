@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { validateAmount } from '@shared/money.js';
+import { containsSecretKey } from '@shared/validation.js';
 import { createExpense, getGroup } from '../client/api.js';
 import { Amount } from '../components/Amount.jsx';
 import { Button } from '../components/Button.jsx';

@@ -80,10 +80,6 @@ Design rules the code must follow (enforced as each part lands):
 
 Planned after the hackathon: release tags and artifacts will be signed with the owner's GPG key, and the key fingerprint will be published here and in `SECURITY.md`.
 
-## Prior work disclosure
-
-Before the event the team wrote a product requirements document (v0.3, dated 25 October 2026) and reviewed public literature on remittances and stablecoins. No application code for this project was written before the event. A separate earlier Testnet prototype by Michella Warren, called Raven, is not part of this repository.
-
 ## Team
 
 Michella Warren, Victor Estival, Damaris Castro, Viviana Andrango, Sofiia Varich.

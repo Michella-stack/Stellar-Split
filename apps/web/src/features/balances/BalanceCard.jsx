@@ -2,7 +2,8 @@ import { Link } from 'react-router';
 import { Amount } from '../../components/Amount.jsx';
 import { ButtonLink } from '../../components/Button.jsx';
 import { Card } from '../../components/Card.jsx';
-import { memberName } from '../../lib/format.js';
+import { totalOwed } from '../settlement/queue.js';
+import { formatUsd, memberName } from '../../lib/format.js';
 import { useEstimate } from '../../hooks/useRates.js';
 
 /**
@@ -26,6 +27,15 @@ export function BalanceCard({ detail, homeCurrency }) {
         <ButtonLink variant="onAccent" to={`/groups/${group.id}/settle/${first.to}`}>
           Settle up with {name}
         </ButtonLink>
+        {rest.length > 0 && (
+          <ButtonLink
+            variant="onAccent"
+            to={`/groups/${group.id}/settle/${first.to}`}
+            state={{ queue: myPosition.owes.map((t) => t.to) }}
+          >
+            Settle all · {formatUsd(totalOwed(myPosition.owes))}
+          </ButtonLink>
+        )}
         {rest.length > 0 && (
           <ul className="flex flex-col gap-2 border-t border-on-accent/20 pt-3 text-sm">
             {rest.map((t) => (

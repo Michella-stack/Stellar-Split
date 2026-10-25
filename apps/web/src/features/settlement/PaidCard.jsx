@@ -14,9 +14,11 @@ import { shortAddress } from '../../lib/format.js';
 /**
  * Success screen after a confirmed Testnet payment.
  * @param {{ amount: string, recipientName: string, recipientAddress: string, groupId: string, groupName: string, txHash: string,
- *   fullyPaid: boolean, record: { status: 'saving' | 'saved' | 'failed' | 'review', retry: () => void } }} props
+ *   fullyPaid: boolean, record: { status: 'saving' | 'saved' | 'failed' | 'review', retry: () => void },
+ *   next?: { memberId: string, name: string, queue: string[], done: number, total: number } | null }} props
+ *   next: the following payment of a "Settle all" queue
  */
-export function PaidCard({ amount, recipientName, recipientAddress, groupId, groupName, txHash, fullyPaid, record }) {
+export function PaidCard({ amount, recipientName, recipientAddress, groupId, groupName, txHash, fullyPaid, record, next = null }) {
   const copy = useCopy();
   const toast = useToast();
   const [paidAt] = useState(() => new Date());
@@ -123,9 +125,23 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
           <span className="sr-only">(opens in a new tab)</span>
         </a>
       )}
-      <ButtonLink to={`/groups/${groupId}`} block>
-        Back to group
-      </ButtonLink>
+      {next ? (
+        <>
+          <p role="status" className="text-center text-sm text-muted">
+            Payment {next.done} of {next.total} done.
+          </p>
+          <ButtonLink to={`/groups/${groupId}/settle/${next.memberId}`} state={{ queue: next.queue }} block>
+            Next: pay {next.name}
+          </ButtonLink>
+          <ButtonLink to={`/groups/${groupId}`} variant="ghost" block>
+            Stop here and go back to the group
+          </ButtonLink>
+        </>
+      ) : (
+        <ButtonLink to={`/groups/${groupId}`} block>
+          Back to group
+        </ButtonLink>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <Button variant="secondary" loading={busy === 'save'} disabled={busy !== null} icon={<IconDownload size={20} />} onClick={save}>
           Save receipt

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useLocation, useParams } from 'react-router';
 import { toStroops, validateAmount } from '@shared/money.js';
 import { cancelSettlementIntent, createSettlementIntent, getGroup, recordSettlement } from '../client/api.js';
 import { buildUsdcPayment, buildUsdcTrustline, checkPayment, loadBalances, submitSigned, usdcAsset } from '../client/stellar.js';
+import { AddressLink } from '../components/AddressLink.jsx';
 import { Amount } from '../components/Amount.jsx';
 import { Button, ButtonLink } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
@@ -13,17 +14,20 @@ import { MemberAvatar } from '../features/balances/MemberAvatar.jsx';
 import { AmountInput } from '../features/expenses/AmountInput.jsx';
 import { PaidCard } from '../features/settlement/PaidCard.jsx';
 import { PaymentProblem } from '../features/settlement/PaymentProblem.jsx';
+import { queueAfter } from '../features/settlement/queue.js';
 import { useApi } from '../hooks/useApi.js';
 import { DEMO } from '../lib/demoMode.js';
 import { useToast } from '../hooks/useToast.js';
 import { useWallet } from '../hooks/useWallet.js';
-import { formatUsd, shortAddress } from '../lib/format.js';
+import { formatUsd } from '../lib/format.js';
 import { USDC_FAUCET_URL } from '../config/env.js';
 import { useEstimate } from '../hooks/useRates.js';
 
 export default function Settle() {
   const { id, memberId } = useParams();
-  const group = useApi(() => getGroup(id), `group:${id}`);
+  const location = useLocation();
+  // Reloaded for every payment, so a "Settle all" queue always shows what is owed now.
+  const group = useApi(() => getGroup(id), `settle:${id}:${memberId}:${location.key}`);
   return (
     <>
       {group.loading && (
@@ -38,7 +42,7 @@ export default function Settle() {
           <LoadError title="Could not load this group" error={group.error} onRetry={group.reload} />
         </>
       )}
-      {group.data && <SettleFlow detail={group.data} memberId={memberId} />}
+      {group.data && <SettleFlow detail={group.data} memberId={memberId} queue={location.state?.queue} />}
     </>
   );
 }
@@ -48,7 +52,7 @@ export default function Settle() {
  * A wallet account or network change (epoch) at any point before submission sends the person back to review.
  * @param {{ detail: any, memberId: string }} props
  */
-function SettleFlow({ detail, memberId }) {
+function SettleFlow({ detail, memberId, queue }) {
   const wallet = useWallet();
   const toast = useToast();
   const { group, members, me, myPosition } = detail;
@@ -219,6 +223,13 @@ function SettleFlow({ detail, memberId }) {
     );
   }
 
+  // "Settle all": who is left to pay after this one.
+  const remaining = queueAfter(queue, memberId);
+  const nextMember = remaining.length > 0 ? members.find((m) => m.id === remaining[0]) : null;
+  const nextPayment = nextMember
+    ? { memberId: nextMember.id, name: nextMember.displayName, queue, done: queue.indexOf(memberId) + 1, total: queue.length }
+    : null;
+
   if (step === 'paid' && paid) {
     return (
       <>
@@ -232,6 +243,7 @@ function SettleFlow({ detail, memberId }) {
           txHash={paid.hash}
           fullyPaid={debt !== null && toStroops(paid.amount) === toStroops(debt)}
           record={{ status: record, retry: () => saveRecord(paid.hash, paidIntent) }}
+          next={nextPayment}
         />
       </>
     );
@@ -333,9 +345,7 @@ function SettleFlow({ detail, memberId }) {
             <Row term="To">
               <span className="flex flex-col items-end">
                 <span className="font-semibold">{recipient.displayName}</span>
-                <span className="font-mono text-sm text-muted" title={recipient.address}>
-                  {shortAddress(recipient.address)}
-                </span>
+                <AddressLink address={recipient.address} className="text-sm text-muted" />
               </span>
             </Row>
             <Row term="Group">{group.name}</Row>

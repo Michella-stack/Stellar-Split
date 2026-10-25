@@ -2,7 +2,7 @@
 
 Draft, 2026-10-25, status as read from `main` at `4197089`. Edit with the team. See [`README.md`](README.md) for the colour key.
 
-The suite: the Soroban group contract, the web app, the API, the MCP server, the agents (Hermes, OpenClaw) and the repository and CI that build them.
+The suite: the Soroban group contract, the web app, the API, the MCP server, Stellar Assist (the agent, running on Hermes and OpenClaw) and the repository and CI that build them.
 
 ## Chart A. From code change to release
 
@@ -48,7 +48,7 @@ flowchart TB
   end
 
   subgraph Agents
-    G1["Telegram message to Hermes or OpenClaw<br/>allowlisted team members"]:::built
+    G1["Telegram message to Stellar Assist<br/>on Hermes or OpenClaw<br/>allowlisted team members"]:::built
     G2["MCP server<br/>validates input, rejects secret keys"]:::built
     G3["Signer in separate container"]:::planned
   end

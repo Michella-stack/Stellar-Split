@@ -5,7 +5,7 @@ PRD section 9 ("Security 360") is the design. The files here are the working rec
 | File | What it is |
 |---|---|
 | [`threat-model.md`](threat-model.md) | Assets, trust boundaries, risk-rated threat register with status and evidence, decisions needed, and what can be claimed publicly. |
-| [`verification-policy.md`](verification-policy.md) | Draft payment verification tiers (over 2 and over 40), the Hermes role, new-user binding, and the reasoning behind each number. |
+| [`verification-policy.md`](verification-policy.md) | Draft payment verification tiers (over 2 and over 40), the Stellar Assist role, new-user binding, and the reasoning behind each number. |
 | [`references/`](references/README.md) | Bibliography and a table of recent breaches and fraud cases, with links and confidence notes. |
 | [`diagrams/`](diagrams/README.md) | Mermaid workflow charts for the security workflow and the verification flow, for the team to edit. |
 

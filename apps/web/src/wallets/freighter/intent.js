@@ -8,7 +8,7 @@ import { WalletError } from './errors.js';
 /**
  * What the person agreed to on the review screen.
  * @typedef {{ kind: 'payment', signer: string, destination: string, amount: string, assetCode: string, assetIssuer: string,
- *     memoHash?: string, notAfter?: string }
+ *     memoHash: string, notAfter: string }
  *   | { kind: 'trustline', signer: string, assetCode: string, assetIssuer: string }} SigningIntent
  */
 
@@ -48,12 +48,13 @@ export function checkIntent(xdr, intent, { now = new Date() } = {}) {
     if (op.destination !== intent.destination) throw mismatch('different recipient');
     if (op.asset.getCode() !== intent.assetCode || op.asset.getIssuer() !== intent.assetIssuer) throw mismatch('different asset');
     if (toStroops(op.amount) !== toStroops(intent.amount)) throw mismatch('different amount');
-    if (intent.memoHash !== undefined) {
-      const memo = tx.memo;
-      const hex = memo?.type === 'hash' && memo.value ? toHex(memo.value) : null;
-      if (hex !== intent.memoHash.toLowerCase()) throw mismatch('the payment reference (memo) is not the reserved one');
-    }
-    if (intent.notAfter !== undefined && maxTime * 1000 > Date.parse(intent.notAfter)) throw mismatch('it stays valid after the reservation expires');
+    // Both are required: without them the API would refuse the payment after the money has moved.
+    if (typeof intent.memoHash !== 'string' || !intent.notAfter) throw mismatch('the reservation (memo and expiry) is missing');
+    const memo = tx.memo;
+    const hex = memo?.type === 'hash' && memo.value ? toHex(memo.value) : null;
+    if (hex !== intent.memoHash.toLowerCase()) throw mismatch('the payment reference (memo) is not the reserved one');
+    // Negated so that an unparsable date (NaN) is refused instead of passing every comparison.
+    if (!(maxTime * 1000 <= Date.parse(intent.notAfter))) throw mismatch('it stays valid after the reservation expires');
     return tx;
   }
 

@@ -1,15 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { ApiError, scanReceipt, USING_MOCKS } from '../client/api.js';
 import { Amount } from '../components/Amount.jsx';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { IconCamera, IconReceipt } from '../components/icons.jsx';
 import { TopBar } from '../components/TopBar.jsx';
-import { mockReceiptResult } from '../features/expenses/mockReceipt.js';
+import { mockReceiptDraft } from '../features/expenses/mockReceipt.js';
+import { draftToPrefill, warningMessages } from '../features/expenses/receiptDraft.js';
+import { PhotoError, prepareReceiptPhoto } from '../features/expenses/receiptPhoto.js';
 import { useT } from '../hooks/useT.js';
+import { tNow } from '../i18n/index.js';
 import { formatDate } from '../lib/format.js';
 
-const SCAN_MS = 1800;
+// Errors that mean the reader itself could not be used. The demo then shows a labelled sample instead of failing.
+const READER_DOWN = new Set(['SCAN_UNAVAILABLE', 'NETWORK', 'TIMEOUT', 'UNKNOWN']);
+
+/** @param {unknown} error */
+function describeFailure(error) {
+  if (error instanceof PhotoError) return tNow('scan.errImage');
+  if (error instanceof ApiError && error.code === 'NOT_A_RECEIPT') return tNow('scan.errNotReceipt');
+  if (error instanceof ApiError && error.code === 'SCAN_UNREADABLE') return tNow('scan.errUnreadable');
+  if (error instanceof ApiError && error.code === 'RATE_LIMITED') return tNow('scan.errRateLimited');
+  if (error instanceof ApiError && error.code === 'UNAUTHORIZED') return tNow('scan.errSession');
+  return tNow('scan.errGeneric');
+}
 
 export default function ExpenseScan() {
   const { t } = useT();
@@ -17,31 +32,47 @@ export default function ExpenseScan() {
   const navigate = useNavigate();
   const cameraRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const uploadRef = useRef(/** @type {HTMLInputElement | null} */ (null));
-  const [step, setStep] = useState(/** @type {'choose' | 'scanning' | 'result'} */ ('choose'));
-  const [result, setResult] = useState(/** @type {ReturnType<typeof mockReceiptResult> | null} */ (null));
-
+  const [step, setStep] = useState(/** @type {'choose' | 'scanning' | 'result' | 'error'} */ ('choose'));
+  const [result, setResult] = useState(/** @type {import('../features/expenses/receiptDraft.js').ReceiptDraft | null} */ (null));
+  // True when the result is a sample, not a reading of the photo: mock mode, or the reader could not be reached.
+  const [sample, setSample] = useState(false);
+  const [failure, setFailure] = useState('');
+  const mounted = useRef(true);
   useEffect(() => {
-    if (step !== 'scanning') return undefined;
-    const timer = setTimeout(() => {
-      setResult(mockReceiptResult());
-      setStep('result');
-    }, SCAN_MS);
-    return () => clearTimeout(timer);
-  }, [step]);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
-  function onFile(event) {
+  async function onFile(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
-    // The photo is never read, displayed or uploaded: scanning is mocked for now.
     if (!file || !file.type.startsWith('image/')) return;
     setStep('scanning');
+    try {
+      // In mock mode the photo is never read or sent. Otherwise it is made small and upright first, which also drops its GPS data.
+      const photo = USING_MOCKS ? { mimeType: 'image/jpeg', imageBase64: '' } : await prepareReceiptPhoto(file);
+      const { draft } = await scanReceipt(id, photo);
+      if (!mounted.current) return;
+      setResult(draft);
+      setSample(USING_MOCKS);
+      setStep('result');
+    } catch (error) {
+      if (!mounted.current) return;
+      if (error instanceof ApiError && (READER_DOWN.has(error.code) || error.status >= 500)) {
+        setResult(mockReceiptDraft());
+        setSample(true);
+        setStep('result');
+        return;
+      }
+      setFailure(describeFailure(error));
+      setStep('error');
+    }
   }
 
   function applyDetails() {
-    navigate(`/groups/${id}/expenses/new`, {
-      replace: true,
-      state: { prefill: { amount: result.usdc, description: t('scan.description', { merchant: result.merchant.split(',')[0] }), source: 'scan' } },
-    });
+    navigate(`/groups/${id}/expenses/new`, { replace: true, state: { prefill: draftToPrefill(result) } });
   }
 
   return (
@@ -55,6 +86,11 @@ export default function ExpenseScan() {
           <>
             <h1 className="font-display-wide text-4xl">{t('scan.title')}</h1>
             <p className="text-muted">{t('scan.intro')}</p>
+            {!USING_MOCKS && (
+              <p role="note" className="rounded-2xl bg-surface-2 px-4 py-3 text-sm">
+                {t('scan.demoNotice')}
+              </p>
+            )}
             <div className="flex flex-col gap-3">
               <Button block icon={<IconCamera size={20} />} onClick={() => cameraRef.current?.click()}>
                 {t('scan.takePhoto')}
@@ -76,35 +112,56 @@ export default function ExpenseScan() {
           </div>
         )}
 
+        {step === 'error' && (
+          <>
+            <h1 className="font-display-wide text-4xl">{t('scan.errorTitle')}</h1>
+            <p role="alert" className="text-muted">
+              {failure}
+            </p>
+            <Button block onClick={() => setStep('choose')}>
+              {t('scan.tryAnother')}
+            </Button>
+            <Button block variant="outline" onClick={() => navigate(`/groups/${id}/expenses/new`, { replace: true })}>
+              {t('scan.enterByHand')}
+            </Button>
+          </>
+        )}
+
         {step === 'result' && result && (
           <>
-            <h1 className="font-display-wide text-4xl">{t('scan.found')}</h1>
+            <h1 className="font-display-wide text-4xl">{sample ? t('scan.sampleTitle') : t('scan.found')}</h1>
+            {sample && (
+              <p role="note" className="rounded-2xl bg-surface-2 px-4 py-3 text-sm">
+                {USING_MOCKS ? t('scan.sampleMock') : t('scan.sampleDown')}
+              </p>
+            )}
             <Card className="flex flex-col gap-4">
               <div className="flex flex-col">
-                <span className="text-lg font-semibold">{result.merchant}</span>
-                <span className="text-sm text-muted">{formatDate(result.date)}</span>
+                <span className="text-lg font-semibold">{result.merchant ?? t('scan.unknownMerchant')}</span>
+                <span className="text-sm text-muted">{result.date ? formatDate(result.date) : t('scan.noDate')}</span>
               </div>
               <dl className="grid grid-cols-2 gap-3">
                 <div>
                   <dt className="text-sm text-muted">{t('scan.totalOnReceipt')}</dt>
-                  <dd className="font-mono text-lg">
-                    {result.localCurrency} {result.localTotal}
-                  </dd>
+                  <dd className="font-mono text-lg">{[result.currency, result.total].filter(Boolean).join(' ')}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-muted">{t('scan.inUsdc')}</dt>
-                  <dd>
-                    <Amount value={result.usdc} size="md" />
-                  </dd>
+                  <dd>{result.usdc ? <Amount value={result.usdc} size="md" /> : <span className="text-sm text-muted">{t('scan.enterNext')}</span>}</dd>
                 </div>
               </dl>
+              {warningMessages(result).map((message) => (
+                <p key={message} role="note" className="text-sm">
+                  {message}
+                </p>
+              ))}
               <div className="flex flex-col gap-1">
                 <h2 className="text-sm font-medium">{t('scan.items')}</h2>
                 <ul className="flex flex-col divide-y divide-line text-sm">
-                  {result.items.map((item) => (
-                    <li key={item.nameKey} className="flex justify-between py-2">
-                      <span>{t(item.nameKey)}</span>
-                      <span className="font-mono">€{item.amount}</span>
+                  {result.items.map((item, index) => (
+                    <li key={`${index}-${item.nameKey ?? item.name}`} className="flex justify-between py-2">
+                      <span>{item.nameKey ? t(item.nameKey) : item.name}</span>
+                      <span className="font-mono">{[result.currency, item.amount].filter(Boolean).join(' ')}</span>
                     </li>
                   ))}
                 </ul>
@@ -120,7 +177,7 @@ export default function ExpenseScan() {
         )}
 
         <p className="mt-auto text-sm text-muted">
-          {t('scan.privacy')}
+          {USING_MOCKS ? t('scan.privacyMock') : t('scan.privacyReal')}
         </p>
       </div>
     </>

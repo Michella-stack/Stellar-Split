@@ -7,6 +7,7 @@ import { checkExactSplit } from '@shared/splits.js';
 import { containsSecretKey, isValidStellarAddress, looksLikeStellarAddress } from '@shared/validation.js';
 import { ApiError } from '../errors.js';
 import { initialState } from './data.js';
+import { mockReceiptDraft } from '../../features/expenses/mockReceipt.js';
 
 const dec = (stroops) => fromStroops(stroops, { minDecimals: 2 });
 const USDC = { code: 'USDC', issuer: null };
@@ -231,6 +232,13 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
       if (!group) return fail('NOT_FOUND', 'Group not found', 404);
       const expenses = [...group.expenses].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(withShares);
       return reply({ expenses });
+    },
+
+    async scanReceipt(groupId) {
+      const group = findGroup(groupId);
+      if (!group || !myMemberId(group)) return fail('NOT_FOUND', 'Group not found', 404);
+      // The photo is never read in mock mode: every photo gives the same sample draft.
+      return reply({ draft: mockReceiptDraft(now()) });
     },
 
     async createExpense(groupId, input, { idempotencyKey } = {}) {

@@ -250,6 +250,20 @@ describe('members and idempotency (same behaviour as the API)', () => {
   });
 });
 
+describe('scanReceipt (receipt scan, issue #87)', () => {
+  it('returns a sample draft with the shape of the real API and creates nothing', async () => {
+    const before = (await api.listExpenses('casa-alfama')).expenses.length;
+    const { draft } = await api.scanReceipt('casa-alfama', { mimeType: 'image/jpeg', imageBase64: '' });
+    expect(Object.keys(draft).sort()).toEqual(['currency', 'date', 'items', 'merchant', 'total', 'usdc', 'warnings']);
+    expect(draft.date).toBe('2026-10-25');
+    expect((await api.listExpenses('casa-alfama')).expenses.length).toBe(before);
+  });
+
+  it('answers a group the person is not in like a missing group', async () => {
+    await expect(api.scanReceipt('no-such-group', {})).rejects.toMatchObject({ code: 'NOT_FOUND', status: 404 });
+  });
+});
+
 describe('demo mode (sample data, nothing sent to Stellar)', () => {
   it('starts with a finished profile, so the tour does not open with a form', async () => {
     const demo = createMockApi({ delayMs: 0, demo: true });

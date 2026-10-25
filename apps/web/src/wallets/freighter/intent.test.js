@@ -40,6 +40,25 @@ describe('checkIntent: payment', () => {
   });
 });
 
+describe('checkIntent: settlement intent memo and expiry', () => {
+  const memoHash = 'ab'.repeat(32);
+  const withMemo = { ...paymentIntent, memoHash, notAfter: new Date(Date.now() + 600_000).toISOString() };
+
+  it('accepts the payment that carries the reserved memo and expires in time', () => {
+    expect(code(() => checkIntent(buildTx([payment()], { memoHash }), withMemo))).toBe('NO_ERROR');
+  });
+
+  it('refuses a missing or different memo', () => {
+    expect(code(() => checkIntent(buildTx([payment()]), withMemo))).toBe('INTENT_MISMATCH');
+    expect(code(() => checkIntent(buildTx([payment()], { memoHash: 'cd'.repeat(32) }), withMemo))).toBe('INTENT_MISMATCH');
+  });
+
+  it('refuses a payment that would stay valid after the reservation expires', () => {
+    const soon = { ...withMemo, notAfter: new Date(Date.now() + 60_000).toISOString() };
+    expect(code(() => checkIntent(buildTx([payment()], { memoHash, timeout: 300 }), soon))).toBe('INTENT_MISMATCH');
+  });
+});
+
 describe('checkIntent: trustline', () => {
   it('accepts a USDC trustline and refuses another asset', () => {
     const intent = { kind: 'trustline', signer: payer, assetCode: 'USDC', assetIssuer: ISSUER };

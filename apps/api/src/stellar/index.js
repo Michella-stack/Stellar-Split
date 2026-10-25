@@ -1,15 +1,16 @@
-// Confirms a plain Testnet USDC payment on Horizon before the ledger records it (#42).
+// Confirms a plain Testnet payment (USDC, or EURC when an issuer is configured) on Horizon before the ledger records it (#42, #98).
 
 import { toStroops } from '../../../../packages/shared/src/index.js';
 
 export const TESTNET_PASSPHRASE = 'Test SDF Network ; September 2015';
 
 /**
- * @param {{ horizonUrl: string, usdcIssuer: string, fetchImpl?: typeof fetch, timeoutMs?: number }} options
+ * @param {{ horizonUrl: string, usdcIssuer: string, eurcIssuer?: string | null, fetchImpl?: typeof fetch, timeoutMs?: number }} options
  */
-export function createStellar({ horizonUrl, usdcIssuer, fetchImpl = globalThis.fetch, timeoutMs = 10_000 }) {
+export function createStellar({ horizonUrl, usdcIssuer, eurcIssuer = null, fetchImpl = globalThis.fetch, timeoutMs = 10_000 }) {
   const base = horizonUrl.replace(/\/+$/, '');
   let networkChecked = false;
+  const assets = { USDC: { code: 'USDC', issuer: usdcIssuer }, ...(eurcIssuer ? { EURC: { code: 'EURC', issuer: eurcIssuer } } : {}) };
 
   async function get(path) {
     const res = await fetchImpl(base + path, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(timeoutMs) }).catch((err) => {
@@ -21,16 +22,19 @@ export function createStellar({ horizonUrl, usdcIssuer, fetchImpl = globalThis.f
   }
 
   return {
-    asset: { code: 'USDC', issuer: usdcIssuer },
+    asset: assets.USDC,
+    /** The settlement asset for a code such as 'USDC' or 'EURC', or null when it is not configured. */
+    assetFor: (code) => assets[code] ?? null,
+    supportedAssets: () => Object.keys(assets),
     explorerTx: (hash) => `https://stellar.expert/explorer/testnet/tx/${hash}`,
 
     /**
-     * Finds one successful USDC payment from `from` to `to` for exactly `amount` in the transaction.
+     * Finds one successful payment in `asset` (USDC unless the group settles in another asset) from `from` to `to` for exactly `amount` in the transaction.
      * The transaction must carry `memoHash` as a MEMO_HASH and end its time bounds by `notAfter`: that proves it
      * was built for this intent, after the reservation, and could not reach the chain once the intent expired.
      * @returns {Promise<{ ok: true, ledgerCloseTime: string } | { ok: false, code: string, message: string }>}
      */
-    async verifyPayment({ txHash, from, to, amount, memoHash, notAfter }) {
+    async verifyPayment({ txHash, from, to, amount, memoHash, notAfter, asset = assets.USDC }) {
       if (!networkChecked) {
         const root = await get('/');
         if (root?.network_passphrase !== TESTNET_PASSPHRASE) {
@@ -56,12 +60,12 @@ export function createStellar({ horizonUrl, usdcIssuer, fetchImpl = globalThis.f
           op.type === 'payment' &&
           (op.from ?? op.source_account) === from &&
           op.to === to &&
-          op.asset_code === 'USDC' &&
-          op.asset_issuer === usdcIssuer &&
+          op.asset_code === asset.code &&
+          op.asset_issuer === asset.issuer &&
           toStroops(op.amount) === want,
       );
       if (!match) {
-        return { ok: false, code: 'PAYMENT_MISMATCH', message: 'No USDC payment with this payer, payee and amount in the transaction' };
+        return { ok: false, code: 'PAYMENT_MISMATCH', message: `No ${asset.code} payment with this payer, payee and amount in the transaction` };
       }
       return { ok: true, ledgerCloseTime: tx.created_at };
     },

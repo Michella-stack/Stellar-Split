@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { toStroops, validateAmount } from '@shared/money.js';
 import { cancelSettlementIntent, createSettlementIntent, getGroup, recordSettlement } from '../client/api.js';
-import { buildUsdcPayment, buildUsdcTrustline, checkPayment, loadBalances, submitSigned, usdcAsset } from '../client/stellar.js';
+import { assetBalance, buildPayment, buildTrustline, checkPayment, loadBalances, sameSettlementAsset, settlementAsset, submitSigned } from '../client/stellar.js';
 import { AddressLink } from '../components/AddressLink.jsx';
 import { Amount } from '../components/Amount.jsx';
+import { AssetProvider } from '../components/AssetProvider.jsx';
 import { Button, ButtonLink } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { IconChevronRight, IconExternal } from '../components/icons.jsx';
@@ -20,7 +21,8 @@ import { useT } from '../hooks/useT.js';
 import { DEMO } from '../lib/demoMode.js';
 import { useToast } from '../hooks/useToast.js';
 import { useWallet } from '../hooks/useWallet.js';
-import { formatUsd } from '../lib/format.js';
+import { assetCodeOf } from '../lib/asset.js';
+import { formatMoney } from '../lib/format.js';
 import { USDC_FAUCET_URL } from '../config/env.js';
 import { useEstimate } from '../hooks/useRates.js';
 
@@ -44,7 +46,11 @@ export default function Settle() {
           <LoadError title={t('group.loadError')} error={group.error} onRetry={group.reload} />
         </>
       )}
-      {group.data && <SettleFlow detail={group.data} memberId={memberId} queue={location.state?.queue} />}
+      {group.data && (
+        <AssetProvider group={group.data.group}>
+          <SettleFlow detail={group.data} memberId={memberId} queue={location.state?.queue} />
+        </AssetProvider>
+      )}
     </>
   );
 }
@@ -59,6 +65,8 @@ function SettleFlow({ detail, memberId, queue }) {
   const wallet = useWallet();
   const toast = useToast();
   const { group, members, me, myPosition } = detail;
+  const code = assetCodeOf(group);
+  const formatUsd = (v) => formatMoney(v, code);
   const recipient = members.find((m) => m.id === memberId);
   const debt = myPosition.owes.find((t) => t.to === memberId)?.amount ?? null;
 
@@ -137,7 +145,7 @@ function SettleFlow({ detail, memberId, queue }) {
     if (DEMO) return confirmDemo();
     try {
       setStep('checking');
-      await checkPayment({ from, to: recipient.address, amount });
+      await checkPayment({ from, to: recipient.address, amount, asset: code });
       // Step 1: reserve the payment with the API. It returns the reference (memo) the payment must carry.
       reserving = true;
       const { intent } = await createSettlementIntent(group.id, { to: recipient.id, amount });
@@ -146,9 +154,12 @@ function SettleFlow({ detail, memberId, queue }) {
       if (intent.payTo !== recipient.address || toStroops(intent.amount) !== toStroops(amount)) {
         throw Object.assign(new Error('The reservation does not match what you reviewed'), { code: 'INTENT_MISMATCH' });
       }
-      const { xdr } = await buildUsdcPayment({ from, to: intent.payTo, amount: intent.amount, memoHash: intent.memo.value, notAfter: intent.expiresAt });
+      if (!sameSettlementAsset(intent.asset, settlementAsset(code))) {
+        throw Object.assign(new Error('The reservation names another asset than this app would pay in'), { code: 'INTENT_MISMATCH' });
+      }
+      const { xdr } = await buildPayment({ from, to: intent.payTo, amount: intent.amount, memoHash: intent.memo.value, notAfter: intent.expiresAt, asset: code });
       setStep('signing');
-      const asset = usdcAsset();
+      const asset = settlementAsset(code);
       const { signedXdr } = await wallet.sign(xdr, {
         kind: 'payment',
         signer: from,
@@ -207,11 +218,11 @@ function SettleFlow({ detail, memberId, queue }) {
   async function addTrustline() {
     setAddingTrustline(true);
     try {
-      const { xdr } = await buildUsdcTrustline(wallet.address);
-      const asset = usdcAsset();
+      const { xdr } = await buildTrustline(wallet.address, code);
+      const asset = settlementAsset(code);
       const { signedXdr } = await wallet.sign(xdr, { kind: 'trustline', signer: wallet.address, assetCode: asset.getCode(), assetIssuer: asset.getIssuer() });
       await submitSigned(signedXdr);
-      toast(t('settle.trustlineAdded'), { tone: 'success' });
+      toast(t('settle.trustlineAdded', { asset: code }), { tone: 'success' });
       setBalanceVersion((v) => v + 1);
       setProblem(null);
       setStep('review');
@@ -271,6 +282,7 @@ function SettleFlow({ detail, memberId, queue }) {
           }}
           onAddTrustline={addTrustline}
           addingTrustline={addingTrustline}
+          asset={code}
         />
       </>
     );
@@ -292,7 +304,7 @@ function SettleFlow({ detail, memberId, queue }) {
   }
 
   const busy = step === 'checking' || step === 'signing' || step === 'submitting';
-  const available = availability(balances.data, check.ok ? amount : null, debt);
+  const available = availability(balances.data, check.ok ? amount : null, debt, code);
   const busyLabel = {
     checking: t('settle.checking'),
     signing: DEMO ? t('settle.confirmingDemo') : t('settle.confirmingFreighter'),
@@ -325,7 +337,7 @@ function SettleFlow({ detail, memberId, queue }) {
         ) : (
           <div className="flex flex-col items-center gap-1 text-center">
             <Amount value={amount} size="xl" />
-            <span className="font-mono text-sm text-muted">USDC</span>
+            <span className="font-mono text-sm text-muted">{code}</span>
           </div>
         )}
 
@@ -337,6 +349,7 @@ function SettleFlow({ detail, memberId, queue }) {
             setAmount(value);
           }}
           onRetry={balances.reload}
+          code={code}
         />
 
         <ul className="flex flex-col gap-1 text-center">
@@ -362,7 +375,7 @@ function SettleFlow({ detail, memberId, queue }) {
             </Row>
             <Row term={t('settle.group')}>{group.name}</Row>
             <Row term={t('settle.asset')}>
-              <span className="font-mono">USDC</span>
+              <span className="font-mono">{code}</span>
             </Row>
             <Row term={t('settle.network')}>{t('common.stellarTestnet')}</Row>
             <Row term={t('settle.fee')}>{t('settle.feeValue')}</Row>
@@ -393,19 +406,22 @@ function SettleFlow({ detail, memberId, queue }) {
  * @param {any} balances result of loadBalances, or null
  * @param {string | null} amount valid amount or null
  * @param {string} debt
+ * @param {string} code settlement asset of the group
  */
-function availability(balances, amount, debt) {
+function availability(balances, amount, debt, code) {
   if (!balances) return { kind: 'unknown', blocking: false };
   if (!balances.funded) return { kind: 'not-funded', blocking: true };
-  if (balances.usdc === null) return { kind: 'no-trustline', blocking: false };
-  const have = toStroops(balances.usdc);
-  const max = have < toStroops(debt) ? balances.usdc : debt;
-  if (amount && toStroops(amount) > have) return { kind: 'short', usdc: balances.usdc, max, blocking: true };
-  return { kind: 'ok', usdc: balances.usdc, blocking: false };
+  const held = assetBalance(balances, code);
+  if (held === null) return { kind: 'no-trustline', blocking: false };
+  const have = toStroops(held);
+  const max = have < toStroops(debt) ? held : debt;
+  if (amount && toStroops(amount) > have) return { kind: 'short', usdc: held, max, blocking: true };
+  return { kind: 'ok', usdc: held, blocking: false };
 }
 
-/** @param {{ state: any, recipientName: string, onPayWhatIHave: (amount: string) => void, onRetry: () => void }} props */
-function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
+/** @param {{ state: any, recipientName: string, onPayWhatIHave: (amount: string) => void, onRetry: () => void, code: string }} props */
+function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry, code }) {
+  const formatUsd = (v) => formatMoney(v, code);
   const { t } = useT();
   const box = 'rounded-2xl px-4 py-3 text-center';
   if (state.kind === 'loading') {
@@ -438,7 +454,7 @@ function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
   if (state.kind === 'no-trustline') {
     return (
       <p className={`${box} bg-surface`}>
-        <span className="font-semibold">{t('avail.noTrustlineBold')}</span> {t('avail.noTrustlineBody')}
+        <span className="font-semibold">{t('avail.noTrustlineBold', { asset: code })}</span> {t('avail.noTrustlineBody', { asset: code })}
       </p>
     );
   }
@@ -446,7 +462,7 @@ function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
     return (
       <div role="alert" className={`${box} flex flex-col items-center gap-2 border-2 border-owe`}>
         <p>
-          <span className="font-semibold">{t('avail.shortBold')}</span> {t('avail.shortBody', { amount: formatUsd(state.usdc) })}
+          <span className="font-semibold">{t('avail.shortBold', { asset: code })}</span> {t('avail.shortBody', { amount: formatUsd(state.usdc) })}
         </p>
         {toStroops(state.max) > 0n ? (
           <Button variant="secondary" onClick={() => onPayWhatIHave(state.max)}>
@@ -454,7 +470,7 @@ function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
           </Button>
         ) : (
           <a href={USDC_FAUCET_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 font-semibold underline">
-            {t('walletScreen.getUsdc')} <IconExternal size={16} />
+            {t('walletScreen.getUsdc', { asset: code })} <IconExternal size={16} />
             <span className="sr-only">{t('common.opensNewTab')}</span>
           </a>
         )}
@@ -464,7 +480,7 @@ function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
   if (state.kind === 'ok') {
     return (
       <p className={`${box} bg-surface`}>
-        {t('avail.available')} <span className="font-semibold tabular-nums">{formatUsd(state.usdc)}</span> <span className="font-mono text-sm text-muted">USDC</span>
+        {t('avail.available')} <span className="font-semibold tabular-nums">{formatUsd(state.usdc)}</span> <span className="font-mono text-sm text-muted">{code}</span>
       </p>
     );
   }

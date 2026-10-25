@@ -4,6 +4,7 @@ import { validateAmount } from '@shared/money.js';
 import { containsSecretKey } from '@shared/validation.js';
 import { createExpense, getGroup } from '../client/api.js';
 import { Amount } from '../components/Amount.jsx';
+import { AssetProvider } from '../components/AssetProvider.jsx';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { Chip } from '../components/Chip.jsx';
@@ -18,7 +19,8 @@ import { cleanAmountInput, descriptionError as describeProblem, equalPreview, ex
 import { useApi } from '../hooks/useApi.js';
 import { useT } from '../hooks/useT.js';
 import { useToast } from '../hooks/useToast.js';
-import { formatUsd, memberName } from '../lib/format.js';
+import { ASSETS, useAssetCode } from '../lib/asset.js';
+import { formatMoney, memberName } from '../lib/format.js';
 import { useEstimate } from '../hooks/useRates.js';
 
 const AMOUNT_ERRORS = {
@@ -36,7 +38,11 @@ export default function ExpenseNew() {
       <TopBar backTo={`/groups/${id}`} title={t('expense.title')} />
       {group.loading && <Loading label={t('group.loading')} />}
       {group.error && <LoadError title={t('group.loadError')} error={group.error} onRetry={group.reload} />}
-      {group.data && <ExpenseForm detail={group.data} />}
+      {group.data && (
+        <AssetProvider group={group.data.group}>
+          <ExpenseForm detail={group.data} />
+        </AssetProvider>
+      )}
     </>
   );
 }
@@ -44,6 +50,7 @@ export default function ExpenseNew() {
 /** @param {{ detail: any }} props */
 function ExpenseForm({ detail }) {
   const { t } = useT();
+  const code = useAssetCode();
   const estimate = useEstimate();
   const navigate = useNavigate();
   const toast = useToast();
@@ -185,12 +192,12 @@ function ExpenseForm({ detail }) {
                   <MemberAvatar member={m} size="sm" />
                   <span>
                     {memberName(m, me)}
-                    <span className="sr-only"> {t('expense.shareSr')}</span>
+                    <span className="sr-only"> {t('expense.shareSr', { asset: code })}</span>
                   </span>
                 </span>
                 <span className="flex items-center gap-1 rounded-input border-2 border-line bg-bg px-3 focus-within:border-text">
                   <span aria-hidden="true" className="text-muted">
-                    $
+                    {ASSETS[code].symbol}
                   </span>
                   <input
                     inputMode="decimal"
@@ -224,6 +231,8 @@ function ExpenseForm({ detail }) {
 /** @param {{ status: ReturnType<typeof exactStatus>, amount: string }} props */
 function ExactSummary({ status, amount }) {
   const { t } = useT();
+  const code = useAssetCode();
+  const formatUsd = (v) => formatMoney(v, code);
   const total = validateAmount(amount).ok ? formatUsd(amount) : null;
   const params = { total, sum: formatUsd(status.sum), difference: formatUsd(status.difference) };
   const text = {

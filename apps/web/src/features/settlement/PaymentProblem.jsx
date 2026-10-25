@@ -14,13 +14,13 @@ const CODES = [
 
 /**
  * @param {{ code: string, txHash?: string, groupId: string, onReview: () => void, onAddTrustline?: () => void,
- *   addingTrustline?: boolean }} props
+ *   addingTrustline?: boolean, asset?: string }} props
  */
-export function PaymentProblem({ code, txHash, groupId, onReview, onAddTrustline, addingTrustline }) {
+export function PaymentProblem({ code, txHash, groupId, onReview, onAddTrustline, addingTrustline, asset = 'USDC' }) {
   const { t } = useT();
   const key = CODES.includes(code) ? code : 'UNKNOWN';
   const unknownOutcome = code === 'TIMEOUT' || (code === 'NETWORK' && txHash);
-  const body = code === 'NETWORK' && txHash ? t('pp.NETWORK.unknownBody') : t(`pp.${key}.body`);
+  const body = code === 'NETWORK' && txHash ? t('pp.NETWORK.unknownBody') : t(`pp.${key}.body`, { asset });
 
   return (
     <div className="flex flex-col gap-6 py-4">
@@ -28,7 +28,7 @@ export function PaymentProblem({ code, txHash, groupId, onReview, onAddTrustline
         <span className="text-owe">
           <IconAlert size={28} />
         </span>
-        <h1 className="font-display-wide text-3xl">{t(`pp.${key}.title`)}</h1>
+        <h1 className="font-display-wide text-3xl">{t(`pp.${key}.title`, { asset })}</h1>
         <p className="text-muted">{body}</p>
       </Card>
 
@@ -45,12 +45,12 @@ export function PaymentProblem({ code, txHash, groupId, onReview, onAddTrustline
       )}
       {code === 'NO_TRUSTLINE' && onAddTrustline && (
         <Button block loading={addingTrustline} onClick={onAddTrustline}>
-          {t('pp.addTrustline')}
+          {t('pp.addTrustline', { asset })}
         </Button>
       )}
       {code === 'INSUFFICIENT_BALANCE' && (
         <a href={USDC_FAUCET_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-1 font-medium underline underline-offset-4">
-          {t('walletScreen.getUsdc')} <IconExternal size={16} />
+          {t('walletScreen.getUsdc', { asset })} <IconExternal size={16} />
           <span className="sr-only">{t('common.opensNewTab')}</span>
         </a>
       )}

@@ -11,6 +11,7 @@ import { GroupTypePill } from '../features/groups/GroupTypePill.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { useT } from '../hooks/useT.js';
 import { useWallet } from '../hooks/useWallet.js';
+import { ASSETS } from '../lib/asset.js';
 import { signOf } from '../lib/format.js';
 import { useEstimate } from '../hooks/useRates.js';
 
@@ -29,6 +30,9 @@ export default function Groups() {
         {data && (
           <>
             {data.groups.length > 0 && <Summary totals={data.totals} homeCurrency={profile?.homeCurrency} />}
+            {(data.otherTotals ?? []).map((other) => (
+              <OtherSummary key={other.asset} totals={other} />
+            ))}
             {data.groups.length === 0 ? (
               <EmptyState
                 icon={<IconUsers />}
@@ -81,6 +85,31 @@ function Summary({ totals, homeCurrency }) {
   );
 }
 
+/**
+ * Totals of groups that settle in another asset (euros), kept apart from the dollar totals.
+ * @param {{ totals: { asset: string, youOwe: string, youAreOwed: string } }} props
+ */
+function OtherSummary({ totals }) {
+  const { t } = useT();
+  const label = ASSETS[totals.asset]?.label ?? totals.asset;
+  return (
+    <section aria-label={`${label}: ${t('groups.acrossAll')}`} className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col gap-1 rounded-card border-2 border-owe/40 bg-owe/10 p-4">
+        <span className="text-sm font-semibold">
+          {t('groups.youOwe')} · {totals.asset}
+        </span>
+        <Amount value={totals.youOwe} asset={totals.asset} size="md" tone={signOf(totals.youOwe) ? 'owe' : 'default'} />
+      </div>
+      <div className="flex flex-col gap-1 rounded-card border-2 border-owed/40 bg-owed/10 p-4">
+        <span className="text-sm font-semibold">
+          {t('groups.youAreOwed')} · {totals.asset}
+        </span>
+        <Amount value={totals.youAreOwed} asset={totals.asset} size="md" tone={signOf(totals.youAreOwed) ? 'owed' : 'default'} />
+      </div>
+    </section>
+  );
+}
+
 /** @param {{ group: any }} props */
 function GroupCard({ group }) {
   const { t } = useT();
@@ -93,6 +122,7 @@ function GroupCard({ group }) {
         <span className="flex items-center gap-2 text-sm text-muted">
           <GroupTypePill type={group.type} />
           {t('groups.members', { count: group.memberCount })}
+          {group.asset && group.asset !== 'USDC' && <span className="font-mono">{group.asset}</span>}
         </span>
       </span>
       <span className="flex flex-col items-end">
@@ -101,7 +131,7 @@ function GroupCard({ group }) {
         ) : (
           <>
             <span className="text-sm text-muted">{sign < 0 ? t('groups.cardOwe') : t('groups.cardOwed')}</span>
-            <Amount value={group.myNet} size="sm" tone={sign < 0 ? 'owe' : 'owed'} />
+            <Amount value={group.myNet} asset={group.asset} size="sm" tone={sign < 0 ? 'owe' : 'owed'} />
           </>
         )}
       </span>

@@ -2,14 +2,14 @@
 
 import { currentLocale } from '../../i18n/state.js';
 import { tNow } from '../../i18n/state.js';
-import { formatUsd } from '../../lib/format.js';
+import { formatMoney } from '../../lib/format.js';
 
 const W = 1080;
 const H = 1350;
 
 /**
  * @typedef {{ amount: string, toName: string, toAddress: string, groupName: string,
- *   txHash: string, explorerUrl: string, date: Date, accent: string, demo?: boolean }} ReceiptData
+ *   txHash: string, explorerUrl: string, date: Date, accent: string, demo?: boolean, asset?: string }} ReceiptData
  */
 
 /**
@@ -35,9 +35,9 @@ export async function renderReceiptPng(r) {
   ctx.font = '600 36px Geist, system-ui, sans-serif';
   ctx.fillText(tNow('receipt.paid', { to: r.toName }), 112, 250);
   ctx.font = '800 150px Archivo, system-ui, sans-serif';
-  ctx.fillText(formatUsd(r.amount), 104, 440);
+  ctx.fillText(formatMoney(r.amount, r.asset), 104, 440);
   ctx.font = '600 34px "Geist Mono", ui-monospace, monospace';
-  ctx.fillText(r.demo ? tNow('receipt.usdcDemo') : tNow('receipt.usdcTestnet'), 112, 540);
+  ctx.fillText(r.demo ? tNow('receipt.usdcDemo', { asset: r.asset ?? 'USDC' }) : tNow('receipt.usdcTestnet', { asset: r.asset ?? 'USDC' }), 112, 540);
 
   ctx.fillStyle = '#f5f5f2';
   ctx.font = '800 48px Archivo, system-ui, sans-serif';

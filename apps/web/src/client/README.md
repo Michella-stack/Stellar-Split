@@ -19,8 +19,8 @@ These shapes are the web team's proposal until the API team confirms them. If th
 | `verifyChallenge({ address, challenge, signature })` | `POST /v1/auth/verify` | `{ session: { token, address, expiresAt } }`. The signature is base64 ed25519 over SHA-256(`"Stellar Signed Message:\n" + challenge`) |
 | `getMe()` | `GET /v1/me` | `Me` |
 | `updateMe(patch)` | `PATCH /v1/me` `{ displayName?, homeCurrency?, email? }` | `Me` |
-| `listGroups()` | `GET /v1/groups` | `{ groups: GroupSummary[], totals: { youOwe, youAreOwed } }` |
-| `createGroup({ name, type })` | `POST /v1/groups` | `GroupDetail` |
+| `listGroups()` | `GET /v1/groups` | `{ groups: GroupSummary[] (each with asset), totals: { youOwe, youAreOwed } (USDC groups), otherTotals: [{ asset, youOwe, youAreOwed }] (e.g. EURC) }` |
+| `createGroup({ name, type, asset? })` | `POST /v1/groups` | `GroupDetail` |
 | `getGroup(id)` | `GET /v1/groups/:id` | `GroupDetail` |
 | `createInvite(id, { address? })` | `POST /v1/groups/:id/invites` | `{ inviteUrl, code }`. With `address`, only that wallet can accept. Links use `/invite/CODE`, and the web serves both `/invite/:code` and `/join/:code` |
 | `addMember(id, { address, displayName? })` | `POST /v1/groups/:id/members` | `{ member: Member }`. Adds a wallet directly; the name defaults to the short address |

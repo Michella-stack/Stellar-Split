@@ -53,3 +53,13 @@ describe('formatDate and memberName', () => {
     expect(memberName(undefined, 'm1')).toBe('Someone');
   });
 });
+
+describe('formatMoney', () => {
+  it('uses dollars for USDC and euros for EURC', async () => {
+    const { formatMoney } = await import('./format.js');
+    expect(formatMoney('1172.2000000')).toBe('$1,172.20');
+    expect(formatMoney('-364.6', 'USDC')).toBe('$364.60');
+    expect(formatMoney('1172.2000000', 'EURC')).toBe('€1,172.20');
+    expect(formatMoney('0.005', 'EURC')).toBe('€0.01');
+  });
+});

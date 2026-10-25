@@ -11,7 +11,7 @@ import { Pill } from '../components/Pill.jsx';
 import { Segmented } from '../components/Segmented.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { fundWithFriendbot, loadBalances } from '../client/stellar.js';
-import { USDC_FAUCET_URL } from '../config/env.js';
+import { CONFIG, USDC_FAUCET_URL } from '../config/env.js';
 import { useCopy } from '../hooks/useCopy.js';
 import { useRates } from '../hooks/useRates.js';
 import { useT } from '../hooks/useT.js';
@@ -32,6 +32,8 @@ export default function Wallet() {
   const [balances, setBalances] = useState(/** @type {any} */ (null));
   const [loadError, setLoadError] = useState(false);
   const [funding, setFunding] = useState(false);
+  const eurcOn = CONFIG.ok && Boolean(CONFIG.config.eurcIssuer);
+  const faucetAssets = eurcOn ? 'USDC / EURC' : 'USDC';
 
   const refresh = useCallback(async () => {
     if (!wallet.address) return;
@@ -92,9 +94,10 @@ export default function Wallet() {
         {!DEMO && (
           <section aria-labelledby="usdc-title" className="flex flex-col gap-2">
           <h2 id="usdc-title" className="text-lg font-semibold">
-            {t('walletScreen.getUsdc')}
+            {t('walletScreen.getUsdc', { asset: faucetAssets })}
           </h2>
           <p className="text-muted">{t('walletScreen.getUsdcBody')}</p>
+          {eurcOn && <p className="text-muted">{t('walletScreen.eurcNote')}</p>}
           <a
             href={USDC_FAUCET_URL}
             target="_blank"
@@ -203,7 +206,8 @@ function Balances({ balances, error, onRetry, onFund, funding }) {
   }
   return (
     <Card className="flex flex-col divide-y divide-line py-2">
-      <BalanceRow code="USDC" value={balances.usdc} empty={t('walletScreen.noTrustline')} />
+      <BalanceRow code="USDC" value={balances.usdc} empty={t('walletScreen.noTrustline', { asset: 'USDC' })} />
+      {CONFIG.ok && CONFIG.config.eurcIssuer && <BalanceRow code="EURC" value={balances.eurc} empty={t('walletScreen.noTrustline', { asset: 'EURC' })} />}
       <BalanceRow code="XLM" value={balances.xlm} />
     </Card>
   );

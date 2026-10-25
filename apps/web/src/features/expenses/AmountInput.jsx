@@ -1,22 +1,24 @@
 import { useId } from 'react';
 import { useT } from '../../hooks/useT.js';
+import { ASSETS, useAssetCode } from '../../lib/asset.js';
 import { cleanAmountInput } from './splitPreview.js';
 
 /**
- * Large amount entry in USDC. Only digits and one decimal point, up to 7 decimals.
+ * Large amount entry in the group's asset. Only digits and one decimal point, up to 7 decimals.
  * @param {{ value: string, onChange: (value: string) => void, error?: string | null, label?: string }} props
  */
 export function AmountInput({ value, onChange, error, label }) {
   const { t } = useT();
   const id = useId();
+  const code = useAssetCode();
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-sm font-medium">
-        {label ?? t('expense.amountLabel')}
+        {label ?? t('expense.amountLabel', { asset: code })}
       </label>
       <div className="flex items-baseline gap-2 rounded-card bg-surface px-5 py-4 focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-text">
         <span aria-hidden="true" className="font-display-wide text-5xl text-muted">
-          $
+          {ASSETS[code].symbol}
         </span>
         <input
           id={id}
@@ -30,7 +32,7 @@ export function AmountInput({ value, onChange, error, label }) {
           className="w-full min-w-0 bg-transparent font-display-wide text-5xl tabular-nums placeholder:text-line focus:outline-none"
         />
         <span id={`${id}-unit`} className="font-mono text-sm text-muted">
-          USDC
+          {code}
         </span>
       </div>
       {error && (

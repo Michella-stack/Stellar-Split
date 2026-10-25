@@ -11,6 +11,8 @@ import { mockReceiptDraft } from '../../features/expenses/mockReceipt.js';
 
 const dec = (stroops) => fromStroops(stroops, { minDecimals: 2 });
 const USDC = { code: 'USDC', issuer: null };
+const EURC = { code: 'EURC', issuer: null };
+const assetOf = (group) => (group.asset === 'EURC' ? EURC : USDC);
 
 const STORAGE_KEY = 'stellar-split.mock-state';
 
@@ -97,7 +99,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
     const me = myMemberId(group);
     const net = balancesOf(group).get(me) ?? 0n;
     const last = [...group.expenses, ...group.settlements].map((x) => x.createdAt).sort().at(-1) ?? group.createdAt;
-    return { id: group.id, name: group.name, type: group.type, memberCount: group.members.length, myNet: dec(net), updatedAt: last };
+    return { id: group.id, name: group.name, type: group.type, asset: assetOf(group).code, memberCount: group.members.length, myNet: dec(net), updatedAt: last };
   }
 
   function detail(group) {
@@ -105,7 +107,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
     const net = balancesOf(group);
     const transfers = suggestTransfers(net);
     return {
-      group: { id: group.id, name: group.name, type: group.type, asset: USDC, network: 'testnet', createdAt: group.createdAt },
+      group: { id: group.id, name: group.name, type: group.type, asset: assetOf(group), network: 'testnet', createdAt: group.createdAt },
       members: group.members,
       me,
       balances: [...net].map(([memberId, v]) => ({ memberId, net: dec(v) })),
@@ -163,23 +165,37 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
       const groups = state.groups.filter((g) => myMemberId(g)).map(summary);
       let owe = 0n;
       let owed = 0n;
+      const other = new Map(); // other assets are totalled apart: dollars and euros never add up
       for (const g of groups) {
         const v = toStroops(g.myNet.replace('-', ''));
-        if (g.myNet.startsWith('-')) owe += v;
-        else owed += v;
+        if (g.asset === 'USDC') {
+          if (g.myNet.startsWith('-')) owe += v;
+          else owed += v;
+        } else {
+          const t = other.get(g.asset) ?? { asset: g.asset, owe: 0n, owed: 0n };
+          if (g.myNet.startsWith('-')) t.owe += v;
+          else t.owed += v;
+          other.set(g.asset, t);
+        }
       }
-      return reply({ groups, totals: { youOwe: dec(owe), youAreOwed: dec(owed) } });
+      return reply({
+        groups,
+        totals: { youOwe: dec(owe), youAreOwed: dec(owed) },
+        otherTotals: [...other.values()].map((t) => ({ asset: t.asset, youOwe: dec(t.owe), youAreOwed: dec(t.owed) })),
+      });
     },
 
-    async createGroup({ name, type }) {
+    async createGroup({ name, type, asset }) {
       const trimmed = typeof name === 'string' ? name.trim() : '';
       if (!trimmed || trimmed.length > 60) return fail('VALIDATION', 'Name must be 1 to 60 characters', 400, { field: 'name' });
       if (containsSecretKey(trimmed)) return fail('SECRET_KEY_REJECTED', 'Input looks like a secret key', 400);
       if (!['flat', 'trip', 'other'].includes(type)) return fail('VALIDATION', 'Unknown group type', 400, { field: 'type' });
+      if (asset !== undefined && asset !== 'USDC' && asset !== 'EURC') return fail('ASSET_NOT_SUPPORTED', 'Unknown settlement asset', 400, { field: 'asset' });
       const group = {
         id: newId('g'),
         name: trimmed,
         type,
+        asset: asset === 'EURC' ? 'EURC' : 'USDC',
         createdAt: now().toISOString(),
         members: [{ id: 'm-you', kind: 'human', address: state.me.address, displayName: state.me.displayName, homeCurrency: state.me.homeCurrency }],
         expenses: [],
@@ -314,7 +330,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
         from,
         to,
         amount: dec(check.stroops),
-        asset: USDC,
+        asset: assetOf(group),
         network: 'stellar:testnet',
         payFrom: group.members.find((m) => m.id === from).address,
         payTo: recipient.address,

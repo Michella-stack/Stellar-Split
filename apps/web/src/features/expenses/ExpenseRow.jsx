@@ -2,7 +2,8 @@ import { Amount } from '../../components/Amount.jsx';
 import { ListRow } from '../../components/ListRow.jsx';
 import { IconReceipt, IconRobot } from '../../components/icons.jsx';
 import { useT } from '../../hooks/useT.js';
-import { formatDate, formatUsd, memberName } from '../../lib/format.js';
+import { useAssetCode } from '../../lib/asset.js';
+import { formatDate, formatMoney, memberName } from '../../lib/format.js';
 
 /**
  * One expense: what, who paid, my share.
@@ -10,6 +11,7 @@ import { formatDate, formatUsd, memberName } from '../../lib/format.js';
  */
 export function ExpenseRow({ expense, members, meId }) {
   const { t } = useT();
+  const code = useAssetCode();
   const payer = members.find((m) => m.id === expense.paidBy);
   const myShare = expense.shares?.find((s) => s.memberId === meId)?.amount;
   return (
@@ -22,8 +24,8 @@ export function ExpenseRow({ expense, members, meId }) {
       title={expense.description}
       subtitle={
         payer?.id === meId
-          ? t('expense.row.paidYou', { amount: formatUsd(expense.amount), date: formatDate(expense.createdAt) })
-          : t('expense.row.paidOther', { name: memberName(payer, meId), amount: formatUsd(expense.amount), date: formatDate(expense.createdAt) })
+          ? t('expense.row.paidYou', { amount: formatMoney(expense.amount, code), date: formatDate(expense.createdAt) })
+          : t('expense.row.paidOther', { name: memberName(payer, meId), amount: formatMoney(expense.amount, code), date: formatDate(expense.createdAt) })
       }
       trailing={
         myShare ? (

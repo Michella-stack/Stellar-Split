@@ -10,6 +10,7 @@ import { useT } from '../../hooks/useT.js';
 import { useToast } from '../../hooks/useToast.js';
 import { DEMO } from '../../lib/demoMode.js';
 import { downloadBlob, renderReceiptPng } from './receipt.js';
+import { useAssetCode } from '../../lib/asset.js';
 import { shortAddress } from '../../lib/format.js';
 
 /**
@@ -21,6 +22,7 @@ import { shortAddress } from '../../lib/format.js';
  */
 export function PaidCard({ amount, recipientName, recipientAddress, groupId, groupName, txHash, fullyPaid, record, next = null }) {
   const { t } = useT();
+  const code = useAssetCode();
   const copy = useCopy();
   const toast = useToast();
   const [paidAt] = useState(() => new Date());
@@ -40,6 +42,7 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
       date: paidAt,
       accent,
       demo: DEMO,
+      asset: code,
     });
     return new File([blob], filename, { type: 'image/png' });
   }
@@ -61,9 +64,9 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
     try {
       const file = await receiptFile();
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: t('paid.shareTitle'), text: t('paid.shareText', { name: recipientName, amount, url: explorerUrl }) });
+        await navigator.share({ files: [file], title: t('paid.shareTitle'), text: t('paid.shareText', { name: recipientName, amount, url: explorerUrl, asset: code }) });
       } else {
-        await copy(DEMO ? t('paid.demoShareText', { name: recipientName, amount }) : explorerUrl, DEMO ? 'copied.receiptText' : 'copied.txLink');
+        await copy(DEMO ? t('paid.demoShareText', { name: recipientName, amount, asset: code }) : explorerUrl, DEMO ? 'copied.receiptText' : 'copied.txLink');
       }
     } catch (error) {
       if (error?.name !== 'AbortError') toast(t('paid.shareError'), { tone: 'error' });

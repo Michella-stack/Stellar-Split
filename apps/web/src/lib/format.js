@@ -10,21 +10,33 @@ export function groupThousands(digits, separator = ',') {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, separator);
 }
 
+const SYMBOLS = { USDC: '$', EURC: '€' };
+
 /**
- * Formats a USDC decimal string as dollars with two decimals, rounding half up on the third decimal.
- * The sign is dropped: callers say "you owe" or "owes you" in words.
+ * Formats a settlement-asset decimal string with two decimals, rounding half up on the third decimal: dollars for
+ * USDC, euros for EURC. The sign is dropped: callers say "you owe" or "owes you" in words.
  * @param {string} value e.g. "-364.6", "1172.2000000"
- * @returns {string} e.g. "$364.60" and "$1,172.20" in English, "$1.172,20" in Spanish and Portuguese
+ * @param {string} [code] 'USDC' (default) or 'EURC'
+ * @returns {string} e.g. "$364.60" and "$1,172.20" in English, "€1.172,20" in Spanish and Portuguese
  */
-export function formatUsd(value) {
+export function formatMoney(value, code = 'USDC') {
   if (!DECIMAL.test(value)) throw new Error(`Not a decimal string: ${value}`);
   const [whole, fraction = ''] = value.replace('-', '').split('.');
   let cents = BigInt(whole) * 100n + BigInt((fraction + '00').slice(0, 2));
   if (Number(fraction[2] ?? '0') >= 5) cents += 1n;
-  const dollars = (cents / 100n).toString();
+  const major = (cents / 100n).toString();
   const rest = (cents % 100n).toString().padStart(2, '0');
   const { group, decimal } = currentSeparators();
-  return `$${groupThousands(dollars, group)}${decimal}${rest}`;
+  return `${SYMBOLS[code] ?? '$'}${groupThousands(major, group)}${decimal}${rest}`;
+}
+
+/**
+ * Formats a USDC decimal string as dollars with two decimals.
+ * @param {string} value e.g. "-364.6", "1172.2000000"
+ * @returns {string} e.g. "$364.60"
+ */
+export function formatUsd(value) {
+  return formatMoney(value, 'USDC');
 }
 
 /**

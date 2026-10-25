@@ -66,10 +66,21 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     return { ...state, me };
   }
 
+  /**
+   * The settlement asset of a group. Groups settle in USDC unless they were created with another asset (#98).
+   * A group whose asset is not configured is refused, never silently treated as USDC.
+   */
+  function groupAsset(group) {
+    if (!group?.asset || group.asset === stellar.asset.code) return stellar.asset;
+    const asset = stellar.assetFor?.(group.asset);
+    if (!asset) throw new ApiError(503, 'ASSET_UNAVAILABLE', `This group settles in ${group.asset}, which is not configured on this server`);
+    return asset;
+  }
+
   function detail({ group, members, expenses, net, me }) {
     const transfers = suggestTransfers(net);
     return {
-      group: { ...group, asset: stellar.asset, network: 'testnet' },
+      group: { ...group, asset: groupAsset(group), network: 'testnet' },
       members,
       me: me.id,
       balances: members.map((m) => ({ memberId: m.id, net: fmt(net.get(m.id)) })),
@@ -117,14 +128,14 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     throw new ApiError(403, decision.code, decision.message, decision.details);
   }
 
-  function publicIntent(i, me, to) {
+  function publicIntent(i, me, to, asset = stellar.asset) {
     return {
       id: i.id,
       groupId: i.groupId,
       from: i.from,
       to: i.to,
       amount: i.amount,
-      asset: stellar.asset,
+      asset,
       network: 'stellar:testnet',
       payFrom: me.address,
       payTo: to.address,
@@ -178,27 +189,45 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       const groups = await repo.listGroupsByAddress(principal.address);
       let owe = 0n;
       let owed = 0n;
+      const other = new Map(); // totals of groups that settle in another asset, kept apart: dollars and euros never add up
       const out = [];
       const states = await Promise.all(groups.map((g) => load(g.id))); // one round trip per group at a time would not scale
       for (const [i, g] of groups.entries()) {
         const { members, expenses, settlements, net } = states[i];
         const me = members.find((m) => m.address === principal.address);
         const mine = net.get(me.id);
-        if (mine < 0n) owe -= mine;
-        else owed += mine;
+        const code = g.asset ?? stellar.asset.code;
+        if (code === stellar.asset.code) {
+          if (mine < 0n) owe -= mine;
+          else owed += mine;
+        } else {
+          const t = other.get(code) ?? { asset: code, youOwe: 0n, youAreOwed: 0n };
+          if (mine < 0n) t.youOwe -= mine;
+          else t.youAreOwed += mine;
+          other.set(code, t);
+        }
         const last = [...expenses, ...settlements].map((x) => x.createdAt).sort().pop();
-        out.push({ id: g.id, name: g.name, type: g.type, memberCount: members.length, myNet: fmt(mine), updatedAt: last ?? g.createdAt });
+        out.push({ id: g.id, name: g.name, type: g.type, asset: code, memberCount: members.length, myNet: fmt(mine), updatedAt: last ?? g.createdAt });
       }
-      return { groups: out, totals: { youOwe: fmt(owe), youAreOwed: fmt(owed) } };
+      return {
+        groups: out,
+        totals: { youOwe: fmt(owe), youAreOwed: fmt(owed) },
+        otherTotals: [...other.values()].map((t) => ({ asset: t.asset, youOwe: fmt(t.youOwe), youAreOwed: fmt(t.youAreOwed) })),
+      };
     },
 
     async createGroup(principal, input = {}) {
       const type = ['flat', 'trip', 'other'].includes(input.type) ? input.type : 'other';
       const name = text(input.name, 'name', 80);
+      // Optional settlement asset (#98). USDC is the default and is stored as no value, so existing databases need no change for it.
+      const asset = input.asset === undefined || input.asset === null ? stellar.asset.code : input.asset;
+      if (typeof asset !== 'string' || !(asset === stellar.asset.code || stellar.assetFor?.(asset))) {
+        throw new ApiError(400, 'ASSET_NOT_SUPPORTED', `asset must be one of: ${(stellar.supportedAssets?.() ?? [stellar.asset.code]).join(', ')}`);
+      }
       const id = randomUUID();
       // Everything that can be refused is checked before the first insert, so a bad request never leaves an empty group.
       const first = await draftMember(id, [], { address: principal.address, displayName: input.displayName, kind: principal.kind });
-      const group = await repo.insertGroup({ id, name, type, createdBy: principal.address, createdAt: ts() });
+      const group = await repo.insertGroup({ id, name, type, createdBy: principal.address, createdAt: ts(), ...(asset === stellar.asset.code ? {} : { asset }) });
       const me = await repo.insertMember(first);
       return detail({ ...(await load(group.id)), me });
     },
@@ -300,11 +329,11 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
      * With dryRun, returns the payment terms (who to pay, how much, which asset) without reserving or recording anything.
      */
     async settle(principal, groupId, input = {}, { dryRun = false } = {}) {
-      const { members, net, me } = await forMember(principal, groupId);
+      const { group, members, net, me } = await forMember(principal, groupId);
       if (dryRun) {
         const { to, amount } = terms(members, net, me, input);
         await enforceAgentCaps(principal, groupId, amount);
-        return { intent: { groupId, from: me.id, to: to.id, amount: fmt(amount), asset: stellar.asset, network: 'stellar:testnet', payFrom: me.address, payTo: to.address } };
+        return { intent: { groupId, from: me.id, to: to.id, amount: fmt(amount), asset: groupAsset(group), network: 'stellar:testnet', payFrom: me.address, payTo: to.address } };
       }
 
       const intent = typeof input.intentId === 'string' ? await repo.getIntent(input.intentId) : null;
@@ -318,7 +347,7 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       const to = members.find((m) => m.id === intent.to);
       const txHash = String(input.txHash ?? '').toLowerCase();
       if (!/^[0-9a-f]{64}$/.test(txHash)) throw invalid('txHash must be a 64-character hex transaction hash');
-      const check = await stellar.verifyPayment({ txHash, from: me.address, to: to.address, amount: intent.amount, memoHash: intent.memoHash, notAfter: intent.expiresAt });
+      const check = await stellar.verifyPayment({ txHash, from: me.address, to: to.address, amount: intent.amount, memoHash: intent.memoHash, notAfter: intent.expiresAt, asset: groupAsset(group) });
       if (!check.ok) throw new ApiError(422, check.code, check.message);
 
       // The money has moved. If the intent was cancelled, or an expense changed the debt since the reservation,
@@ -341,7 +370,8 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
      * The transaction must carry `memo` as a MEMO_HASH and expire (time bounds) no later than `expiresAt`.
      */
     async reserveSettlement(principal, groupId, input = {}) {
-      const { members, me } = await forMember(principal, groupId);
+      const { group, members, me } = await forMember(principal, groupId);
+      const asset = groupAsset(group);
       const to = members.find((m) => m.id === input.to);
       if (!to || to.id === me.id) throw invalid('to must be another member of the group');
       const amount = amountOf(input.amount);
@@ -363,17 +393,17 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
         await repo.updateIntent(id, { status: 'cancelled', closedAt: ts() });
         throw err;
       }
-      return { intent: publicIntent(intent, me, to) };
+      return { intent: publicIntent(intent, me, to, asset) };
     },
 
     /** Cancels a reserved intent, for example when the person rejects the signature in Freighter. Only the payer can. */
     async cancelSettlement(principal, groupId, intentId) {
-      const { members, me } = await forMember(principal, groupId);
+      const { group, members, me } = await forMember(principal, groupId);
       const intent = await repo.getIntent(intentId);
       if (!intent || intent.groupId !== groupId || intent.from !== me.id) throw new ApiError(404, 'INTENT_NOT_FOUND', 'Settlement intent not found');
       if (intent.status !== 'reserved') throw new ApiError(409, 'INTENT_NOT_OPEN', `This settlement intent is ${intent.status}`);
       const cancelled = await repo.updateIntent(intent.id, { status: 'cancelled', closedAt: ts() });
-      return { intent: publicIntent(cancelled, me, members.find((m) => m.id === intent.to)) };
+      return { intent: publicIntent(cancelled, me, members.find((m) => m.id === intent.to), groupAsset(group)) };
     },
 
     async activity(principal, groupId) {

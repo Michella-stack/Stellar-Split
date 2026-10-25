@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { getGroup, listExpenses } from '../client/api.js';
+import { AssetProvider } from '../components/AssetProvider.jsx';
 import { Button } from '../components/Button.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
 import { IconButton } from '../components/IconButton.jsx';
@@ -43,6 +44,7 @@ export default function Group() {
       {group.loading && <Loading label={t('group.loading')} />}
       {group.error && <LoadError title={t('group.loadError')} error={group.error} onRetry={group.reload} />}
       {detail && (
+        <AssetProvider group={detail.group}>
         <div className="flex flex-col gap-6 pb-28">
           <h1 className="sr-only">{detail.group.name}</h1>
           <MembersRow members={detail.members} meId={detail.me} />
@@ -89,6 +91,7 @@ export default function Group() {
           </div>
           <AddExpenseSheet open={sheetOpen} onClose={() => setSheetOpen(false)} groupId={id} />
         </div>
+        </AssetProvider>
       )}
     </>
   );

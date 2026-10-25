@@ -21,7 +21,7 @@ Review of 2026-10-25 on `main` plus the open PRs #28 to #32. Items marked **chec
 | 8 | `?dry_run=true` on the settlements endpoint is used by `mcp/src/api.js` but is not in the PRD or the stories. There is no endpoint to query a settlement by intent id, which the safe-retry flow needs | Agree the API shape; add a status endpoint |
 | 9 | PRD says `record_x402_settlement` takes an intent id and tx hash; the contract takes `(group, from, to, amount, tx_hash)` with no intent id | Align PRD to the contract or the reverse |
 | 10 | Indexer: the PRD puts it in Phase 1 or the MVP in some places and Phase 2 in others; story 21 says Phase 2 | Pick one |
-| 11 | PRD version and date: README and BUILD-FOCUS say v0.2, the PRD says v0.3. The PRD is dated the first day of the event but is described as written before it | Align; check the prior-work disclosure wording |
+| 11 | PRD version: README and BUILD-FOCUS said v0.2 while the PRD says v0.3 (aligned on `main` by PR #33) | Check that no other document still says v0.2 |
 | 12 | Owner tables blank in BUILD-FOCUS; the PRD says "single maintainer" and a different GitHub owner than the repository's | Fill in or remove |
 | 13 | `docs/AGENTS.md` (PR #30): says agents are "reachable only on Telegram" and also describes dashboards through a Cloudflare tunnel; the PRD says Tailscale. It says agents hold no Stellar keys, but each agent now owns a funded testnet account (the key location is in `docs/AGENT-WALLETS.md`). Image tags `:latest` and `:stable` versus digest pins the PRD asks for (digest pinning has since been applied on the server). The PRD assumes a different model host | Update AGENTS.md after merging |
 

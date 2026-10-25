@@ -19,7 +19,16 @@ jobs:
           toolchain: "1.97.0"
           targets: wasm32v1-none
           components: clippy
-      - run: cargo install --locked stellar-cli --version "28.1.0"
+      # Official prebuilt binary pinned by checksum. Building from source needs system libs and ~10 min.
+      - name: Install stellar-cli 28.1.0
+        env:
+          STELLAR_CLI_TGZ: stellar-cli-28.1.0-x86_64-unknown-linux-gnu.tar.gz
+          STELLAR_CLI_SHA256: c1680deee94301d33ada7a17f98411e642a4248c727afbd2e43050d345746462
+        run: |
+          curl -sSfLO "https://github.com/stellar/stellar-cli/releases/download/v28.1.0/${STELLAR_CLI_TGZ}"
+          echo "${STELLAR_CLI_SHA256}  ${STELLAR_CLI_TGZ}" | sha256sum -c -
+          mkdir -p "$HOME/.local/bin" && tar xzf "${STELLAR_CLI_TGZ}" -C "$HOME/.local/bin" stellar
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: stellar contract build
         working-directory: contracts
       - run: cargo clippy --locked --all-targets -- -D warnings

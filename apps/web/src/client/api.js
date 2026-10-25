@@ -15,8 +15,16 @@ export function setSessionToken(token) {
   sessionToken = token;
 }
 
+function tabStorage() {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 const impl = USING_MOCKS
-  ? createMockApi()
+  ? createMockApi({ storage: tabStorage() })
   : createHttpApi({ baseUrl: import.meta.env.VITE_API_URL ?? '', getToken: () => sessionToken });
 
 export const {

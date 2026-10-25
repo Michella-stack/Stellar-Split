@@ -12,16 +12,39 @@ import { initialState } from './data.js';
 const dec = (stroops) => fromStroops(stroops, { minDecimals: 2 });
 const USDC = { code: 'USDC', issuer: null };
 
+const STORAGE_KEY = 'stellar-split.mock-state';
+
 /**
- * @param {{ delayMs?: number, now?: () => Date }} [options]
+ * @param {{ delayMs?: number, now?: () => Date, storage?: Storage | null }} [options]
+ *   storage: when given (sessionStorage in the app), mock data survives a page reload in the same tab.
  */
-export function createMockApi({ delayMs = 300, now = () => new Date() } = {}) {
-  const state = initialState();
+export function createMockApi({ delayMs = 300, now = () => new Date(), storage = null } = {}) {
+  const state = load() ?? initialState();
   let nextId = 1;
   const newId = (prefix) => `${prefix}-${Date.now().toString(36)}-${nextId++}`;
 
+  function load() {
+    try {
+      const saved = storage?.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function save() {
+    try {
+      storage?.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Storage full or blocked: the mock keeps working in memory.
+    }
+  }
+
   /** Resolves after the configured delay with a deep copy, so callers never mutate mock state. */
-  const reply = (value) => new Promise((resolve) => setTimeout(() => resolve(structuredClone(value)), delayMs));
+  const reply = (value) => {
+    save();
+    return new Promise((resolve) => setTimeout(() => resolve(structuredClone(value)), delayMs));
+  };
   const fail = (code, message, status, details) =>
     new Promise((_, reject) => setTimeout(() => reject(new ApiError(code, message, { status, details })), delayMs));
 

@@ -6,9 +6,31 @@ import { WalletContext } from './wallet-context.js';
 
 const errorCode = (error) => (error instanceof WalletError ? error.code : 'UNKNOWN');
 
+// The session survives a reload in the same tab (sessionStorage) and is dropped when the tab closes,
+// the account changes or the person disconnects. It never holds keys, only the API session token.
+const SESSION_KEY = 'stellar-split.session';
+
+function readSavedSession() {
+  try {
+    const saved = JSON.parse(window.sessionStorage.getItem(SESSION_KEY) ?? 'null');
+    return saved && Date.parse(saved.expiresAt) > Date.now() ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSavedSession(session) {
+  try {
+    if (session) window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    else window.sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // Storage blocked: the session lasts until reload.
+  }
+}
+
 /**
  * Holds the connected Freighter account, its network, the API session and the profile.
- * The session token lives in memory only, so a reload asks for a new sign-in signature.
+ * The session is kept in sessionStorage for the current tab, so a reload does not ask for a new signature.
  * @param {{ children: import('react').ReactNode }} props
  */
 export function WalletProvider({ children }) {
@@ -32,6 +54,7 @@ export function WalletProvider({ children }) {
   }, []);
 
   const forgetSession = useCallback(() => {
+    writeSavedSession(null);
     api.setSessionToken(null);
     setSession(null);
     setProfile(null);
@@ -49,6 +72,19 @@ export function WalletProvider({ children }) {
         if (cancelled) return;
         setAddress(existing);
         setNetwork(net);
+        const saved = readSavedSession();
+        if (saved?.address === existing) {
+          api.setSessionToken(saved.token);
+          try {
+            const me = await api.getMe();
+            if (cancelled) return;
+            setSession(saved);
+            setProfile(me);
+          } catch {
+            writeSavedSession(null);
+            api.setSessionToken(null);
+          }
+        }
         setStatus('connected');
       } catch {
         if (!cancelled) setStatus('disconnected');
@@ -117,6 +153,7 @@ export function WalletProvider({ children }) {
       const { signedXdr } = await freighter.signTransaction(challengeXdr, { kind: 'sign-in', signer: current });
       const { session: next } = await api.verifyChallenge({ signedXdr });
       api.setSessionToken(next.token);
+      writeSavedSession(next);
       setSession(next);
       setProfile(await api.getMe());
       return true;

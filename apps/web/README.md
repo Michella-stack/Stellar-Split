@@ -49,7 +49,7 @@ src/
 - Before every signature, the adapter reads Freighter's network and account again and refuses anything that is not Testnet or not the reviewed account. It then checks that the transaction matches the reviewed intent (`intent.js`: recipient, amount, asset, a single operation, an expiry time) and pins the Testnet passphrase.
 - An account or network change bumps `epoch` and clears the session. Anything reviewed under an older epoch must be reviewed again.
 - With `VITE_USE_MOCKS=true`, sign-in still asks Freighter for a real signature. The mock builds a SEP-10 style challenge (a single data entry that is never submitted) and checks the signature. The signed-in wallet then takes the place of "you" in the demo data.
-- The session token lives in memory only, so a page reload asks you to sign in again.
+- The session (API token, never keys) is kept in `sessionStorage` for the current tab, so a reload keeps you signed in. Closing the tab, changing account or disconnecting drops it. In mock mode the demo data is kept the same way.
 - The app refuses to start unless `VITE_NETWORK=testnet`, the Horizon URL is the Testnet one and `VITE_USDC_ISSUER` is a valid address (`src/config/env.js`).
 
 ### Try it with Freighter

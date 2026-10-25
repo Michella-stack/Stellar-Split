@@ -162,3 +162,14 @@ describe('mock sign-in', () => {
     await expect(api.verifyChallenge({ signedXdr: tx.toXDR() })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
   });
 });
+
+describe('mock persistence', () => {
+  it('keeps changes across instances that share a storage', async () => {
+    const store = new Map();
+    const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+    const first = createMockApi({ delayMs: 0, storage });
+    await first.updateMe({ displayName: 'Damaris', homeCurrency: 'EUR' });
+    const second = createMockApi({ delayMs: 0, storage });
+    expect((await second.getMe()).displayName).toBe('Damaris');
+  });
+});

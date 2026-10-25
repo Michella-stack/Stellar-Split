@@ -39,3 +39,16 @@ test("http mode on a non-loopback host without MCP_AUTH_TOKEN exits cleanly", ()
   assert.match(r.err, /MCP_AUTH_TOKEN is required/);
   assert.doesNotMatch(r.err, /\n\s+at /);
 });
+
+test("a signer file that is missing or not a secret key stops the start without echoing its content", async () => {
+  const { writeFileSync, mkdtempSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const file = `${mkdtempSync(`${tmpdir()}/signer-`)}/signer`;
+  writeFileSync(file, "not-a-secret-key-xyz");
+  for (const f of [file, `${file}.missing`]) {
+    const r = run({ ...ok, LEDGERLY_SIGNER_FILE: f });
+    assert.equal(r.code, 1);
+    assert.match(r.err, /LEDGERLY_SIGNER_FILE/);
+    assert.doesNotMatch(r.err, /xyz|\n\s+at /);
+  }
+});

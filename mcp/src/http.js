@@ -24,7 +24,7 @@ async function readJson(req) {
 }
 
 // Stateless streamable HTTP: one server and transport per request, nothing kept between calls.
-export function startHttp({ api, host = "127.0.0.1", port = 8787, authToken }) {
+export function startHttp({ api, settler, host = "127.0.0.1", port = 8787, authToken }) {
   if (!authToken && !LOOPBACK.has(host)) {
     throw new Error("MCP_AUTH_TOKEN is required when MCP_HTTP_HOST is not loopback");
   }
@@ -39,7 +39,7 @@ export function startHttp({ api, host = "127.0.0.1", port = 8787, authToken }) {
     } catch {
       return end(400);
     }
-    const mcp = buildServer(api);
+    const mcp = buildServer(api, { settler });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on("close", () => {
       transport.close();

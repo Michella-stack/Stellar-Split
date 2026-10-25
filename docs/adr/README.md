@@ -14,3 +14,4 @@ Name records `NNNN-short-title.md` and include: status, context, decision, conse
 | [0004 The agent pays on behalf and the API records it](0004-agent-pays-on-behalf-and-the-api-records-it.md) | Accepted, stretch path |
 | [0005 The person signs the link to their agent](0005-the-person-signs-the-link-to-their-agent.md) | Accepted, real-browser signing to verify |
 | [0006 On-chain delegated payment is the roadmap](0006-on-chain-delegated-payment-roadmap.md) | Accepted as roadmap, not scheduled |
+| [0007 The web app is a Vite single-page app](0007-web-vite-spa.md) | Accepted (first numbered 0001, renumbered to remove the duplicate) |

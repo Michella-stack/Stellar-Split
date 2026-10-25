@@ -26,14 +26,24 @@ Context from public sources (to be checked before the pitch; see `docs/BUILD-FOC
 
 | Part | Where | Status |
 |---|---|---|
-| Web app: Freighter sign-in, groups, equal and exact splits, balances, settle in Testnet USDC with the tx on Stellar Expert | [`apps/web`](apps/web/README.md) | Merged. Runs on mock data until it is switched to the API ([#55](https://github.com/Michella-stack/Stellar-Split/pull/55)) |
-| API: sign-in with a signed message, groups, members, expenses, balances, settlements recorded only after Horizon confirms the payment | [`apps/api`](apps/api/README.md) | In review ([#51](https://github.com/Michella-stack/Stellar-Split/pull/51)), deployed at the live URL above |
+| Web app: Freighter sign-in, groups, equal and exact splits, balances, settle in Testnet USDC with the tx on Stellar Expert | [`apps/web`](apps/web/README.md) | Live at the URL above, talking to the API. Stellar Assist (the agent screens) runs on labelled sample data (“Preview”) until the agent API exists |
+| API: sign-in with a signed message, groups, members, expenses, balances, two-step settlements (a reserved intent, then the payment with its memo) recorded only after Horizon confirms it | [`apps/api`](apps/api/README.md) | Live at the URL above, with Supabase |
 | Shared money, split and balance rules used by both | [`packages/shared`](packages/shared/README.md) | Merged |
 | Non-custodial Soroban group contract | [`contracts/group`](contracts/README.md) | Deployed on Testnet (below) |
 | MCP server for agents: groups, balances, expenses, settlement proposals. It cannot move money | [`mcp`](docs/AGENT-INTERFACE.md) | Merged, not yet connected to the agents |
 | Hermes Agent and OpenClaw on Telegram | [`docs/AGENTS.md`](docs/AGENTS.md) | Running for the team; payments are the stretch goal |
+| Demo accounts: funded Testnet accounts with a USDC trustline and Testnet USDC, without a faucet | [`scripts/demo-accounts`](scripts/demo-accounts/README.md) | Merged |
 
-Testnet evidence: two USDC payments sent by the web app, [7e15141b…](https://stellar.expert/explorer/testnet/tx/7e15141b4fa3484aa319efcc783a81df6e35ab5d77dfb0576d8c38e80af576de) (1.50 USDC) and [fee0d278…](https://stellar.expert/explorer/testnet/tx/fee0d278e996b207c1998a60959bf85d2bf7dd0621b0b0e6376d9dd2d24d4099) (1.00 USDC).
+### Testnet evidence
+
+All are Testnet USDC payments signed in Freighter (or a test wallet) and sent by the web app, straight from the debtor to the creditor.
+
+| What it shows | Transaction |
+|---|---|
+| A payment from the web app | [7e15141b…](https://stellar.expert/explorer/testnet/tx/7e15141b4fa3484aa319efcc783a81df6e35ab5d77dfb0576d8c38e80af576de) (1.50 USDC) |
+| A partial payment from the review screen | [fee0d278…](https://stellar.expert/explorer/testnet/tx/fee0d278e996b207c1998a60959bf85d2bf7dd0621b0b0e6376d9dd2d24d4099) (1.00 USDC) |
+| A payment the API verified on Horizon before recording it | [bd22e9a8…](https://stellar.expert/explorer/testnet/tx/bd22e9a86050c2a720b40cc950b4e0480f264b32ac029175d1c43633ab12efd5) (0.30 USDC) |
+| A two-step settlement: the payment carries its reserved intent as a `MEMO_HASH` and expires with it, and the API recorded it after checking both | [6993c304…](https://stellar.expert/explorer/testnet/tx/6993c3042f956330e68e7196b673128aad4e9b9582b9e28fb70b886245ef3f62) (0.20 USDC) |
 
 The plan, what is deferred and the submission checklist are in [`docs/BUILD-FOCUS.md`](docs/BUILD-FOCUS.md). The design is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -52,7 +62,7 @@ flowchart LR
 ```
 
 - Freighter signs everything a person sends, so the app never sees a secret key. The payment goes straight from the debtor to the creditor.
-- The API records a settlement only after Horizon shows a successful USDC payment with the right payer, payee and amount.
+- Paying is two steps. The API first reserves a settlement intent, which blocks other payments between the same people. The payment then carries the intent as a `MEMO_HASH` and expires with it. The API records it only after Horizon shows a successful USDC payment with the right payer, payee, amount, memo and time bounds, so an older payment cannot settle a new debt.
 - The off-chain ledger is Supabase (PostgreSQL). The Soroban group contract is deployed; settling through its `settle` function comes after the plain transfer.
 - Agents reach the ledger only through the MCP server. Agent payments through x402 are the stretch goal.
 - Stack: JavaScript (ES modules, JSDoc), Vite + React + Tailwind CSS, Node.js with no runtime dependencies in the API, Supabase.
@@ -65,8 +75,9 @@ flowchart LR
 | Deploy transaction | [`56a42289…095fbe6a`](https://stellar.expert/explorer/testnet/tx/56a42289418586c90efec1a09ce36e70a152988067e2c7268fc9b2ec095fbe6a) (25 October 2026) |
 | WASM hash | `ca6ba904c5759a963a3b08611a8d4519aa6a8e75670dacab873ace8fe27463e4` |
 | Admin and recorder | `GCOURV2JXCIXK3CHXMJ4HBOPS5TMWGLL4AVKTO6A44DYYDJE2FA5I4N4` |
+| Testnet USDC (Circle) | `USDC` issued by [`GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`](https://stellar.expert/explorer/testnet/asset/USDC-GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5) (home domain `centre.io`) |
 
-Group 1 on this contract is a smoke test that uses native XLM, not USDC. The Testnet USDC asset and the settlement transaction used in the demo will be listed here.
+Group 1 on this contract is a smoke test that uses native XLM, not USDC. The demo settles with plain USDC payments (see [Testnet evidence](#testnet-evidence)); settling through the contract's `settle` comes later.
 
 ## Setup
 
@@ -85,7 +96,7 @@ Each part documents its own variables: [`apps/web`](apps/web/README.md#environme
 
 The web app and the API run as one Vercel project. How it is built and deployed is in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
-The three-minute demo script is in [`apps/web/README.md`](apps/web/README.md#demo-script-about-3-minutes). It needs two funded Testnet accounts with a USDC trustline in Freighter.
+The three-minute demo script is in [`apps/web/README.md`](apps/web/README.md#demo-script-about-3-minutes). It needs two funded Testnet accounts with a USDC trustline in Freighter. [`scripts/demo-accounts`](scripts/demo-accounts/README.md) prepares them in about a minute. `fund <G address>` sends Testnet USDC to any Freighter account that has a trustline, without its secret key.
 
 ## Security
 

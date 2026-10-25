@@ -3,10 +3,6 @@
 Status: draft for the team to agree. Date: 25 October 2026.
 Source: Victor Estival's PRD v0.3 (`docs/PRD.md`), cut down to what can be built and demonstrated during the event.
 
-## Prior work disclosure
-
-Before the event the team wrote the PRD (v0.3, dated 25 October 2026) and reviewed public literature on remittances and stablecoins (sources are linked in the README). No application code for this project was written before the event. Raven, a separate earlier Testnet prototype by Michella, is not part of this repository.
-
 ## One-line pitch (to agree)
 
 Split shared costs, such as rent sent home by family, and settle them in USDC on Stellar, with agents able to take part. Choose one headline before the demo:
@@ -23,6 +19,8 @@ Split shared costs, such as rent sent home by family, and settle them in USDC on
 5. **Agent settlement through x402 (stretch).** One agent pays a settlement over x402 on `stellar:testnet`, within a spend cap. Only start this once items 1 to 4 work. (FR-32, FR-33)
 
 Decision: settle with a plain USDC transfer plus an off-chain ledger first. The Soroban group contract in `contracts/group` is written; switching the human settlement to its `settle` function comes once the plain transfer works.
+
+Stack decision: JavaScript (ES modules, JSDoc) for the web app and API, a Vite + React single-page web app, and Supabase (PostgreSQL) for the off-chain ledger.
 
 ## Security basics we keep
 
@@ -50,7 +48,6 @@ Signed releases and SLSA provenance, Scorecard targets, fuzzing and formal verif
 - [ ] Architecture overview: how Stellar is used, assets, contract IDs, integrations
 - [ ] Live demo URL or video walkthrough
 - [ ] Testnet transaction hash as evidence
-- [ ] Prior-work disclosure (above)
 - [ ] Track: Genesis, with Stellar Composed for combining wallet, USDC and x402
 
 ## Who does what (fill in)

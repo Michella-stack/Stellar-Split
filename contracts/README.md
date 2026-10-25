@@ -1,6 +1,6 @@
-# Ledgerly group contract
+# Stellar-Split group contract
 
-Non-custodial Soroban contract that holds groups, members, expense hashes and net balances for Ledgerly. Crate: `stellar_split_group`, built with `soroban-sdk` 28.0.0.
+Non-custodial Soroban contract that holds groups, members, expense hashes and net balances for Stellar-Split. Crate: `stellar_split_group`, built with `soroban-sdk` 28.0.0.
 
 The contract never holds tokens. `settle` calls the group token's SEP-41 `transfer(from, to, amount)` so funds move straight from debtor to creditor. `record_x402_settlement` only updates the ledger for an agent payment that the API already verified on-chain.
 

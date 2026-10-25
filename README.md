@@ -36,8 +36,18 @@ The full plan, what is deferred, and the submission checklist are in [`docs/BUIL
 - API for groups, expenses and balances.
 - Settlement as a plain USDC transfer on Stellar Testnet first. A Soroban group contract is written in [`contracts/group`](contracts/README.md); settling through its `settle` function comes after the plain transfer works.
 - x402 on Stellar (the `exact` scheme with a facilitator) for agent payments (stretch).
+- Stack: JavaScript (ES modules, JSDoc), a Vite + React web app with Tailwind CSS, a Node.js API, and Supabase (PostgreSQL) for the off-chain ledger.
 
-Contract IDs, assets and integration details will be listed here once confirmed for the demo.
+### Deployed on Stellar Testnet
+
+| Item | Value |
+|---|---|
+| Group contract | [`CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`](https://stellar.expert/explorer/testnet/contract/CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y) |
+| Deploy transaction | [`56a42289…095fbe6a`](https://stellar.expert/explorer/testnet/tx/56a42289418586c90efec1a09ce36e70a152988067e2c7268fc9b2ec095fbe6a) (25 October 2026) |
+| WASM hash | `ca6ba904c5759a963a3b08611a8d4519aa6a8e75670dacab873ace8fe27463e4` |
+| Admin and recorder | `GCOURV2JXCIXK3CHXMJ4HBOPS5TMWGLL4AVKTO6A44DYYDJE2FA5I4N4` |
+
+Group 1 on this contract is a smoke test that uses native XLM, not USDC. The Testnet USDC asset and the settlement transaction used in the demo will be listed here.
 
 ## Setup
 
@@ -72,6 +82,7 @@ Design rules the code must follow (enforced as each part lands):
 - [Product requirements](docs/PRD.md) (written under the working name Ledgerly)
 - [Judging criteria](docs/JUDGING.md)
 - [Build focus](docs/BUILD-FOCUS.md)
+- [Agents: setup and access](docs/AGENTS.md)
 - [Group contract](contracts/README.md)
 - [Security policy](SECURITY.md)
 - [Supply chain checks](supply-chain/README.md)
@@ -79,10 +90,6 @@ Design rules the code must follow (enforced as each part lands):
 ## Release signing key
 
 Planned after the hackathon: release tags and artifacts will be signed with the owner's GPG key, and the key fingerprint will be published here and in `SECURITY.md`.
-
-## Prior work disclosure
-
-Before the event the team wrote a product requirements document (v0.3, dated 25 October 2026) and reviewed public literature on remittances and stablecoins. No application code for this project was written before the event. A separate earlier Testnet prototype by Michella Warren, called Raven, is not part of this repository.
 
 ## Team
 

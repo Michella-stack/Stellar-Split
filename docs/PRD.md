@@ -3,9 +3,11 @@
 | Field | Value |
 |---|---|
 | Status | Draft |
-| Version | 0.3 |
+| Version | 0.4 |
 | Date | 2026-10-25 |
 | Owner | Victor Estival (`@vestival`) |
+| Working name | Ledgerly (working name) |
+| Repository | `Michella-stack/Stellar-Split` |
 | Working name | Ledgerly (working name; the project is now called Stellar-Split) |
 | Repository | [Michella-stack/Stellar-Split](https://github.com/Michella-stack/Stellar-Split) |
 
@@ -103,13 +105,13 @@ Agents are members of a group like humans are, but they are always sponsored by 
 
 | Component | Responsibility | Technology |
 |---|---|---|
-| Web app | Human UI: groups, expenses, balances, settle, agent management, approvals. | TypeScript, server-rendered pages with minimal client JS. Wallet connection via Freighter or another wallet that supports Soroban authorization entry signing. |
-| API server | REST API, authentication, authorization, spend policy enforcement, webhooks, x402 resource server middleware. | TypeScript (Node.js), the `@x402/stellar` exact scheme and the x402 HTTP middleware for the payment-gated routes. Export names are checked against the pinned release. |
+| Web app | Human UI: groups, expenses, balances, settle, agent management, approvals. | JavaScript (ES modules, JSDoc), React single-page app built with Vite, Tailwind CSS. Wallet connection via Freighter or another wallet that supports Soroban authorization entry signing. |
+| API server | REST API, authentication, authorization, spend policy enforcement, webhooks, x402 resource server middleware. | JavaScript (Node.js, ES modules, JSDoc), the `@x402/stellar` exact scheme and the x402 HTTP middleware for the payment-gated routes. Export names are checked against the pinned release. |
 | Policy engine | Evaluates the agent's spend policy against the intent and its spend history before any 402 challenge is issued. | Pure function, unit and property tested. |
 | MCP server | Exposes Ledgerly tools to agents. Runs next to the agent, in the agent's own container, and holds the agent's Stellar signer. Checks that the 402 terms match the intent it created before it signs. The model never sees the key. | TypeScript MCP SDK. Distributed as a signed container image and npm package. Supports stdio and streamable HTTP. |
 | Chain verifier | Confirms every settlement on Stellar RPC (asset contract, amount, payer, payee, network) before Ledgerly marks it final. | Worker process. |
-| Indexer | Reads Soroban contract events and keeps a queryable copy for fast balance views. Reconciles against the contract on a schedule. | Worker process, PostgreSQL. |
-| Database | Groups, members, expense metadata, agent identities, policies, approvals, webhook subscriptions, idempotency keys. Never the source of truth for balances. No private keys. | PostgreSQL. |
+| Indexer | Reads Soroban contract events and keeps a queryable copy for fast balance views. Reconciles against the contract on a schedule. | Worker process, PostgreSQL (Supabase). |
+| Database | Groups, members, expense metadata, agent identities, policies, approvals, webhook subscriptions, idempotency keys. Never the source of truth for balances. No private keys. | PostgreSQL hosted on Supabase, behind a repository layer. |
 | Group contract | Non-custodial Soroban contract holding groups, expense hashes, balance deltas and settlement records. `settle` calls the SEP-41 token to transfer directly from debtor to creditor and records it in the same transaction. `record_x402_settlement` records an agent settlement already verified on-chain. The contract never holds a token balance. | Rust, `soroban-sdk`. |
 | Facilitator | Verifies and settles x402 payments, submits the transaction and pays the fee. Testnet: Coinbase x402 facilitator or the OpenZeppelin facilitator. Mainnet: OpenZeppelin facilitator (supports both networks) or the self-hosted `relayer-plugin-x402-facilitator` once its mainnet support is confirmed in Phase 3. | External service, endpoints `/verify`, `/settle`, `/supported`. |
 | Stellar network | Testnet for development and the MVP acceptance test, mainnet behind the gate in section 12. | Soroban RPC, Horizon for account lookups. |
@@ -311,7 +313,7 @@ Hermes defines MCP servers in `~/.hermes/config.yaml` under `mcp_servers`, suppo
 | HA-6 | Feed the agent a document that contains an embedded instruction to pay an unknown address. | The counterparty allowlist rejects it server-side. Logged as a policy denial. |
 | HA-7 | Revoke the agent in the web app mid-session. | Next tool call returns `401`. Pending approvals cancelled. |
 
-Both test plans must pass on testnet before Phase 2 exits.
+Phase 1a runs HA-1, HA-3, HA-4, HA-6 and OC-1, OC-4, OC-6. Both full test plans must pass on testnet before Phase 2 exits.
 
 ### 7.4 Agent guardrails
 
@@ -719,7 +721,7 @@ Trigger: push of a tag matching `v*`, which must be GPG-signed (the workflow ver
 
 ## 12. MVP definition
 
-The MVP is a working ledger for one group with human members, settlement on Stellar testnet, and the security baseline in place. A minimal MCP server (list groups, balances, create expense, propose and settle) and one agent (Hermes Agent) are in the MVP. OpenClaw, approvals, velocity checks and the full tool set are Phase 2.
+The MVP is a working ledger for one group with human members, settlement on Stellar testnet, and the security baseline in place. A minimal MCP server (list groups, balances, create expense, propose and settle) and two agents (Hermes Agent and OpenClaw) are in the MVP. Approvals, velocity checks and the full tool set are Phase 2.
 
 ### Acceptance criteria
 
@@ -729,8 +731,8 @@ The MVP is a working ledger for one group with human members, settlement on Stel
 - [ ] A settlement from the web app produces a real Stellar testnet transaction that transfers testnet USDC directly to the creditor and records the settlement in the group contract. The transaction hash is shown and resolvable on a testnet explorer.
 - [ ] After every test run the group contract's token balance is zero.
 - [ ] The indexer reflects the settlement within 30 seconds and the reconciliation job reports zero mismatches.
-- [ ] One agent (Hermes Agent) completes an x402-paid settlement on testnet through the MCP server, within policy. The chain verifier confirms it, the contract records it, and the transaction hash is returned to the agent.
-- [ ] A policy violation (cap exceeded) by that agent is blocked server-side with no transaction and a logged denial.
+- [ ] Each agent (Hermes Agent and OpenClaw) completes an x402-paid settlement on testnet through the MCP server, within policy. The chain verifier confirms it, the contract records it, and the transaction hash is returned to the agent.
+- [ ] A policy violation (cap exceeded) by either agent is blocked server-side with no transaction and a logged denial.
 - [ ] The group contract passes unit tests, property tests for the zero-sum invariant, Scout static analysis with no findings at the highest severity, and a 2-minute fuzz run without crashes.
 - [ ] The repository has branch protection, required signed commits, CODEOWNERS, secret scanning with push protection, and all workflows in section 10 passing on `main`.
 - [ ] The first tagged release is GPG-signed, ships an SBOM, GPG-signed artifacts and SLSA Build Level 2 provenance, and the WASM hash in the release matches the deployed testnet contract.
@@ -755,8 +757,8 @@ Mainnet deployment happens only after all of the following:
 | Phase | Scope | Exit criteria |
 |---|---|---|
 | Phase 0: Foundations and security baseline | Repository created with branch protection, signed commits, CODEOWNERS, secret scanning, push protection. All section 10 workflows added and green on an empty skeleton, with a placeholder fuzz target. Approved versions list seeded. Release key generated offline, fingerprint published. Toolchains pinned. `SECURITY.md`, `PRIVACY.md`, `CONTRIBUTING.md` written. | All checks pass on a hello-world commit. First signed tag `v0.0.1` released with SBOM, GPG-signed artifacts and provenance. Scorecard 7.0 or higher. |
-| Phase 1a: Hackathon build | Non-custodial group contract on testnet with unit tests and Scout. Minimal API with the x402 settle endpoint (OpenZeppelin testnet facilitator) and chain verification. Minimal MCP server (list groups, balances, create expense, settle) used by Hermes Agent. One web page to read balances and settle with Freighter. Balances read from the contract directly (no indexer, no Postgres). Security baseline: GPG-signed commits and release tag, actions pinned by SHA, Dependabot cooldown, dependency review, OSV-Scanner, CodeQL, a first version of the version guard. | Live demo: a human settles from the web page and Hermes settles through x402, both visible on a testnet explorer. Signed `v0.1.0` tag. All checks green. |
-| Phase 1: MVP | Group contract on testnet with tests, fuzzing, Scout. API and web app for groups, expenses, balances, settlement. Indexer and reconciliation. Agent identity model and 402 middleware present. Hermes Agent single-agent settlement. | All MVP acceptance criteria met. Demo video of a testnet settlement. Submission-ready build. |
+| Phase 1a: Hackathon build | Non-custodial group contract implemented and deployed on testnet, with demo integration after the required plain-transfer path works. Minimal Node.js API for groups, expenses and balances, with Supabase PostgreSQL as the off-chain ledger. One Vite + React page styled with Tailwind CSS connects Freighter and settles a plain Testnet USDC payment first. The existing non-paying MCP tools are connected to Hermes Agent and OpenClaw if time permits; signer-backed x402 settlement remains a stretch goal. Security baseline: actions pinned by SHA, Dependabot cooldown, dependency review, OSV-Scanner, CodeQL and the version guard. | Required live demo: a human settles from the web page and the verified transaction is visible on a Testnet explorer. Stretch exit: Hermes and OpenClaw use the MCP/x402 path within server-enforced limits. All applicable checks green. |
+| Phase 1: MVP | Group contract on testnet with tests, fuzzing, Scout. API and web app for groups, expenses, balances, settlement. Indexer and reconciliation. Agent identity model and 402 middleware present. Hermes Agent and OpenClaw settlements. | All MVP acceptance criteria met. Demo video of a testnet settlement. Submission-ready build. |
 | Phase 2: Agents | MCP server with full tool set and annotations. Spend policies, approvals, velocity checks, audit log, kill switch. Full OpenClaw and Hermes test plans. Agent smart accounts built on OpenZeppelin's Stellar smart account contracts with a spending-limit policy, so per-agent caps also hold on-chain. Metered endpoints via x402. Optional cosign provenance added to releases. | Both test plans pass. Prompt injection tests OC-6 and HA-6 pass. Approval flow works via web and Telegram. Komet run on settlement logic. |
 | Phase 3: Integrations | Public OpenAPI, API keys with scopes, OAuth 2.1 PKCE, webhooks with HMAC and retries, rate limits with headers, CSV export, sandbox docs. At least one external integration built as a reference (for example a budgeting sheet sync). | Reference integration consumes webhooks end to end. OpenAPI document validated in CI. Rate limit tests pass. Mainnet gate review started. |
 | Phase 4: Scale and mainnet | Mainnet deployment behind the gate. Multisig admin, timelock, external audit, self-hosted facilitator option, 99.5 percent availability target, status page, backup restore drills, multi-admin groups, recurring expenses. | Mainnet gate complete. First 10 mainnet groups settled without incident for 30 days. Availability target met for one month. |

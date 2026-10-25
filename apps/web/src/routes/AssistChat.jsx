@@ -9,13 +9,14 @@ import { Chip } from '../components/Chip.jsx';
 import { IconAlert, IconCheck } from '../components/icons.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { ApprovalCard } from '../features/assist/ApprovalCard.jsx';
+import { TelegramCheck } from '../features/assist/TelegramCheck.jsx';
 import { decide, parseIntent } from '../features/assist/script.js';
 import { useToast } from '../hooks/useToast.js';
 import { formatUsd } from '../lib/format.js';
 
 // Scripted demo: Stellar Assist acts on Casa Alfama, the group it belongs to.
 const GROUP_ID = 'casa-alfama';
-const SUGGESTIONS = ['What do I owe?', 'Pay my internet share'];
+const SUGGESTIONS = ['What do I owe?', 'Pay my internet share', 'Check a payment on Telegram'];
 
 /** @typedef {{ id: number, from: 'me' | 'assist', text?: string, card?: any }} Message */
 
@@ -130,6 +131,14 @@ async function reply(intent) {
     return { from: 'assist', text: lines.length ? lines.join(' ') : 'You’re all square in every group.' };
   }
 
+  if (intent.kind === 'telegram-check') {
+    const approval = pendingApprovals.find((a) => /internet/i.test(a.description)) ?? pendingApprovals[0];
+    if (!approval) return { from: 'assist', text: 'Nothing is waiting for a check right now.' };
+    const detail = await assist.getGroup(approval.groupId);
+    const recipientName = detail.members.find((m) => m.id === approval.to)?.displayName ?? 'them';
+    return { from: 'assist', text: 'This is what I would send you on Telegram. It is a simulation: nothing is sent and no money moves.', card: { type: 'telegram-check', approval, recipientName } };
+  }
+
   if (intent.kind === 'pay-internet') {
     const approval = pendingApprovals.find((a) => /internet/i.test(a.description));
     if (!approval) return { from: 'assist', text: 'Your internet share is already taken care of.' };
@@ -172,6 +181,11 @@ function ChatMessage({ message }) {
       {message.card?.type === 'approval' && (
         <div className="w-full">
           <ApprovalCard approval={message.card.approval} recipientName={message.card.recipientName} approvalAbove={message.card.policy.approvalAbove} />
+        </div>
+      )}
+      {message.card?.type === 'telegram-check' && (
+        <div className="w-full">
+          <TelegramCheck approval={message.card.approval} recipientName={message.card.recipientName} />
         </div>
       )}
       {message.card?.type === 'over-limit' && <OverLimitCard card={message.card} />}

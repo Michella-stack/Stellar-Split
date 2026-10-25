@@ -118,6 +118,10 @@ The first settlement path is a plain USDC payment from the person who owes to th
 
 If the Freighter account or network changes before submission, the payment goes back to review.
 
+**Settle all.** When you owe several members in a group, the group card shows **Settle all · $total** next to the single payments. It walks through them one after another with the same review, checks and signature for each, and every Paid screen offers **Next: pay …** (or "Stop here and go back to the group"). The list of who to pay travels in the route state (`features/settlement/queue.js`); each payment reads what you owe again, so a changed balance is never paid blindly.
+
+Addresses on the Settle up review and on Wallet open the account on Stellar Expert (not in demo mode, where addresses are samples).
+
 In mock mode, set `VITE_MOCK_MATEO_ADDRESS` to a real Testnet account with a USDC trustline so that "Settle up with Mateo" reaches it.
 
 ## Exchange rates

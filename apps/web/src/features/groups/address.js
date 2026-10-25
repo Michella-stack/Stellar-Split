@@ -1,5 +1,4 @@
-import { StrKey } from '@stellar/stellar-sdk';
-import { containsSecretKey } from '@shared/validation.js';
+import { containsSecretKey, isValidStellarAddress } from '@shared/validation.js';
 
 /**
  * Checks a Stellar address typed or pasted by a person, including its checksum.
@@ -12,6 +11,6 @@ export function addressError(value) {
   if (containsSecretKey(text)) {
     return 'That is a secret key, not an address. Never share it. Ask your friend for their public address (it starts with G).';
   }
-  if (!StrKey.isValidEd25519PublicKey(text)) return 'That is not a Stellar address. It starts with G and has 56 characters.';
+  if (!isValidStellarAddress(text)) return 'That is not a Stellar address. It starts with G and has 56 characters.';
   return null;
 }

@@ -1,9 +1,10 @@
 // Runtime configuration from VITE_ variables. Fails closed: anything that is not Stellar Testnet is refused.
 
-import { Networks, StrKey } from '@stellar/stellar-sdk';
+import { isValidStellarAddress } from '@shared/validation.js';
 
 export const NETWORK = 'testnet';
-export const NETWORK_PASSPHRASE = Networks.TESTNET;
+// Same value as Networks.TESTNET in @stellar/stellar-sdk (kept literal so the SDK is not needed at startup).
+export const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015';
 export const EXPLORER_TX_URL = 'https://stellar.expert/explorer/testnet/tx/';
 export const FREIGHTER_INSTALL_URL = 'https://www.freighter.app/';
 export const FRIENDBOT_URL = 'https://friendbot.stellar.org';
@@ -25,7 +26,7 @@ export function readConfig(env) {
     problems.push('VITE_HORIZON_URL must be the Stellar Testnet Horizon (https://horizon-testnet.stellar.org) or a local one.');
   }
   const usdcIssuer = env.VITE_USDC_ISSUER ?? '';
-  if (!StrKey.isValidEd25519PublicKey(usdcIssuer)) problems.push('VITE_USDC_ISSUER must be the Testnet USDC issuer address (G...).');
+  if (!isValidStellarAddress(usdcIssuer)) problems.push('VITE_USDC_ISSUER must be the Testnet USDC issuer address (G...).');
   if (problems.length > 0) return { ok: false, problems };
   return {
     ok: true,

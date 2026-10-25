@@ -12,7 +12,6 @@ import {
 } from '@stellar/freighter-api';
 import { NETWORK_PASSPHRASE } from '../../config/env.js';
 import { WalletError, fromFreighterError } from './errors.js';
-import { checkIntent } from './intent.js';
 
 /**
  * @typedef {{ name: 'testnet' | 'public' | 'futurenet' | 'other', passphrase: string, isTestnet: boolean }} WalletNetwork
@@ -94,6 +93,8 @@ export async function signTransaction(xdr, intent) {
   const current = await getConnectedAddress();
   if (!current) throw new WalletError('LOCKED', 'Freighter is locked or this site lost access');
   if (current !== intent.signer) throw new WalletError('ACCOUNT_CHANGED', 'The Freighter account changed since you reviewed this');
+  // Loaded on first signature so the Stellar SDK is not part of the first page.
+  const { checkIntent } = await import('./intent.js');
   checkIntent(xdr, intent);
 
   const result = await freighterSign(xdr, { networkPassphrase: NETWORK_PASSPHRASE, address: intent.signer });

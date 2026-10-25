@@ -4,9 +4,8 @@
 import { netBalances, expenseShares, suggestTransfers } from '@shared/balances.js';
 import { fromStroops, toStroops, validateAmount } from '@shared/money.js';
 import { checkExactSplit } from '@shared/splits.js';
-import { containsSecretKey, looksLikeStellarAddress } from '@shared/validation.js';
+import { containsSecretKey, isValidStellarAddress, looksLikeStellarAddress } from '@shared/validation.js';
 import { ApiError } from '../errors.js';
-import { buildChallenge, verifyChallenge } from './challenge.js';
 import { initialState } from './data.js';
 
 const dec = (stroops) => fromStroops(stroops, { minDecimals: 2 });
@@ -22,7 +21,7 @@ const STORAGE_KEY = 'stellar-split.mock-state';
 export function createMockApi({ delayMs = 300, now = () => new Date(), storage = null, addresses = {} } = {}) {
   const state = load() ?? initialState();
   for (const [memberId, address] of Object.entries(addresses)) {
-    if (!address || !looksLikeStellarAddress(address)) continue;
+    if (!address || !isValidStellarAddress(address)) continue;
     for (const group of state.groups) {
       const member = group.members.find((m) => m.id === memberId);
       if (member) member.address = address;
@@ -113,10 +112,12 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
     async requestChallenge({ address }) {
       if (!looksLikeStellarAddress(address)) return fail('INVALID_ADDRESS', 'Not a Stellar address', 400);
       pendingAddress = address;
+      const { buildChallenge } = await import('./challenge.js');
       return reply({ challengeXdr: buildChallenge(address) });
     },
 
     async verifyChallenge({ signedXdr }) {
+      const { verifyChallenge } = await import('./challenge.js');
       if (!pendingAddress || !verifyChallenge(signedXdr, pendingAddress)) {
         return fail('UNAUTHORIZED', 'Challenge signature is not valid', 401);
       }

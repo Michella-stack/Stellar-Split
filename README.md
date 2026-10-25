@@ -75,7 +75,8 @@ flowchart LR
 | Deploy transaction | [`56a42289…095fbe6a`](https://stellar.expert/explorer/testnet/tx/56a42289418586c90efec1a09ce36e70a152988067e2c7268fc9b2ec095fbe6a) (25 October 2026) |
 | WASM hash | `ca6ba904c5759a963a3b08611a8d4519aa6a8e75670dacab873ace8fe27463e4` |
 | Admin and recorder | `GCOURV2JXCIXK3CHXMJ4HBOPS5TMWGLL4AVKTO6A44DYYDJE2FA5I4N4` |
-| Testnet USDC (Circle) | `USDC` issued by [`GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`](https://stellar.expert/explorer/testnet/asset/USDC-GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5) (home domain `centre.io`) |
+| Testnet USDC (Circle) | `USDC` issued by [`GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`](https://stellar.expert/explorer/testnet/asset/USDC-GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5) (home domain `centre.io`), 7 decimals |
+| Testnet USDC token contract | [`CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA`](https://stellar.expert/explorer/testnet/contract/CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA), the Stellar Asset Contract of that asset. Derived from the asset for the Testnet passphrase; the contract answers `name` = `USDC:GBBD47…` and `decimals` = 7 |
 
 Group 1 on this contract is a smoke test that uses native XLM, not USDC. The demo settles with plain USDC payments (see [Testnet evidence](#testnet-evidence)); settling through the contract's `settle` comes later.
 
@@ -97,6 +98,16 @@ Each part documents its own variables: [`apps/web`](apps/web/README.md#environme
 The web app and the API run as one Vercel project. How it is built and deployed is in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 The three-minute demo script is in [`apps/web/README.md`](apps/web/README.md#demo-script-about-3-minutes). It needs two funded Testnet accounts with a USDC trustline in Freighter. [`scripts/demo-accounts`](scripts/demo-accounts/README.md) prepares them in about a minute. `fund <G address>` sends Testnet USDC to any Freighter account that has a trustline, without its secret key.
+
+Three demo accounts are already set up in Freighter on Testnet, each with XLM from Friendbot, a USDC trustline and Testnet USDC. Their secret keys stay in Freighter and are not in this repository.
+
+| Account | Address |
+|---|---|
+| Demo user 1 | [`GAZ2D6UYGDFFORAS3PXOEIZQLVS7ME6VYRANQJNLEELMYIAOUB4PY7NY`](https://stellar.expert/explorer/testnet/account/GAZ2D6UYGDFFORAS3PXOEIZQLVS7ME6VYRANQJNLEELMYIAOUB4PY7NY) |
+| Demo user 2 | [`GCCEP6MCOGHOWGFHMHGB3LAJVTB7ZFDPGYBUI6BFCOUH3NPVM7RZNZZX`](https://stellar.expert/explorer/testnet/account/GCCEP6MCOGHOWGFHMHGB3LAJVTB7ZFDPGYBUI6BFCOUH3NPVM7RZNZZX) |
+| Demo user 3 | [`GDNTRR7T5BS22ULN2YHYIRPLYJWZ7EIPWG5BWBWN2TC52UVYGONEXXLC`](https://stellar.expert/explorer/testnet/account/GDNTRR7T5BS22ULN2YHYIRPLYJWZ7EIPWG5BWBWN2TC52UVYGONEXXLC) |
+
+Testnet USDC can also be requested at [faucet.circle.com](https://faucet.circle.com) (Stellar Testnet), with a cooldown of about two hours per address.
 
 ## Security
 

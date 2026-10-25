@@ -362,14 +362,14 @@ For the required first demo, the web builds a plain Testnet USDC payment from th
 
 ## 9. Configuration
 
-The root `.env.example` documents variable names and safe Testnet defaults. The deployed group contract details are confirmed, while the Testnet USDC identity, Supabase project values, facilitator, and demo transaction still require environment-specific configuration.
+The root `.env.example` documents variable names and safe Testnet defaults. The deployed group contract details and the Testnet USDC identity are confirmed, while Supabase project values, facilitator, and demo transaction still require environment-specific configuration.
 
 | Variable | Runtime | Purpose |
 |---|---|---|
 | `STELLAR_NETWORK` | Shared/public | Must equal `testnet`. |
 | `HORIZON_URL` | Server or public when required | Approved Stellar Testnet Horizon endpoint. |
 | `SOROBAN_RPC_URL` | Server or public when required | Approved Stellar Testnet RPC endpoint. |
-| `USDC_ASSET_CODE` / `USDC_ISSUER` or token contract ID | Shared/public | Exact Testnet USDC identity used by the demo; still to be confirmed. |
+| `USDC_ASSET_CODE` / `USDC_ISSUER` or `USDC_TOKEN_CONTRACT_ID` | Shared/public | Circle Testnet USDC: code `USDC`, issuer `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`, Stellar Asset Contract `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` (7 decimals). Confirmed on Testnet: the contract id matches the asset and the contract answers `name` = `USDC:GBBD47…`. |
 | `GROUP_CONTRACT_ID` | Shared/public | Deployed Testnet contract: `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`. |
 | `SUPABASE_URL` | Server; public only if RLS permits | Selected Supabase project endpoint. |
 | `SUPABASE_ANON_KEY` | Browser only if RLS permits | Public client credential; not a replacement for authorization rules. |

@@ -83,6 +83,8 @@ Each part documents its own variables: [`apps/web`](apps/web/README.md#environme
 
 ## Demo
 
+The web app and the API run as one Vercel project. How it is built and deployed is in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 The three-minute demo script is in [`apps/web/README.md`](apps/web/README.md#demo-script-about-3-minutes). It needs two funded Testnet accounts with a USDC trustline in Freighter.
 
 ## Security
@@ -108,6 +110,7 @@ Threat model and policies: [`docs/security`](docs/security/README.md).
 - [Agent interface (MCP)](docs/AGENT-INTERFACE.md) and [agent wallets](docs/AGENT-WALLETS.md)
 - [Security: threat model and policies](docs/security/README.md)
 - [Testing status](docs/TESTING.md)
+- [Deployment on Vercel](docs/DEPLOYMENT.md)
 - [Group contract](contracts/README.md)
 - [Security policy](SECURITY.md)
 - [Supply chain checks](supply-chain/README.md)

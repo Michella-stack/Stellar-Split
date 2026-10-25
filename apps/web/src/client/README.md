@@ -9,7 +9,7 @@ These shapes are the web team's proposal until the API team confirms them. If th
 - **Amounts** are decimal strings with up to 7 decimals and at least 2, e.g. `"364.60"` or `"-33.3333333"`. They are never JSON numbers. For maths use `@shared/money.js` (`toStroops`, `fromStroops`).
 - **Net balance sign:** positive means the member is owed money, negative means the member owes.
 - **Errors** are JSON `{ "error": { "code", "message", "details"? } }` with an HTTP status. The client throws `ApiError` with `code`, `status` and `details`. The codes are `NETWORK`, `TIMEOUT`, `UNAUTHORIZED`, `NOT_FOUND`, `VALIDATION`, `SPLIT_MISMATCH` (422, `details.difference`), `SECRET_KEY_REJECTED`, `INVALID_ADDRESS`, `ALREADY_MEMBER` and `UNKNOWN`.
-- **Auth:** the session token from `verifyChallenge` is sent as `Authorization: Bearer <token>`. The web app keeps it in `sessionStorage` for the current tab.
+- **Auth:** the session token from `verifyChallenge` is sent as `Authorization: Bearer <token>`. The web app keeps it in `localStorage` until it expires, so every tab shares one sign-in. Disconnect or an account change removes it.
 
 ## Endpoints
 

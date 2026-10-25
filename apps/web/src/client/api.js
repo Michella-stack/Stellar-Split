@@ -15,16 +15,17 @@ export function setSessionToken(token) {
   sessionToken = token;
 }
 
-function tabStorage() {
+// Mock data is kept in localStorage so every tab shows the same demo data (and the same profile).
+function browserStorage() {
   try {
-    return window.sessionStorage;
+    return window.localStorage;
   } catch {
     return null;
   }
 }
 
 const impl = USING_MOCKS
-  ? createMockApi({ storage: tabStorage(), addresses: { 'm-mateo': import.meta.env.VITE_MOCK_MATEO_ADDRESS } })
+  ? createMockApi({ storage: browserStorage(), addresses: { 'm-mateo': import.meta.env.VITE_MOCK_MATEO_ADDRESS } })
   : createHttpApi({ baseUrl: import.meta.env.VITE_API_URL ?? '', getToken: () => sessionToken });
 
 export const {

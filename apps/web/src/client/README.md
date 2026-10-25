@@ -27,7 +27,9 @@ These shapes are the web team's proposal until the API team confirms them. If th
 | `acceptInvite(code)` | `POST /v1/invites/:code/accept` | `{ groupId, alreadyMember }` |
 | `listExpenses(id)` | `GET /v1/groups/:id/expenses` | `{ expenses: Expense[] }` (newest first) |
 | `createExpense(id, input, { idempotencyKey })` | `POST /v1/groups/:id/expenses` `{ description, amount, paidBy, split, source? }` with an `Idempotency-Key` header (one key per form, so a retry cannot add the expense twice) | `{ expense: Expense }` |
-| `recordSettlement(id, input)` | `POST /v1/groups/:id/settlements` `{ to, amount, txHash }` | `{ settlement: Settlement }` |
+| `createSettlementIntent(id, { to, amount })` | `POST /v1/groups/:id/settlements/intents` | `{ intent: { id, to, amount, payTo, memo: { type: 'hash', value }, expiresAt } }`. Reserves the payment for 10 minutes. `409 INTENT_IN_PROGRESS` while the payer or creditor has another one open, `422 OVERPAY` above the debt |
+| `cancelSettlementIntent(id, intentId)` | `POST /v1/groups/:id/settlements/intents/:intentId/cancel` | `{ intent }`. Used when nothing was sent (rejected in Freighter, a check failed) |
+| `recordSettlement(id, { intentId, txHash })` | `POST /v1/groups/:id/settlements` | `{ settlement: Settlement }`. The API checks on Horizon that the transaction pays `payTo` exactly `amount` in USDC, carries `memo` as a `MEMO_HASH` and expires no later than `expiresAt`. `409 NEEDS_REVIEW` when the payment arrived but no longer matches an open debt; the hash is kept |
 | `listActivity(id)` | `GET /v1/groups/:id/activity` | `{ items: (Expense & { type: 'expense' } \| Settlement & { type: 'settlement' })[] }` |
 | `getAgent(id)` | `GET /v1/agents/:id` | `{ agent: Agent, pendingApprovals: Approval[] }` |
 | `updateAgent(id, patch)` | `PATCH /v1/agents/:id` `{ status?, policy? }` | `{ agent: Agent }` |
@@ -62,7 +64,7 @@ Split = { type: 'equal', participants: memberId[] }
 Expense = { id, groupId, description, amount, paidBy, split, shares: { memberId, amount }[],
             source: 'manual' | 'scan' | 'agent', createdBy, createdAt }
 
-Settlement = { id, groupId, from, to, amount, txHash, createdAt }
+Settlement = { id, groupId, from, to, amount, txHash, intentId, createdAt }
 
 Agent = { id, displayName, address, ownerAddress, groupIds, status: 'inactive' | 'active' | 'paused',
           policy: { addBills, payBills, bills: string[], maxPerPayment, approvalAbove, dailyCap },
@@ -83,4 +85,4 @@ The mock applies these rules so the UI can be built against them. The real API i
 - Exact shares must add up to the amount. Otherwise the server returns `SPLIT_MISMATCH`.
 - "Who pays whom" (`myPosition.owes` and `myPosition.owed`) comes from `suggestTransfers` in `@shared/balances.js`.
 - Text that looks like a Stellar secret key (`S` followed by 55 base32 characters) is refused with `SECRET_KEY_REJECTED`.
-- A settlement's `txHash` is accepted once. The real API also verifies the payment on Stellar Testnet before recording it.
+- Settling is two steps: reserve an intent, then pay with its memo and record `{ intentId, txHash }`. A `txHash` is accepted once, and the real API verifies the payment on Stellar Testnet before recording it.

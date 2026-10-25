@@ -60,6 +60,9 @@ export function createHttpApi({ baseUrl, getToken }) {
     // The same idempotency key on a retry makes the API return the first result instead of a duplicate.
     createExpense: (groupId, input, { idempotencyKey } = {}) =>
       request('POST', `/v1/groups/${enc(groupId)}/expenses`, input, idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+    createSettlementIntent: (groupId, input) => request('POST', `/v1/groups/${enc(groupId)}/settlements/intents`, input),
+    cancelSettlementIntent: (groupId, intentId) =>
+      request('POST', `/v1/groups/${enc(groupId)}/settlements/intents/${enc(intentId)}/cancel`),
     recordSettlement: (groupId, input) => request('POST', `/v1/groups/${enc(groupId)}/settlements`, input),
     listActivity: (groupId) => request('GET', `/v1/groups/${enc(groupId)}/activity`),
     getAgent: (agentId) => request('GET', `/v1/agents/${enc(agentId)}`),

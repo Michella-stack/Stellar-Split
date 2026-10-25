@@ -1,6 +1,6 @@
 # Agent interface (MCP) - non-paying tools
 
-Status: the read, expense and propose tools are built in `mcp/`. It follows PRD section 7 and does not change it. The signer and `ledgerly_settle` are a stretch goal (story 14 is Phase 2) and are not built. See `docs/AGENT-WALLETS.md` and `docs/DELEGATED-PAYMENTS.md`.
+Status: the read, expense and propose tools are built in `mcp/`. It follows PRD section 7 and does not change it. `ledgerly_settle` is built as an x402-style, self-verified testnet payment (classic Stellar payment, no external facilitator, no Soroban authorization entry), and is registered only when a signer file is configured. See `docs/AGENT-WALLETS.md` and `docs/DELEGATED-PAYMENTS.md`.
 
 Agents (Hermes, OpenClaw) reach Ledgerly through an MCP server that runs on the agent host and talks to the Ledgerly API with a per-agent credential.
 
@@ -16,9 +16,9 @@ Telegram group -> Hermes / OpenClaw -> ledgerly-mcp (HTTP, same host) -> Ledgerl
 | `ledgerly_get_balances` | No | Yes |
 | `ledgerly_create_expense` (equal and exact splits) | No | Yes |
 | `ledgerly_propose_settlement` | No | Yes (dry run only) |
-| `ledgerly_settle` (x402 payment, agent signer) | Yes | **No.** Stretch goal, Phase 2 |
+| `ledgerly_settle` (x402-style payment, agent signer) | Yes | Yes, only when `LEDGERLY_SIGNER_FILE` is set. Testnet, at most 25 per call |
 
-There is no signing code and no key handling in this phase. The MCP server cannot move money.
+Without `LEDGERLY_SIGNER_FILE` the server holds no key and cannot move money. With it, `ledgerly_settle` reserves an intent, checks that exactly one entry of the 402 terms matches the intent and the pinned network, asset (USDC or EURC issuer) and API host (FR-38), signs one classic payment with MEMO_HASH and time bounds up to the intent expiry, submits it to Horizon testnet, then retries with `PAYMENT-SIGNATURE`. Any mismatch aborts with nothing signed. An intent id is signed at most once per process. Args: `group_id`, `to`, `amount`, optional `on_behalf_of`, `idempotency_key`. Returns `{ txHash, explorerUrl, status }`.
 
 ## API contract
 
@@ -58,6 +58,8 @@ LEDGERLY_API_URL=https://api.example LEDGERLY_TOKEN=... MCP_TRANSPORT=http MCP_A
 | `MCP_TRANSPORT` | No | `stdio` (default) or `http` |
 | `MCP_HTTP_HOST`, `MCP_HTTP_PORT` | No | Default `127.0.0.1:8787`, endpoint `/mcp` |
 | `MCP_AUTH_TOKEN` | If host is not loopback | Bearer token the agent presents to this server |
+| `LEDGERLY_SIGNER_FILE` | No | Path to a file holding the signer's Stellar secret key (mount it read-only, for example `/run/secrets/signer`). Read once at start, never from an environment variable. Unset means `ledgerly_settle` does not exist |
+| `LEDGERLY_HORIZON_URL` | No | Horizon for submitting payments. Default `https://horizon-testnet.stellar.org` |
 
 ## Connecting the agents
 
@@ -82,7 +84,7 @@ Run one MCP container per agent, each with its own `LEDGERLY_TOKEN`, so revoking
 
 ## Not covered yet
 
-- `ledgerly_settle`, the agent signer, and the check that a 402 matches the intent (FR-38). The signer will live in this server process and never be visible to the model.
+- Mainnet, Soroban authorization entries, an external facilitator and `record_x402_settlement` (roadmap).
 - A container image and its signing.
 - The API itself. Until it exists, the tests use a mock.
 - Responses contain member names and descriptions written by other people. Treat them as untrusted text: they can contain instructions aimed at the agent. Policy is enforced server-side for that reason (PRD 7.4).

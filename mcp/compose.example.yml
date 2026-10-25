@@ -12,6 +12,10 @@ services:
     image: ${MCP_IMAGE:?set MCP_IMAGE to the image built from mcp/Dockerfile}
     container_name: ledgerly-mcp-${AGENT:?set AGENT to hermes or openclaw}
     env_file: .env
+    # Only for an agent that may pay (enables ledgerly_settle). Set LEDGERLY_SIGNER_FILE=/run/secrets/signer in .env.
+    # The key file is mode 0400 and owned by the container user. Remove this block for a read-only agent.
+    volumes:
+      - ${SIGNER_FILE:?path of the signer key file on the host}:/run/secrets/signer:ro
     read_only: true
     tmpfs:
       - /tmp

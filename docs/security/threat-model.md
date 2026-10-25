@@ -133,6 +133,21 @@ Likelihood and impact are Low, Medium or High, for a mainnet deployment. Risk is
 | T-46 | Release tampered. | L | H | Signed tags and artifacts, provenance, SBOM, protected `release` environment. | Gap | No release workflow, no SBOM, no signing key published in `SECURITY.md` yet. |
 | T-47 | Vulnerability found and reported in public. | L | M | `SECURITY.md`, private reporting. | Built | `SECURITY.md` on `main`. Whether private reporting is switched on in settings is not checked. |
 
+### 4.5 Payment identity and verification
+
+New rows from [`verification-policy.md`](verification-policy.md). Evidence for each is in [`references/incidents.md`](references/incidents.md).
+
+| ID | Threat | L | I | Mitigation | Status | Evidence or gap |
+|---|---|---|---|---|---|---|
+| T-50 | **Wrong payee:** the payer pays an address that is not the person they think it is (look-alike address, swapped invite, impersonation). | H | H | Payee check above 2 USD-equivalent: name, bound Telegram ID and full address compared on the server. | Planned | Draft policy. Address poisoning study (Tsuchiya and Christin, 2025). Nothing built. |
+| T-51 | Telegram username changed or taken over after binding, so the name no longer means the same person. | M | H | Bind to the numeric Telegram ID, treat the username as a label, flag any change and re-verify. | Planned | Draft policy. Telegram Bot API: `username` is optional. |
+| T-52 | Structuring: a large payment is split into small ones to stay under a tier. | M | M | Rolling 24 hour total per payer and payee counts toward the tier. Velocity limit already in PRD 7.4. | Planned | Draft policy. Precedent: EU low-value exemption counts cumulative amounts. |
+| T-53 | Verification agent talked into approving (prompt injection, forged chat text, fake memory). | M | H | Hermes only carries questions. The API decides from Telegram-authenticated callbacks and wallet signatures. No approval inside the agent's own chat. | Planned | Draft policy. Greshake et al. 2023, Patlan et al. 2025. |
+| T-54 | Telegram account takeover (SIM swap, stolen session) used to confirm a payment. | M | H | Tier 2 also needs a wallet signature on the exact intent. Telegram alone never moves money. | Planned | Draft policy. Banana Gun 2024 fixed with a delay and a second factor. |
+| T-55 | One person creates many wallets and Telegram accounts to look like many members (Sybil), or two accounts claim one address. | M | M | One binding per address and per Telegram ID, admin approval of new members. | Planned | Draft policy. Douceur 2002. |
+| T-56 | A public verification bot is abused (spam, injection from strangers, token theft). | M | H | Keep the team bot allowlisted. Build any public bot as a separate minimal service after its own threat review. | Gap | `docs/AGENTS.md` allows five named team members only. |
+| T-57 | Telegram ID and wallet pairs are leaked or over-kept, enabling targeted scams. | M | M | Keep only the binding triple, retention period, delete on request, no message text in logs. Data-protection check before launch. | Gap | Coinbase 2025 shows leaked customer data feeds impersonation. No privacy notice or retention rule yet. |
+
 ## 5. Contract and agent findings to act on first
 
 Ranked by value for the demo and for credibility.

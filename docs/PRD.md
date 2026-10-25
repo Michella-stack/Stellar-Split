@@ -452,6 +452,10 @@ This policy exists because an LLM writing code will suggest the versions it reme
 | Toolchains | Node.js: current LTS line only. Rust: pinned stable in `rust-toolchain.toml`, updated within 30 days of a stable release. Fuzzing uses a pinned dated nightly, the only nightly toolchain allowed. |
 | Review | The approved list is reviewed monthly. Each entry carries a "next review" date. A weekly workflow re-checks every approved version against OSV and the registries, so a version that gains a CVE, gets deprecated or falls behind after approval opens an issue. |
 
+### 9.7 Transaction verification tiers (draft)
+
+A settlement is irreversible, so the one moment to stop a wrong or fraudulent payment is before the payer signs. Draft policy, for team review: up to 2 USD-equivalent, server policy only; over 2, a payee check carried by Hermes on Telegram and decided by the API; over 40, a second-channel step-up with a wallet signature on the exact intent, plus a payee confirmation and cooling-off when a risk signal is present. Rolling 24 hour totals count toward the tier. New members are bound once (Telegram ID, address, username). Hermes asks and the API decides, so the agent cannot approve its own question, which follows 7.4. The reasoning, the numbers, the open decisions (including whether Tier 2 should be the equivalent of EUR 30) and the tests are in [`docs/security/verification-policy.md`](security/verification-policy.md). Sources are in [`docs/security/references/`](security/references/README.md). This is not KYC and must not be described as compliance.
+
 ## 10. Automated GitHub controls
 
 All workflows pin actions by commit SHA. The snippets below show `<sha>` with the version in a comment. CI rejects any workflow whose `uses:` is not a full commit SHA. No workflow in this table auto-merges anything.

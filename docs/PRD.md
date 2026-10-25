@@ -350,6 +350,8 @@ Security here covers four surfaces: the contract, the application, the repositor
 
 ### 9.1 Threat model (STRIDE)
 
+This table is the summary. The full register, with assets, trust boundaries, risk ratings, status and evidence for each threat, is in [`docs/security/threat-model.md`](security/threat-model.md). Rows that the repository does not yet back up are marked there as Planned or Gap, and section 7 of that file lists what can be claimed publicly.
+
 | Threat | Example | Mitigation |
 |---|---|---|
 | Spoofing | Attacker presents a forged agent credential or a stolen API key. | Keys hashed at rest, short-lived OAuth tokens, SEP-10 style address verification, per-key IP allowlist optional, instant revocation. |
@@ -449,6 +451,10 @@ This policy exists because an LLM writing code will suggest the versions it reme
 | LLM-introduced versions | Any PR that changes a version is checked by the LLM outdated version guard (section 10). A version older than the current approved version, or older than the newest release that has aged past its cooldown window, fails the PR with an explanation and the correct candidate version. |
 | Toolchains | Node.js: current LTS line only. Rust: pinned stable in `rust-toolchain.toml`, updated within 30 days of a stable release. Fuzzing uses a pinned dated nightly, the only nightly toolchain allowed. |
 | Review | The approved list is reviewed monthly. Each entry carries a "next review" date. A weekly workflow re-checks every approved version against OSV and the registries, so a version that gains a CVE, gets deprecated or falls behind after approval opens an issue. |
+
+### 9.7 Transaction verification tiers (draft)
+
+A settlement is irreversible, so the one moment to stop a wrong or fraudulent payment is before the payer signs. Draft policy, for team review: up to 2 USD-equivalent, server policy only; over 2, a payee check carried by Hermes on Telegram and decided by the API; over 40, a second-channel step-up with a wallet signature on the exact intent, plus a payee confirmation and cooling-off when a risk signal is present. Rolling 24 hour totals count toward the tier. New members are bound once (Telegram ID, address, username). Hermes asks and the API decides, so the agent cannot approve its own question, which follows 7.4. The reasoning, the numbers, the open decisions (including whether Tier 2 should be the equivalent of EUR 30) and the tests are in [`docs/security/verification-policy.md`](security/verification-policy.md). Sources are in [`docs/security/references/`](security/references/README.md). This is not KYC and must not be described as compliance.
 
 ## 10. Automated GitHub controls
 

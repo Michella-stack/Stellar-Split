@@ -37,9 +37,13 @@ src/
 ├── hooks/
 ├── wallets/freighter/   the only module that imports @stellar/freighter-api
 ├── client/              api.js (mock or real), stellar.js (Horizon), mocks/
-├── lib/                 browser-side helpers (theme, formatting)
+├── lib/                 browser-side helpers (theme, formatting, rate estimates)
 └── styles/app.css       Tailwind entry and theme tokens
 ```
+
+## Shared rules and mocks
+
+Amounts, splits and balances come from [`packages/shared`](../../packages/shared/README.md), imported as `@shared/...`. The API client and the mock response shapes are documented in [`src/client/README.md`](src/client/README.md). Home-currency estimates (`src/lib/rates.js`) use a fixed mock rate table for now.
 
 ## Theme
 

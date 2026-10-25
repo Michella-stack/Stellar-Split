@@ -56,6 +56,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
     new Promise((_, reject) => setTimeout(() => reject(new ApiError(code, message, { status, details })), delayMs));
 
   const pendingChallenges = new Set();
+  const idempotent = new Map();
 
   /** Mock only: the signed-in wallet takes the place of "you" in the fixtures, so the demo data is yours. */
   function becomeMe(address) {
@@ -194,6 +195,18 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
       return reply({ inviteUrl: `${globalThis.location?.origin ?? 'http://localhost:5173'}/join/${code}`, code });
     },
 
+    async addMember(groupId, { address, displayName } = {}) {
+      const group = findGroup(groupId);
+      if (!group || !myMemberId(group)) return fail('NOT_FOUND', 'Group not found', 404);
+      if (typeof address !== 'string' || containsSecretKey(address)) return fail('SECRET_KEY_REJECTED', 'That is a secret key, not an address', 400);
+      if (!isValidStellarAddress(address)) return fail('INVALID_ADDRESS', 'Not a valid Stellar account address', 400);
+      if (group.members.some((m) => m.address === address)) return fail('ALREADY_MEMBER', 'This address is already a member', 409);
+      const name = typeof displayName === 'string' && displayName.trim() ? displayName.trim().slice(0, 60) : `${address.slice(0, 4)}…${address.slice(-4)}`;
+      const member = { id: newId('m'), kind: 'human', displayName: name, address, homeCurrency: 'USD' };
+      group.members.push(member);
+      return reply({ member });
+    },
+
     async acceptInvite(code) {
       const groupId = state.invites[code];
       const group = groupId && findGroup(groupId);
@@ -208,8 +221,9 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
       return reply({ expenses });
     },
 
-    async createExpense(groupId, input) {
+    async createExpense(groupId, input, { idempotencyKey } = {}) {
       const group = findGroup(groupId);
+      if (idempotencyKey && idempotent.has(idempotencyKey)) return reply({ expense: idempotent.get(idempotencyKey) });
       if (!group) return fail('NOT_FOUND', 'Group not found', 404);
       const memberIds = new Set(group.members.map((m) => m.id));
       const description = typeof input.description === 'string' ? input.description.trim() : '';
@@ -248,6 +262,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
         createdAt: now().toISOString(),
       };
       group.expenses.push(expense);
+      if (idempotencyKey) idempotent.set(idempotencyKey, withShares(expense));
       return reply({ expense: withShares(expense) });
     },
 

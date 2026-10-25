@@ -3,7 +3,7 @@ version: 2
 updates:
   # The root has no package.json; each JavaScript package has its own lockfile.
   - package-ecosystem: "npm"
-    directories: ["/apps/web", "/apps/api", "/mcp", "/packages/shared"]
+    directories: ["/apps/web", "/apps/api", "/mcp", "/packages/shared", "/scripts/demo-accounts"]
     schedule:
       interval: "weekly"
     cooldown:

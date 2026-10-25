@@ -1,4 +1,4 @@
-# ADR 0001: The web app is a Vite single-page app
+# ADR 0007: The web app is a Vite single-page app
 
 - Status: accepted
 - Date: 2026-10-25

@@ -1,4 +1,4 @@
-# 0007. More wallets after Freighter are a roadmap item, not the demo
+# 0008. More wallets after Freighter are a roadmap item, not the demo
 
 - **Status:** Accepted as a roadmap item on 2026-10-25. **Paused**, not scheduled. Decided by Victor Estival. Not yet reviewed by the rest of the team.
 - **Related:** `docs/WALLETS.md` (analysis, effort, risks), `docs/BUILD-FOCUS.md`, ADR 0005 (fallback sign-in by challenge transaction).

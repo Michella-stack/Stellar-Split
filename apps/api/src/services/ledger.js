@@ -10,6 +10,7 @@ import {
   toStroops,
   validateAmount,
 } from '../../../../packages/shared/src/index.js';
+import { checkSpend, DEFAULT_CAPS } from '../../../../packages/policy-engine/src/index.js';
 import { decodeAddress } from '../auth/index.js';
 
 export class ApiError extends Error {
@@ -40,9 +41,9 @@ function amountOf(value, field = 'amount') {
 }
 
 /**
- * @param {{ repo: object, stellar: object, appUrl?: string, now?: () => Date }} deps
+ * @param {{ repo: object, stellar: object, appUrl?: string, now?: () => Date, agentCaps?: object, log?: (line: object) => void }} deps
  */
-export function createLedger({ repo, stellar, appUrl = '', now = () => new Date() }) {
+export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(), agentCaps = DEFAULT_CAPS, log = () => {} }) {
   const ts = () => now().toISOString();
 
   async function load(groupId) {
@@ -98,6 +99,22 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     const debt = -net.get(fromId);
     const credit = net.get(toId);
     return debt <= 0n || credit <= 0n || amount > (debt < credit ? debt : credit);
+  }
+
+  /**
+   * PRD 7.4 spend caps for agents, enforced here so that no limit depends on the agent behaving (#13). Counts the agent's
+   * intents in every group over the last 30 days. `exceptId` leaves out the reservation being checked.
+   */
+  async function enforceAgentCaps(principal, groupId, amount, exceptId) {
+    if (principal.kind !== 'agent') return;
+    const since = new Date(now().getTime() - 30 * 24 * 3600_000).toISOString();
+    const committed = (await repo.listIntentsByPayer(principal.address, since))
+      .filter((i) => i.id !== exceptId)
+      .map((i) => ({ amount: i.amount, at: i.reservedAt, status: i.status }));
+    const decision = checkSpend({ amount, committed, caps: agentCaps, now: now() });
+    if (decision.ok) return;
+    log({ t: ts(), level: 'warn', msg: 'agent_spend_denied', agent: principal.address, groupId, amount: fmt(amount), code: decision.code, ...decision.details });
+    throw new ApiError(403, decision.code, decision.message, decision.details);
   }
 
   function publicIntent(i, me, to) {
@@ -281,6 +298,7 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       const { members, net, me } = await forMember(principal, groupId);
       if (dryRun) {
         const { to, amount } = terms(members, net, me, input);
+        await enforceAgentCaps(principal, groupId, amount);
         return { intent: { groupId, from: me.id, to: to.id, amount: fmt(amount), asset: stellar.asset, network: 'stellar:testnet', payFrom: me.address, payTo: to.address } };
       }
 
@@ -330,10 +348,12 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
         .catch((err) => {
           throw err.code === 'INTENT_IN_PROGRESS' ? new ApiError(409, 'INTENT_IN_PROGRESS', err.message) : err;
         });
-      // Balances are read after winning the reservation, so no other settlement for these two members can be counted twice.
+      // Balances and agent spending are read after winning the reservation, so no other settlement for these two members can
+      // be counted twice, and two reservations by one agent in different groups each see the other.
       const { net } = await load(groupId);
       try {
         terms(members, net, me, input);
+        await enforceAgentCaps(principal, groupId, amount, id);
       } catch (err) {
         await repo.updateIntent(id, { status: 'cancelled', closedAt: ts() });
         throw err;

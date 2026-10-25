@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifySubmitError } from './stellar.js';
+import { buildUsdcPayment, classifySubmitError } from './stellar.js';
 
 const horizonError = (status, transaction, operations = []) => ({
   response: { status, data: { extras: { result_codes: { transaction, operations } } } },
@@ -21,5 +21,18 @@ describe('classifySubmitError', () => {
     const result = classifySubmitError(error, 'abc');
     expect(result.code).toBe(code);
     expect(result.txHash).toBe('abc');
+  });
+});
+
+describe('buildUsdcPayment', () => {
+  const base = { from: 'G'.padEnd(56, 'A'), to: 'G'.padEnd(56, 'B'), amount: '1.00', memoHash: 'ab'.repeat(32) };
+
+  it('refuses an unparsable reservation expiry', async () => {
+    await expect(buildUsdcPayment({ ...base, notAfter: 'soon' })).rejects.toMatchObject({ code: 'UNKNOWN' });
+    await expect(buildUsdcPayment({ ...base, notAfter: undefined })).rejects.toMatchObject({ code: 'UNKNOWN' });
+  });
+
+  it('refuses a reservation that has already expired', async () => {
+    await expect(buildUsdcPayment({ ...base, notAfter: new Date(Date.now() - 1000).toISOString() })).rejects.toMatchObject({ code: 'EXPIRED' });
   });
 });

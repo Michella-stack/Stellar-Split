@@ -1,6 +1,6 @@
 # Wallets: Freighter now, more wallets later
 
-Status: analysis and roadmap, 2026-10-25. **Paused**: nothing here is built. The decision is in [ADR 0007](adr/0007-more-wallets-after-freighter-is-roadmap.md). Network: Stellar Testnet only.
+Status: analysis and roadmap, 2026-10-25. **Paused**: nothing here is built. The decision is in [ADR 0008](adr/0008-more-wallets-after-freighter-is-roadmap.md). Network: Stellar Testnet only.
 
 ## 1. Where we are
 
@@ -51,7 +51,7 @@ Half a day, in a branch, no merge. It turns the estimates above into numbers.
 2. Load it on a preview deployment with the real CSP. List every directive that has to change.
 3. Try `signMessage` on each wallet. Record which return a SEP-53 signature the API accepts.
 4. Check `getNetwork` on each wallet, and what the app can still refuse.
-5. Write the findings in this file and update ADR 0007.
+5. Write the findings in this file and update ADR 0008.
 
 ## 6. Not verified
 

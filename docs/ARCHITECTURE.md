@@ -255,8 +255,8 @@ Current integration status:
 
 - both agents answer active team members on Telegram;
 - neither agent is connected to `mcp/` yet;
-- neither agent holds a Stellar key;
-- selected Phase 1a cases are HA-1, HA-3, HA-4, HA-6 and OC-1, OC-4, OC-6; and
+- neither agent container holds a Stellar key (each agent's funded testnet wallet key stays on the host, outside the containers);
+- selected Phase 1a cases are HA-1, HA-3, HA-6 and OC-1, OC-3, OC-6, with HA-4 and OC-4 as the settlement stretch; and
 - payment tests cannot pass until the API, MCP connection, isolated signer, and `ledgerly_settle` x402 path exist.
 
 ## 5. Core domain model
@@ -391,7 +391,7 @@ Configuration validation must reject public-network passphrases, endpoints, asse
 | API and Supabase integration tests | Planned: group/expense persistence, balance derivation, settlement-intent validation, authorization, and transaction-hash replay. |
 | Stellar integration tests | Planned: plain-USDC transaction building and server-side verification against deterministic fixtures or Testnet. Contract invocation tests follow. |
 | End-to-end test | Planned required demo: connect Freighter, record expenses, settle Testnet USDC, and display a resolvable transaction hash. |
-| Agent integration tests | Selected Phase 1a targets are HA-1, HA-3, HA-4, HA-6 and OC-1, OC-4, OC-6. Telegram access is operational, but MCP reads and payment cases remain blocked on the missing connection and API. |
+| Agent integration tests | Selected Phase 1a targets are HA-1, HA-3, HA-6 and OC-1, OC-3, OC-6; HA-4 and OC-4 are the settlement stretch. Telegram access is operational, but MCP reads and payment cases remain blocked on the missing connection and API. |
 | x402 stretch test | Deferred until signer-backed settlement exists: enforce the spend cap, settle through the facilitator, and verify the resulting Testnet transfer. |
 
 Network-dependent tests are opt-in and Testnet-only. No test command may default to public network.

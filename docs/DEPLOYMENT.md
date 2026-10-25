@@ -16,8 +16,8 @@ The project is `stellar-split` in the Vercel team `vestival's projects`. Deploym
 | Item | State |
 |---|---|
 | Vercel project and public URL | Working. The health endpoint answered 200 |
-| Content served | The **placeholder page**. The two deployments so far were made by hand and predate the web app, so they carry no commit information |
-| Automatic deploys from GitHub | **Not connected yet.** The workflow for Option B is written and waits for three repository secrets |
+| Content served | The real web app, from commit `b720476` (merge of #66). The first two deployments were made by hand and served a placeholder page |
+| Automatic deploys from GitHub | **Working through Option B** (GitHub Actions). The first production run succeeded and the deployment carries the commit. Option A (Vercel Git integration) is not connected |
 
 ## What is deployed
 
@@ -64,7 +64,7 @@ To switch it on, two people are needed once:
 | `VERCEL_ORG_ID` | `team_mBzhC3YpoNFezzITJmlHxkGW` (the team id; an identifier, not a secret) |
 | `VERCEL_PROJECT_ID` | The id of project `stellar-split` (*Settings* of the project, *General*) |
 
-Until the secrets exist the workflow skips with a notice and stays green. Remove the Vercel Git integration if Option A is later connected, otherwise every commit deploys twice.
+A secret pasted with a trailing space or line break makes Vercel answer `forbidden` (seen once with `VERCEL_ORG_ID`, 30 characters instead of 29): type the values by hand. Until the secrets exist the workflow skips with a notice and stays green. Remove the Vercel Git integration if Option A is later connected, otherwise every commit deploys twice.
 
 Limits of this option:
 
@@ -105,4 +105,4 @@ In Vercel, *Deployments*, pick a previous good deployment and promote it. Or rev
 
 ## Not verified
 
-That Option A works with the personal account setup, the environment variables of the live project, the first deployment of the real web app, and Option B end to end: the workflow has been checked for syntax and action pinning but has never run against Vercel.
+That Option A works with the personal account setup, the environment variables of the live project, and the preview deployments of Option B on a real pull request (only the production run has been seen). The health check passes, but sign-in and any route that needs Supabase have not been tried on the live URL.

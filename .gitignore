@@ -8,3 +8,7 @@ build/
 *.log
 target/
 .idea/
+
+# Reference PDFs: licences vary (arXiv default does not allow reposting). Link instead.
+docs/security/references/*.pdf
+docs/security/references/*.PDF

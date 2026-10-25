@@ -20,6 +20,21 @@ Incident write-ups are in [`incidents.md`](incidents.md).
 | A4 | T. Tsuchiya, N. Christin. "Blockchain Address Poisoning." *USENIX Security 2025*. [Presentation page](https://www.usenix.org/conference/usenixsecurity25/presentation/tsuchiya). [CMU CyLab summary](https://cylab.cmu.edu/news/2026/01/07-blockchain-address-poisoning.html) | Attackers plant look-alike addresses in a victim's history with tiny transfers. People copy the wrong address. Reported 270 million attempts and at least USD 83.8M lost on Ethereum and BNB Smart Chain. Supports checking the payee by name, not by pasted address. | Confirmed (abstract and summary). Read the paper before quoting figures |
 | A5 | I. Heartfield, G. Loukas. "A Taxonomy of Attacks and a Survey of Defence Mechanisms for Semantic Social Engineering Attacks." *ACM Computing Surveys* 48(3), article 37. (2015/2016: check the exact year) | Survey of attacks that persuade the person and defences against them. Background for why a second channel and a pause work against pressure. | Confirmed (title, venue). Year: check |
 | A6 | A. Adams, M. A. Sasse. "Users are not the enemy." *Communications of the ACM* 42(12), 1999 | Security controls that burden users get bypassed. The reason for a low-friction floor and for keeping checks proportionate. | From memory |
+| A7 | M. Kim, Y. Kwon, Y. Kim (KAIST). "Is Stellar As Secure As You Think?" arXiv [1904.13302](https://arxiv.org/abs/1904.13302) [cs.DC], 29 April 2019. No journal or venue listed on arXiv. A local copy was read by the team lead, see the note below the table | The only paper in this list about **Stellar itself**. It studies how the network agrees on transactions and finds the structure was concentrated in 2019: small trust groups (quorum slices) and a few highly influential validators. In their January 2019 data, losing two validators run by one organisation stopped the whole network. This is why we treat the chain as something that can pause, and never mark a payment settled on the app's word alone. | Confirmed (read, 9 pages). **Data is from 2019 and is dated** |
+
+### Note on A7 (the Stellar consensus paper)
+
+**What it says, briefly.** Stellar uses a trust-based agreement method (federated Byzantine agreement). Each node picks the nodes it trusts. The authors argue this is not safer than classic Byzantine fault tolerance, then look at real data collected in 2018 and early 2019. They report few validators, trust concentrated in a small number of them (including the Stellar Development Foundation's), and a cascading stall when two of those were removed. They discuss ways to reduce this and why each is hard.
+
+**Why it is in our references.** Our product depends on Stellar to finalise every settlement. Three design rules follow, and each is already in this folder's documents:
+
+1. **Treat a network stall as an expected event, not a surprise.** A stall stops payments, it does not by itself steal them. The app must show "pending", not "paid", until the chain confirms (threat T-58, chain verifier T-12).
+2. **Do not record a settlement as complete until we have checked it on the ledger.** The API verifies the transaction on Soroban RPC before marking it settled (PRD 7.1 step 9).
+3. **Keep a way to ask "what happened to this payment?"** The status endpoint missing today (T-05) is what lets an agent or a person avoid paying twice after a timeout.
+
+**How far to trust it.** It is a 2019 arXiv preprint with no listed venue, and it measures a network that has changed since (more validators and organisations run nodes today). Do not quote its numbers as current. Before we say anything about Stellar's decentralisation in a pitch, check current validator data (for example on Stellarbeat) and the Stellar docs. The paper supports the **design rule**, not a claim about today's network.
+
+**The PDF itself.** `Stellar_Article_2019.pdf` sits in this folder on the team lead's machine. It is **not committed**. arXiv's default licence lets arXiv distribute the paper but does not let us repost it, so the repository links to arXiv instead, and `.gitignore` keeps PDFs out. Teammates should open the arXiv link above.
 
 ## B. Rules and regulator evidence
 

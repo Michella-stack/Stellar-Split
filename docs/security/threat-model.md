@@ -147,6 +147,7 @@ New rows from [`verification-policy.md`](verification-policy.md). Evidence for e
 | T-55 | One person creates many wallets and Telegram accounts to look like many members (Sybil), or two accounts claim one address. | M | M | One binding per address and per Telegram ID, admin approval of new members. | Planned | Draft policy. Douceur 2002. |
 | T-56 | A public verification bot is abused (spam, injection from strangers, token theft). | M | H | Keep the team bot allowlisted. Build any public bot as a separate minimal service after its own threat review. | Gap | `docs/AGENTS.md` allows five named team members only. |
 | T-57 | Telegram ID and wallet pairs are leaked or over-kept, enabling targeted scams. | M | M | Keep only the binding triple, retention period, delete on request, no message text in logs. Data-protection check before launch. | Gap | Coinbase 2025 shows leaked customer data feeds impersonation. No privacy notice or retention rule yet. |
+| T-58 | Stellar network stalls or confirms slowly, so a payment is neither failed nor final. A 2019 study found the validator structure concentrated and a two-node loss able to halt the network. Today's network may differ. | L | M | Show "pending" until the chain confirms, verify on Soroban RPC before recording, status endpoint, no re-sign until the first authorisation has expired. | Planned | Kim, Kwon and Kim 2019 (`references/README.md`, A7). Verifier is issue #12, status endpoint is a gap (T-05). |
 
 ## 5. Contract and agent findings to act on first
 

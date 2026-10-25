@@ -15,8 +15,8 @@ These shapes are the web team's proposal until the API team confirms them. If th
 
 | Function | Request | Response |
 |---|---|---|
-| `requestChallenge({ address })` | `POST /v1/auth/challenge` | `{ challengeXdr }` |
-| `verifyChallenge({ signedXdr })` | `POST /v1/auth/verify` | `{ session: { token, address, expiresAt } }` |
+| `requestChallenge({ address })` | `POST /v1/auth/challenge` | `{ challenge, expiresAt }`: a SEP-53 text message |
+| `verifyChallenge({ address, challenge, signature })` | `POST /v1/auth/verify` | `{ session: { token, address, expiresAt } }`. The signature is base64 ed25519 over SHA-256(`"Stellar Signed Message:\n" + challenge`) |
 | `getMe()` | `GET /v1/me` | `Me` |
 | `updateMe(patch)` | `PATCH /v1/me` `{ displayName?, homeCurrency?, email? }` | `Me` |
 | `listGroups()` | `GET /v1/groups` | `{ groups: GroupSummary[], totals: { youOwe, youAreOwed } }` |

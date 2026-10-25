@@ -7,8 +7,7 @@ import { WalletError } from './errors.js';
 
 /**
  * What the person agreed to on the review screen.
- * @typedef {{ kind: 'sign-in', signer: string }
- *   | { kind: 'payment', signer: string, destination: string, amount: string, assetCode: string, assetIssuer: string }
+ * @typedef {{ kind: 'payment', signer: string, destination: string, amount: string, assetCode: string, assetIssuer: string }
  *   | { kind: 'trustline', signer: string, assetCode: string, assetIssuer: string }} SigningIntent
  */
 
@@ -37,13 +36,6 @@ export function checkIntent(xdr, intent, { now = new Date() } = {}) {
 
   const ops = tx.operations;
   const opSource = (op) => op.source ?? tx.source;
-
-  if (intent.kind === 'sign-in') {
-    // SEP-10 style challenge: only manage_data operations for the signer, never anything that moves money.
-    if (ops.length === 0 || !ops.every((op) => op.type === 'manageData')) throw mismatch('a sign-in must only contain data entries');
-    if (opSource(ops[0]) !== intent.signer) throw mismatch('the sign-in is for another account');
-    return tx;
-  }
 
   if (tx.source !== intent.signer) throw mismatch('paid from another account');
   if (ops.length !== 1) throw mismatch('expected exactly one operation');

@@ -55,7 +55,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
   const fail = (code, message, status, details) =>
     new Promise((_, reject) => setTimeout(() => reject(new ApiError(code, message, { status, details })), delayMs));
 
-  let pendingAddress = /** @type {string | null} */ (null);
+  const pendingChallenges = new Set();
 
   /** Mock only: the signed-in wallet takes the place of "you" in the fixtures, so the demo data is yours. */
   function becomeMe(address) {
@@ -111,18 +111,19 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
   return {
     async requestChallenge({ address }) {
       if (!looksLikeStellarAddress(address)) return fail('INVALID_ADDRESS', 'Not a Stellar address', 400);
-      pendingAddress = address;
       const { buildChallenge } = await import('./challenge.js');
-      return reply({ challengeXdr: buildChallenge(address) });
+      const issued = buildChallenge(address);
+      pendingChallenges.add(issued.challenge);
+      return reply(issued);
     },
 
-    async verifyChallenge({ signedXdr }) {
-      const { verifyChallenge } = await import('./challenge.js');
-      if (!pendingAddress || !verifyChallenge(signedXdr, pendingAddress)) {
-        return fail('UNAUTHORIZED', 'Challenge signature is not valid', 401);
+    async verifyChallenge({ address, challenge, signature }) {
+      const { verifySignedMessage } = await import('./challenge.js');
+      // Single use, like the API: a challenge is accepted at most once.
+      if (!pendingChallenges.delete(challenge) || !(await verifySignedMessage(address, challenge, signature))) {
+        return fail('UNAUTHORIZED', 'Signature, address or challenge is not valid', 401);
       }
-      becomeMe(pendingAddress);
-      pendingAddress = null;
+      becomeMe(address);
       const expiresAt = new Date(now().getTime() + 24 * 3600 * 1000).toISOString();
       return reply({ session: { token: `mock-session-${nextId++}`, address: state.me.address, expiresAt } });
     },

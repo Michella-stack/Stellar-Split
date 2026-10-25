@@ -9,11 +9,12 @@ const ext = vi.hoisted(() => ({
   requestAccess: vi.fn(),
   getNetwork: vi.fn(),
   signTransaction: vi.fn(),
+  signMessage: vi.fn(),
   WatchWalletChanges: vi.fn(),
 }));
 vi.mock('@stellar/freighter-api', () => ext);
 
-const { assertTestnet, connect, getConnectedAddress, isAvailable, signTransaction } = await import('./adapter.js');
+const { assertTestnet, connect, getConnectedAddress, isAvailable, signMessage, signTransaction } = await import('./adapter.js');
 
 const TESTNET = { network: 'TESTNET', networkPassphrase: 'Test SDF Network ; September 2015' };
 const PUBLIC = { network: 'PUBLIC', networkPassphrase: 'Public Global Stellar Network ; September 2015' };
@@ -116,5 +117,35 @@ describe('signTransaction', () => {
   it('maps an unknown extension error to UNKNOWN', async () => {
     ext.signTransaction.mockResolvedValue({ error: { code: -1, message: 'internal' } });
     expect(await codeOf(signTransaction(xdr(), intent))).toBe('UNKNOWN');
+  });
+});
+
+describe('signMessage (SEP-53 sign-in)', () => {
+  const message = `Stellar-Split sign-in\nAddress: ${payer}\nNonce: abcdefghijklmnopqrstuv.1792932162000.${'x'.repeat(43)}\nExpires: 2026-10-25T16:00:00.000Z`;
+  const intentIn = { kind: 'sign-in', signer: payer };
+
+  it('signs the API sign-in message and returns base64', async () => {
+    ext.signMessage.mockResolvedValue({ signedMessage: 'c2lnbmF0dXJl', signerAddress: payer });
+    expect(await signMessage(message, intentIn)).toEqual({ signature: 'c2lnbmF0dXJl', signer: payer });
+    expect(ext.signMessage).toHaveBeenCalledWith(message, { networkPassphrase: TESTNET.networkPassphrase, address: payer });
+  });
+
+  it('converts byte signatures from older Freighter versions to base64', async () => {
+    ext.signMessage.mockResolvedValue({ signedMessage: new Uint8Array([1, 2, 3]), signerAddress: payer });
+    expect((await signMessage(message, intentIn)).signature).toBe('AQID');
+  });
+
+  it('refuses any text that is not a sign-in message for this account', async () => {
+    expect(await codeOf(signMessage('Send me all your money', intentIn))).toBe('INTENT_MISMATCH');
+    expect(await codeOf(signMessage(message.replace(payer, creditor), intentIn))).toBe('INTENT_MISMATCH');
+    expect(ext.signMessage).not.toHaveBeenCalled();
+  });
+
+  it('refuses on the wrong network and maps a declined request', async () => {
+    ext.getNetwork.mockResolvedValue(PUBLIC);
+    expect(await codeOf(signMessage(message, intentIn))).toBe('WRONG_NETWORK');
+    ext.getNetwork.mockResolvedValue(TESTNET);
+    ext.signMessage.mockResolvedValue(rejected);
+    expect(await codeOf(signMessage(message, intentIn))).toBe('USER_REJECTED');
   });
 });

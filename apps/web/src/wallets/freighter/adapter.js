@@ -8,6 +8,7 @@ import {
   isAllowed,
   isConnected,
   requestAccess,
+  signMessage as freighterSignMessage,
   signTransaction as freighterSign,
 } from '@stellar/freighter-api';
 import { NETWORK_PASSPHRASE } from '../../config/env.js';
@@ -103,6 +104,45 @@ export async function signTransaction(xdr, intent) {
     throw new WalletError('ACCOUNT_CHANGED', 'Freighter signed with a different account');
   }
   return { signedXdr: result.signedTxXdr, signer: intent.signer };
+}
+
+// The API's sign-in message (SEP-53). Anything else is refused, so a page cannot get an arbitrary text signed.
+const SIGN_IN_MESSAGE = /^Stellar-Split sign-in\nAddress: (G[A-Z2-7]{55})\nNonce: [\w.-]{20,120}\nExpires: \d{4}-\d{2}-\d{2}T[\d:.]+Z$/;
+
+/**
+ * Signs the API's sign-in message (SEP-53 signed message) after re-reading the account and network.
+ * @param {string} message challenge text from the API
+ * @param {{ kind: 'sign-in', signer: string }} intent
+ * @returns {Promise<{ signature: string, signer: string }>} base64 ed25519 signature
+ */
+export async function signMessage(message, intent) {
+  await assertTestnet();
+  const current = await getConnectedAddress();
+  if (!current) throw new WalletError('LOCKED', 'Freighter is locked or this site lost access');
+  if (current !== intent.signer) throw new WalletError('ACCOUNT_CHANGED', 'The Freighter account changed');
+  const match = SIGN_IN_MESSAGE.exec(message);
+  if (intent.kind !== 'sign-in' || !match || match[1] !== intent.signer) {
+    throw new WalletError('INTENT_MISMATCH', 'This is not a Stellar-Split sign-in message for your account');
+  }
+
+  const result = await freighterSignMessage(message, { networkPassphrase: NETWORK_PASSPHRASE, address: intent.signer });
+  if (result.error) throw fromFreighterError(result.error);
+  if (result.signerAddress && result.signerAddress !== intent.signer) {
+    throw new WalletError('ACCOUNT_CHANGED', 'Freighter signed with a different account');
+  }
+  const signature = toBase64(result.signedMessage);
+  if (!signature) throw new WalletError('UNKNOWN', 'Freighter returned no signature');
+  return { signature, signer: intent.signer };
+}
+
+/**
+ * Freighter returns a base64 string (newer extensions) or bytes (older ones).
+ * @param {string | Uint8Array | null | undefined} value
+ */
+function toBase64(value) {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  return btoa(String.fromCharCode(...value));
 }
 
 /**

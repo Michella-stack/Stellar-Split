@@ -147,24 +147,31 @@ describe('isolation', () => {
   });
 });
 
-describe('mock sign-in', () => {
-  it('accepts a challenge signed by the wallet and makes that wallet "me"', async () => {
-    const { Keypair, TransactionBuilder, Networks } = await import('@stellar/stellar-sdk');
+describe('mock sign-in (SEP-53, same format as the API)', () => {
+  async function signSep53(keypair, message) {
+    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`Stellar Signed Message:\n${message}`)));
+    return btoa(String.fromCharCode(...keypair.sign(hash)));
+  }
+
+  it('accepts a signed challenge once and makes that wallet "me"', async () => {
+    const { Keypair } = await import('@stellar/stellar-sdk');
     const wallet = Keypair.random();
-    const { challengeXdr } = await api.requestChallenge({ address: wallet.publicKey() });
-    const tx = TransactionBuilder.fromXDR(challengeXdr, Networks.TESTNET);
-    tx.sign(wallet);
-    const { session } = await api.verifyChallenge({ signedXdr: tx.toXDR() });
-    expect(session.address).toBe(wallet.publicKey());
+    const address = wallet.publicKey();
+    const { challenge } = await api.requestChallenge({ address });
+    expect(challenge).toMatch(new RegExp(`^Stellar-Split sign-in\nAddress: ${address}\nNonce: `));
+    const signature = await signSep53(wallet, challenge);
+    const { session } = await api.verifyChallenge({ address, challenge, signature });
+    expect(session.address).toBe(address);
     expect((await api.getGroup('casa-alfama')).me).toBe('m-you');
+    await expect(api.verifyChallenge({ address, challenge, signature })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
   });
 
-  it('refuses a challenge signed by another key', async () => {
-    const { Keypair, TransactionBuilder, Networks } = await import('@stellar/stellar-sdk');
-    const { challengeXdr } = await api.requestChallenge({ address: Keypair.random().publicKey() });
-    const tx = TransactionBuilder.fromXDR(challengeXdr, Networks.TESTNET);
-    tx.sign(Keypair.random());
-    await expect(api.verifyChallenge({ signedXdr: tx.toXDR() })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+  it('refuses a signature from another key', async () => {
+    const { Keypair } = await import('@stellar/stellar-sdk');
+    const address = Keypair.random().publicKey();
+    const { challenge } = await api.requestChallenge({ address });
+    const signature = await signSep53(Keypair.random(), challenge);
+    await expect(api.verifyChallenge({ address, challenge, signature })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
   });
 });
 

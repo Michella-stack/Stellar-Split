@@ -172,9 +172,9 @@ export function WalletProvider({ children }) {
     if (!current) return false;
     setError(null);
     try {
-      const { challengeXdr } = await api.requestChallenge({ address: current });
-      const { signedXdr } = await freighter.signTransaction(challengeXdr, { kind: 'sign-in', signer: current });
-      const { session: next } = await api.verifyChallenge({ signedXdr });
+      const { challenge } = await api.requestChallenge({ address: current });
+      const { signature } = await freighter.signMessage(challenge, { kind: 'sign-in', signer: current });
+      const { session: next } = await api.verifyChallenge({ address: current, challenge, signature });
       api.setSessionToken(next.token);
       writeSavedSession(next);
       setSession(next);

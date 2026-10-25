@@ -40,21 +40,16 @@ describe('checkIntent: payment', () => {
   });
 });
 
-describe('checkIntent: sign-in and trustline', () => {
-  it('accepts a challenge made only of data entries for the signer', () => {
-    const xdr = buildTx([Operation.manageData({ name: 'stellar-split auth', value: 'nonce', source: payer })]);
-    expect(code(() => checkIntent(xdr, { kind: 'sign-in', signer: payer }))).toBe('NO_ERROR');
-  });
-
-  it('refuses a "sign-in" that moves money', () => {
-    const xdr = buildTx([Operation.manageData({ name: 'auth', value: 'x', source: payer }), payment()]);
-    expect(code(() => checkIntent(xdr, { kind: 'sign-in', signer: payer }))).toBe('INTENT_MISMATCH');
-  });
-
+describe('checkIntent: trustline', () => {
   it('accepts a USDC trustline and refuses another asset', () => {
     const intent = { kind: 'trustline', signer: payer, assetCode: 'USDC', assetIssuer: ISSUER };
     expect(code(() => checkIntent(buildTx([Operation.changeTrust({ asset: usdc })]), intent))).toBe('NO_ERROR');
     const other = Operation.changeTrust({ asset: new Asset('USDC', Keypair.random().publicKey()) });
     expect(code(() => checkIntent(buildTx([other]), intent))).toBe('INTENT_MISMATCH');
+  });
+
+  it('refuses a payment presented as a trustline', () => {
+    const intent = { kind: 'trustline', signer: payer, assetCode: 'USDC', assetIssuer: ISSUER };
+    expect(code(() => checkIntent(buildTx([payment()]), intent))).toBe('INTENT_MISMATCH');
   });
 });

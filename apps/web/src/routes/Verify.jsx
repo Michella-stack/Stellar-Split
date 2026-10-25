@@ -39,7 +39,7 @@ export default function Verify() {
         <Button block loading={busy} onClick={handleSign}>
           {busy ? 'Waiting for Freighter…' : 'Sign in with Freighter'}
         </Button>
-        <p className="text-sm text-muted">Freighter will show a sign-in request with a single data entry. It is never sent to the network.</p>
+        <p className="text-sm text-muted">Freighter shows the sign-in message with your address. Signing it is not a transaction and moves no money.</p>
       </div>
     </>
   );

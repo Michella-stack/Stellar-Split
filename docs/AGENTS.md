@@ -103,5 +103,5 @@ Run these on the server:
 ## Status
 
 - Both bots answer the Active team members in "Stellar Agents" when @mentioned.
-- The Ledgerly MCP server (#14) is not connected yet, so neither agent can read balances or settle.
+- The Ledgerly MCP server (#14) is not connected yet, so neither agent can read balances or settle. The plan to connect them is in [AGENT-MCP-ROLLOUT.md](AGENT-MCP-ROLLOUT.md).
 - The Phase 1a tests are HA-1, HA-3, HA-6 for Hermes and OC-1, OC-3, OC-6 for OpenClaw. Agent settlement (HA-4, OC-4) is the stretch goal (PRD section 7.3).

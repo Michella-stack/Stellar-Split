@@ -1,0 +1,16 @@
+{
+  "name": "@stellar-split/policy-engine",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Agent policy decisions enforced by the API: spend caps per payment, per 24 hours and per 30 days.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"src/**/*.test.js\""
+  }
+}

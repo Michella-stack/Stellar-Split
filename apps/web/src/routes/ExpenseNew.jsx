@@ -18,7 +18,7 @@ import { cleanAmountInput, equalPreview, exactStatus } from '../features/expense
 import { useApi } from '../hooks/useApi.js';
 import { useToast } from '../hooks/useToast.js';
 import { formatUsd, memberName } from '../lib/format.js';
-import { estimate } from '../lib/rates.js';
+import { useEstimate } from '../hooks/useRates.js';
 
 const AMOUNT_ERRORS = {
   INVALID_FORMAT: 'Enter an amount like 12.50.',
@@ -41,6 +41,7 @@ export default function ExpenseNew() {
 
 /** @param {{ detail: any }} props */
 function ExpenseForm({ detail }) {
+  const estimate = useEstimate();
   const navigate = useNavigate();
   const toast = useToast();
   const prefill = useLocation().state?.prefill;

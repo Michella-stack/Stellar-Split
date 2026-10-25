@@ -81,7 +81,7 @@ A misspelled username is not a mention, so the bot stays silent. Tap the bot in 
 
 ## Web dashboards
 
-Each agent has a web dashboard for the owner. Both sit behind Cloudflare Access and Authentik single sign-on, and the containers do not expose them on any other interface.
+Each agent has a web dashboard for the owner. Both are published through a Cloudflare tunnel and sit behind Authentik single sign-on. Only the owner's user and the Authentik admins group can open them. Cloudflare Access is not used. The containers do not expose the dashboards on any other interface.
 
 ## Operations
 

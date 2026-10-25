@@ -17,3 +17,4 @@ Name records `NNNN-short-title.md` and include: status, context, decision, conse
 | [0007 The web app is a Vite single-page app](0007-web-vite-spa.md) | Accepted (first numbered 0001, renumbered to remove the duplicate) |
 | [0008 More wallets after Freighter are a roadmap item](0008-more-wallets-after-freighter-is-roadmap.md) | Accepted as roadmap, paused |
 | [0009 The MCP server runs next to each agent, not on Vercel](0009-mcp-server-runs-next-to-each-agent.md) | Accepted |
+| [0010 One settlement asset per group: USDC or EURC](0010-one-settlement-asset-per-group.md) | Accepted, not yet tested with a real payment |

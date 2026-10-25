@@ -34,14 +34,14 @@ The full plan, what is deferred, and the submission checklist are in [`docs/BUIL
 
 - Web app with Freighter for signing, so the app never sees a secret key.
 - API for groups, expenses and balances.
-- Settlement as a USDC transfer on Stellar Testnet. A Soroban group contract is planned if time allows.
-- x402 on Stellar (the `exact` scheme with a facilitator) for agent payments.
+- Settlement as a plain USDC transfer on Stellar Testnet first. A Soroban group contract is written in [`contracts/group`](contracts/README.md); settling through its `settle` function comes after the plain transfer works.
+- x402 on Stellar (the `exact` scheme with a facilitator) for agent payments (stretch).
 
-Contract IDs, assets and integration details will be listed here once deployed.
+Contract IDs, assets and integration details will be listed here once confirmed for the demo.
 
 ## Setup
 
-Not available yet. Install and run steps will be added with the first code.
+The Soroban contract can be built and tested now; see [`contracts/README.md`](contracts/README.md). Install and run steps for the web app and API will be added with their first code.
 
 ### Environment variables (planned)
 
@@ -60,6 +60,8 @@ Demo steps, the live URL and Testnet transaction evidence will be added here.
 
 ## Security
 
+Design rules the code must follow (enforced as each part lands):
+
 - Testnet only. The app refuses to act if the wallet is on another network.
 - No secret keys are collected, stored or logged.
 - Amounts are validated: positive, at most seven decimals, and within balance.
@@ -67,19 +69,16 @@ Demo steps, the live URL and Testnet transaction evidence will be added here.
 
 ## Docs
 
-- [Product requirements](docs/PRD.md)
+- [Product requirements](docs/PRD.md) (written under the working name Ledgerly)
 - [Judging criteria](docs/JUDGING.md)
 - [Build focus](docs/BUILD-FOCUS.md)
+- [Group contract](contracts/README.md)
 - [Security policy](SECURITY.md)
 - [Supply chain checks](supply-chain/README.md)
 
 ## Release signing key
 
-Release tags and artifacts will be signed with the owner's GPG key. The key fingerprint will be published here and in `SECURITY.md` with v0.1.0.
-
-## Prior work disclosure
-
-Before the event the team wrote a product requirements document (v0.2, dated 25 October 2026) and reviewed public literature on remittances and stablecoins. No application code for this project was written before the event. A separate earlier Testnet prototype by Michella Warren, called Raven, is not part of this repository.
+Planned after the hackathon: release tags and artifacts will be signed with the owner's GPG key, and the key fingerprint will be published here and in `SECURITY.md`.
 
 ## Team
 

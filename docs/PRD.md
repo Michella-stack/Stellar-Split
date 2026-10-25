@@ -8,6 +8,10 @@
 | Owner | Victor Estival (`@vestival`) |
 | Working name | Ledgerly (working name) |
 | Repository | `Michella-stack/Stellar-Split` |
+| Working name | Ledgerly (working name; the project is now called Stellar-Split) |
+| Repository | [Michella-stack/Stellar-Split](https://github.com/Michella-stack/Stellar-Split) |
+
+> **Hackathon scope.** For HackMeridian, [`BUILD-FOCUS.md`](BUILD-FOCUS.md) takes precedence over the MVP, phases and Must priorities in this document.
 
 ## Table of contents
 
@@ -437,7 +441,7 @@ This policy exists because an LLM writing code will suggest the versions it reme
 
 | Rule | Detail |
 |---|---|
-| Approved versions list | `supply-chain/approved-versions.yaml` lists every direct dependency with its approved version, the date approved, and the person who approved it. CI fails if a manifest references a version not in the list. |
+| Approved versions list | `supply-chain/approved-versions.json` lists every direct dependency with its approved version, the date approved, and the person who approved it. CI fails if a manifest references a version not in the list. |
 | Latest stable, with cooldown | A new version becomes eligible 7 days (patch), 14 days (minor) or 30 days (major) after publication, and never less than 14 days for the payment and signing path. "Latest stable at time of pinning" is the target. Pre-releases, release candidates and nightly builds are rejected. |
 | No older than the latest stable minor line | A dependency pinned to a version behind the latest stable minor line for more than 90 days fails a weekly check unless it has an exemption with an expiry date in the approved list. |
 | Known vulnerabilities | Any version with an open OSV or GitHub Advisory entry at high or critical severity is rejected at PR time. Medium severity requires an exemption with an expiry. |
@@ -599,7 +603,7 @@ This check exists because the code author is an LLM. It runs on any PR that chan
 
 Fail conditions:
 
-- The new version is older than the version currently approved in `supply-chain/approved-versions.yaml`.
+- The new version is older than the version currently approved in `supply-chain/approved-versions.json`.
 - The new version is older than the newest release that has aged past its cooldown window (14 days minimum for the payment and signing path), and no exemption with a future expiry exists.
 - The new version is deprecated (npm), yanked (crates.io), archived (GitHub action repo), or past end of life (Node.js line).
 - The new version has an OSV entry at high or critical severity.
@@ -607,7 +611,7 @@ Fail conditions:
 
 On failure the check posts a PR comment naming the dependency, the version proposed, the version expected, and the reason, so the AI coding assistant can fix the PR in the next turn. Fork PRs get the report in the job summary instead.
 
-The guard script and its policy are always read from the base branch, never from the PR head, so a PR cannot weaken the check that reviews it. Changes to `supply-chain/` land in their own PR first and need code owner review.
+The implemented guard is `supply-chain/version-guard.js`; its exact rules, cooldowns and command line are documented in `supply-chain/README.md` and take precedence over the outline in this section. The guard script and its policy are always read from the base branch, never from the PR head, so a PR cannot weaken the check that reviews it. Changes to `supply-chain/` land in their own PR first and need code owner review.
 
 ```yaml
 # .github/workflows/version-guard.yml
@@ -623,7 +627,7 @@ on:
       - ".github/workflows/**"
       - "rust-toolchain.toml"
       - ".nvmrc"
-      - "supply-chain/approved-versions.yaml"
+      - "supply-chain/approved-versions.json"
 permissions:
   contents: read
   pull-requests: write
@@ -641,11 +645,11 @@ jobs:
         run: |
           mkdir -p .guard
           git show "${{ github.event.pull_request.base.sha }}:supply-chain/version-guard.js" > .guard/version-guard.js
-          git show "${{ github.event.pull_request.base.sha }}:supply-chain/approved-versions.yaml" > .guard/approved-versions.yaml
+          git show "${{ github.event.pull_request.base.sha }}:supply-chain/approved-versions.json" > .guard/approved-versions.json
       - name: Diff versions against base branch
         run: node .guard/version-guard.js --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}" --out guard.json
       - name: Query registries and OSV
-        run: node .guard/version-guard.js --check guard.json --policy .guard/approved-versions.yaml --report report.md
+        run: node .guard/version-guard.js --check guard.json --policy .guard/approved-versions.json --report report.md
       - name: Report in job summary
         if: failure()
         run: cat report.md >> "$GITHUB_STEP_SUMMARY"

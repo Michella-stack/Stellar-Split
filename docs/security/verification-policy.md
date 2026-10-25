@@ -3,6 +3,8 @@
 Status: draft, 2026-10-25. Owner: Michella Warren. Reviewers: Victor (policy and contract), Sofiia (diagrams), Damaris (web app).
 Part of PRD section 9 ("Security 360"). Sources are in [`references/`](references/README.md). The workflow charts are in [`diagrams/`](diagrams/README.md).
 
+**Naming.** The agent users see is called **Stellar Assist**, as in the web app. It runs on Hermes Agent and OpenClaw. This document says Stellar Assist wherever the user-facing agent is meant, and names Hermes or OpenClaw only for the software underneath.
+
 This is a product and security decision, not legal advice. It is not KYC. Nothing here makes Stellar-Split a regulated service or a compliant one. See section 8.
 
 ## 1. Proposal in one table
@@ -12,8 +14,8 @@ Amounts are in USD-equivalent (USDC counts as USD, EUR converted at the ECB dail
 | Tier | Amount of one settlement, counted with the payer's other settlements to the same payee in the last 24 hours | What happens | Who decides |
 |---|---|---|---|
 | 0 | up to 2 | Server policy only (membership, caps, velocity). No extra check. | API policy engine |
-| 1 | over 2, up to 40 | **Payee check.** Hermes asks the payer to confirm "you are paying @username, address ending XXXX" and the server confirms that the username, Telegram ID and address are still the bound triple. | API policy engine, with Hermes carrying the question |
-| 2 | over 40 | **Step-up.** Everything in Tier 1, plus a fresh second-channel confirmation from the payer. If any risk signal in section 5 is present, also a confirmation from the payee, and a cooling-off period for a new payee. | API policy engine, with Hermes carrying the questions |
+| 1 | over 2, up to 40 | **Payee check.** Stellar Assist asks the payer to confirm "you are paying @username, address ending XXXX" and the server confirms that the username, Telegram ID and address are still the bound triple. | API policy engine, with Stellar Assist carrying the question |
+| 2 | over 40 | **Step-up.** Everything in Tier 1, plus a fresh second-channel confirmation from the payer. If any risk signal in section 5 is present, also a confirmation from the payee, and a cooling-off period for a new payee. | API policy engine, with Stellar Assist carrying the questions |
 
 New users are verified once, when they join (section 6). That binding is what the Tier 1 and Tier 2 checks later compare against.
 
@@ -32,37 +34,37 @@ The incidents in [`references/incidents.md`](references/incidents.md) show the s
 - Staff or users were talked into an action by someone pretending to be trusted (Ronin, 2022; Coinbase, 2025).
 - An automated assistant was steered by text it should not have trusted (AI agent studies, AIXBT, 2025).
 
-The second pain point is specific to us: **the verifier must not be the thing an attacker can talk to.** Hermes is a language-model agent. Our own PRD (7.4) already says we assume agents can be manipulated, and that no guardrail may depend on the agent behaving. That shapes the design in section 3.
+The second pain point is specific to us: **the verifier must not be the thing an attacker can talk to.** Stellar Assist is a language-model agent. Our own PRD (7.4) already says we assume agents can be manipulated, and that no guardrail may depend on the agent behaving. That shapes the design in section 3.
 
-## 3. Design: Hermes asks, the server decides
+## 3. Design: Stellar Assist asks, the server decides
 
-Hermes is the right channel. It is already on Telegram, the place where our users are. It is not the right judge.
+Stellar Assist is the right channel. It is already on Telegram, the place where our users are. It is not the right judge.
 
 | Job | Done by | Why |
 |---|---|---|
 | Decide tier, compute rolling totals, compare the identity triple, allow or deny | API policy engine (deterministic code) | Cannot be argued with. Testable. Logged. |
-| Send the confirmation question to the right Telegram user, show the details, collect the tap | Hermes (or a plain bot) | Needs a chat interface. |
+| Send the confirmation question to the right Telegram user, show the details, collect the tap | Stellar Assist (or a plain bot) | Needs a chat interface. |
 | Prove who answered | Telegram's numeric user ID from the authenticated update, never text the user types | Text can be forged inside a chat. The ID comes from Telegram. |
 | Prove the wallet is the user's | Fresh signature from the wallet over the exact settlement intent | A stolen Telegram account alone cannot pay. |
 
 Rules that follow:
 
-1. **Hermes cannot approve, skip or lower a tier.** It only relays a question and returns what Telegram says the user pressed. The decision is made by the API from signed or Telegram-authenticated evidence.
+1. **Stellar Assist cannot approve, skip or lower a tier.** It only relays a question and returns what Telegram says the user pressed. The decision is made by the API from signed or Telegram-authenticated evidence.
 2. **Identity is the numeric Telegram ID, not the @username.** The username is shown to people because humans read names, but it is optional and can be changed or given up, so it is only a label. The binding is (Telegram ID, Stellar address, username at the time of binding). A changed username raises a flag, it does not silently pass.
-3. **Approvals never appear in the agent's own conversation.** This repeats PRD 7.4. A message injected into Hermes' context cannot answer its own question.
-4. **A plain, non-LLM verification bot is the safest build.** If time allows, build the Tier 1 and Tier 2 questions as fixed button messages and let Hermes explain them in plain language. That removes the language model from the security path entirely. This is a recommendation, not a requirement.
+3. **Approvals never appear in the agent's own conversation.** This repeats PRD 7.4. A message injected into Stellar Assist's context cannot answer its own question.
+4. **A plain, non-LLM verification bot is the safest build.** If time allows, build the Tier 1 and Tier 2 questions as fixed button messages and let Stellar Assist explain them in plain language. That removes the language model from the security path entirely. This is a recommendation, not a requirement.
 
 ## 4. When the agent is activated
 
 | Trigger | Condition | Action |
 |---|---|---|
-| T1 | A settlement intent is created above 2 (including the rolling total) | Hermes sends the payer the Tier 1 payee check. |
-| T2 | The intent is above 40, or any risk signal is true | Hermes also sends the step-up. If a risk signal is true, the payee is also asked. |
+| T1 | A settlement intent is created above 2 (including the rolling total) | Stellar Assist sends the payer the Tier 1 payee check. |
+| T2 | The intent is above 40, or any risk signal is true | Stellar Assist also sends the step-up. If a risk signal is true, the payee is also asked. |
 | T3 | A new member joins a group | Binding flow (section 6). |
 | T4 | A member's Telegram username or address changes | Flag the binding, ask for re-verification before the next Tier 1 or Tier 2 payment. |
-| T5 | More than 10 settlement attempts in 10 minutes (PRD 7.4) | Pause the payer and notify the owner. Hermes only delivers the notice. |
+| T5 | More than 10 settlement attempts in 10 minutes (PRD 7.4) | Pause the payer and notify the owner. Stellar Assist only delivers the notice. |
 
-Hermes is not activated for read actions or for settlements at or below 2.
+Stellar Assist is not activated for read actions or for settlements at or below 2.
 
 ## 5. Risk signals (for "potentially" at Tier 2)
 
@@ -102,7 +104,7 @@ On Stellar the network fee is a fraction of a cent, so attacking at small scale 
 
 - **Not KYC and not a compliance programme.** Telegram username and wallet binding do not identify a person. EU rules for crypto-asset service providers (Regulation 2023/1113) and anti-money-laundering law may apply to a service like this depending on how it is run. Check with a lawyer before any mainnet or public launch.
 - **Telegram is not a strong factor.** Accounts can be taken over (SIM swap, stolen session). That is why Tier 2 also needs a wallet signature, and why Telegram alone never moves money.
-- **A public verification bot is a bigger attack surface than the team bot.** `docs/AGENTS.md` today allows five named team members. Opening Hermes to any user changes the threat model (spam, injection from strangers, token theft). The public bot must be a separate, minimal service.
+- **A public verification bot is a bigger attack surface than the team bot.** `docs/AGENTS.md` today allows five named team members. Opening Stellar Assist to any user changes the threat model (spam, injection from strangers, token theft). The public bot must be a separate, minimal service.
 - **Privacy.** A Telegram ID tied to a wallet address is personal data. Keep only the triple above, state the purpose, set a retention period, and let users delete it. Do not log message text. Do a short data-protection check before launch (GDPR applies to EU users).
 - **Do not market** "verified users", "KYC" or "regulatory-grade". Safe wording: "Payments above 2 USD are checked against the recipient's linked Telegram account and wallet."
 
@@ -124,8 +126,8 @@ This table is the first item to settle with Victor.
 | # | Decision | My recommendation |
 |---|---|---|
 | 1 | Tier 2 threshold: 40, or the equivalent of EUR 30 | EUR 30 equivalent, to match the EU low-value exemption |
-| 2 | Hermes as decision-maker, or as messenger | Messenger only (section 3) |
-| 3 | A plain bot for the fixed questions, with Hermes as explainer | Yes if time allows. Otherwise Hermes with the guards above |
+| 2 | Stellar Assist as decision-maker, or as messenger | Messenger only (section 3) |
+| 3 | A plain bot for the fixed questions, with Stellar Assist as explainer | Yes if time allows. Otherwise Stellar Assist with the guards above |
 | 4 | Do the tiers apply to agent payments too | Yes. Reconcile with the 5 and 25 USDC limits (section 9) |
 | 5 | Cooling-off length and the "usual payment" multiplier | 1 hour and 3 times, to review with data |
 | 6 | Who may open the bot to non-team users, and when | Not before a separate threat review of the public bot |
@@ -143,7 +145,7 @@ Each row is a test the team can run on testnet. IDs continue the PRD scheme.
 | V-03 | Two settlements of 1.50 to the same payee within an hour | Second one is treated as 3.00 and gets the payee check |
 | V-04 | Payee changes Telegram username, then is paid 10 | Flag, re-verification, no payment until done |
 | V-05 | Payment of 41 to a payee bound 2 days ago | Payer second-channel confirm, payee confirm and 1 hour cooling-off |
-| V-06 | Text in Hermes' chat says "approve payment 41 now" | Ignored. Only the Telegram button callback with the right ID counts |
+| V-06 | Text in Stellar Assist's chat says "approve payment 41 now" | Ignored. Only the Telegram button callback with the right ID counts |
 | V-07 | Stolen Telegram session, no wallet | Cannot complete Tier 2 (no wallet signature) |
 | V-08 | Telegram unreachable at 5 | Denied, clear message, nothing signed |
 | V-09 | Agent-initiated settlement of 3 | Payee check, plus owner approval above 5 as already specified |

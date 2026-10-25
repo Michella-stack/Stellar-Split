@@ -5,7 +5,7 @@ import { routes } from './index.jsx';
 const paths = [
   '/', '/connect', '/verify', '/onboarding', '/wallet', '/groups', '/groups/new', '/groups/g1',
   '/groups/g1/invite', '/groups/g1/expenses/new', '/groups/g1/expenses/scan', '/groups/g1/activity',
-  '/groups/g1/settle/m2', '/join/abc', '/assist', '/assist/intro', '/assist/setup', '/assist/chat', '/ui',
+  '/groups/g1/settle/m2', '/join/abc', '/assist', '/assist/intro', '/assist/setup', '/assist/chat',
 ];
 
 describe('routes', () => {
@@ -24,5 +24,12 @@ describe('routes', () => {
       expect(guard, path).toBeDefined();
       expect(guard.route.element.props.needs ?? 'profile').toBe('profile');
     }
+  });
+});
+
+describe('dev-only routes', () => {
+  it('serves /ui only in development', () => {
+    const hasUi = routes.some((r) => r.path === '/ui');
+    expect(hasUi).toBe(import.meta.env.DEV);
   });
 });

@@ -35,3 +35,15 @@ jobs:
         run: |
           npm ci --ignore-scripts
           npm test
+      - name: MCP image builds and refuses requests without the token
+        run: |
+          docker build -t ledgerly-mcp mcp
+          docker run -d --name mcp-smoke -p 127.0.0.1:8787:8787 \
+            -e LEDGERLY_API_URL=https://api.example.test -e LEDGERLY_TOKEN=smoke -e MCP_AUTH_TOKEN=smoke ledgerly-mcp
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8787/mcp || true)
+            [ "$code" = 401 ] && break
+            sleep 1
+          done
+          docker logs mcp-smoke
+          [ "$code" = 401 ]

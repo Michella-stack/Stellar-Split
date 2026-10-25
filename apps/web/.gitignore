@@ -1,0 +1,3 @@
+# The root .gitignore ignores every .env.* file. This one holds only public Testnet values and is
+# needed by the Vercel build, so it is committed. Never put a secret in it.
+!.env.production

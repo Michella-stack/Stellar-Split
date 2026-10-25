@@ -28,6 +28,7 @@ const impl = USING_MOCKS
   : createHttpApi({ baseUrl: import.meta.env.VITE_API_URL ?? '', getToken: () => sessionToken });
 
 export const {
+  addMember,
   requestChallenge,
   verifyChallenge,
   getMe,
@@ -47,3 +48,10 @@ export const {
   approve,
   reject,
 } = impl;
+
+/**
+ * Stellar Assist has no API routes yet (no /v1/agents or /v1/approvals). Until it does, Assist screens use
+ * their own in-memory sample data, even when the rest of the app talks to the real API, and say so.
+ */
+export const ASSIST_PREVIEW = !USING_MOCKS;
+export const assist = USING_MOCKS ? impl : createMockApi({ storage: null });

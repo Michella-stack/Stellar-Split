@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { createExpense, getAgent, getGroup, listGroups } from '../client/api.js';
+import { ASSIST_PREVIEW, assist } from '../client/api.js';
+import { PreviewNote } from '../features/assist/PreviewNote.jsx';
 import { Amount } from '../components/Amount.jsx';
 import { AgentAvatar } from '../components/Avatar.jsx';
 import { Button, ButtonLink } from '../components/Button.jsx';
@@ -54,6 +55,7 @@ export default function AssistChat() {
     <>
       <TopBar title="Chat with Assist" backTo="/assist" backLabel="Back to Stellar Assist" />
       <h1 className="sr-only">Chat with Stellar Assist</h1>
+      <PreviewNote />
       <div role="log" aria-live="polite" aria-label="Conversation" className="flex flex-1 flex-col gap-4 pt-2 pb-48">
         {messages.map((m) => (
           <ChatMessage key={m.id} message={m} />
@@ -106,21 +108,21 @@ async function reply(intent) {
   if (intent.kind === 'secret') {
     return { from: 'assist', text: 'That looks like a secret key. I never need it and I did not keep it. Please don’t share it with anyone.' };
   }
-  const { agent, pendingApprovals } = await getAgent('assist');
+  const { agent, pendingApprovals } = await assist.getAgent('assist');
   if (agent.status !== 'active') return { from: 'assist', text: 'I’m paused right now. Resume me from the Stellar Assist screen.' };
 
   if (intent.kind === 'add-expense') {
-    const detail = await getGroup(GROUP_ID);
+    const detail = await assist.getGroup(GROUP_ID);
     const humans = detail.members.filter((m) => m.kind === 'human').map((m) => m.id);
     const participants = intent.ways ? humans.slice(0, intent.ways) : humans;
     return { from: 'assist', text: 'Here is the expense. Add it to Casa Alfama?', card: { type: 'expense', ...intent, participants, paidBy: detail.me } };
   }
 
   if (intent.kind === 'what-owe') {
-    const { groups } = await listGroups();
+    const { groups } = await assist.listGroups();
     const lines = [];
     for (const g of groups) {
-      const detail = await getGroup(g.id);
+      const detail = await assist.getGroup(g.id);
       const name = (id) => detail.members.find((m) => m.id === id)?.displayName ?? 'someone';
       for (const t of detail.myPosition.owes) lines.push(`In ${g.name} you owe ${name(t.to)} ${formatUsd(t.amount)}.`);
       for (const t of detail.myPosition.owed) lines.push(`In ${g.name}, ${name(t.from)} owes you ${formatUsd(t.amount)}.`);
@@ -133,13 +135,13 @@ async function reply(intent) {
     if (!approval) return { from: 'assist', text: 'Your internet share is already taken care of.' };
     const outcome = decide(approval.amount, agent.policy, agent.spentToday);
     if (outcome === 'auto') return { from: 'assist', text: `That is within your limits, so I paid ${formatUsd(approval.amount)}.` };
-    const detail = await getGroup(approval.groupId);
+    const detail = await assist.getGroup(approval.groupId);
     const recipientName = detail.members.find((m) => m.id === approval.to)?.displayName ?? 'them';
     return { from: 'assist', text: 'That is above your ask-me-first limit, so I need your OK.', card: { type: 'approval', approval, recipientName, policy: agent.policy } };
   }
 
   if (intent.kind === 'pay') {
-    const detail = await getGroup(GROUP_ID);
+    const detail = await assist.getGroup(GROUP_ID);
     const recipient = detail.members.find((m) => m.displayName?.toLowerCase() === intent.to);
     if (!recipient) return { from: 'assist', text: `I can only pay members of Casa Alfama. I don’t know “${intent.to}”.` };
     const outcome = decide(intent.amount, agent.policy, agent.spentToday);
@@ -185,7 +187,7 @@ function ExpenseCard({ card }) {
   async function add() {
     setState('saving');
     try {
-      await createExpense(GROUP_ID, {
+      await assist.createExpense(GROUP_ID, {
         description: card.description,
         amount: card.amount,
         paidBy: card.paidBy,
@@ -229,7 +231,10 @@ function OverLimitCard({ card }) {
         Paying {card.recipient.displayName} {formatUsd(card.amount)} is more than your {formatUsd(card.limit)} {card.daily ? 'daily cap' : 'limit per payment'}, so I
         won’t do it. You can review it and pay from your own wallet.
       </p>
-      <ButtonLink to={`/groups/${card.groupId}/settle/${card.recipient.id}`}>Review and pay myself</ButtonLink>
+      {/* In preview the sample group does not exist in the real API, so send the person to their own groups. */}
+      <ButtonLink to={ASSIST_PREVIEW ? '/groups' : `/groups/${card.groupId}/settle/${card.recipient.id}`}>
+        {ASSIST_PREVIEW ? 'Open my groups to pay' : 'Review and pay myself'}
+      </ButtonLink>
     </Card>
   );
 }

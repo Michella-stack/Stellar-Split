@@ -24,7 +24,7 @@ function tabStorage() {
 }
 
 const impl = USING_MOCKS
-  ? createMockApi({ storage: tabStorage() })
+  ? createMockApi({ storage: tabStorage(), addresses: { 'm-mateo': import.meta.env.VITE_MOCK_MATEO_ADDRESS } })
   : createHttpApi({ baseUrl: import.meta.env.VITE_API_URL ?? '', getToken: () => sessionToken });
 
 export const {

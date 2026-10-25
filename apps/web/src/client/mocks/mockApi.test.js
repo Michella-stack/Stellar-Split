@@ -173,3 +173,13 @@ describe('mock persistence', () => {
     expect((await second.getMe()).displayName).toBe('Damaris');
   });
 });
+
+describe('mock address overrides', () => {
+  it('lets a real Testnet account play Mateo', async () => {
+    const real = 'GAZ2D6UYGDFFORAS3PXOEIZQLVS7ME6VYRANQJNLEELMYIAOUB4PY7NY';
+    const mock = createMockApi({ delayMs: 0, addresses: { 'm-mateo': real, 'm-jake': 'not-an-address' } });
+    const { members } = await mock.getGroup('casa-alfama');
+    expect(members.find((m) => m.id === 'm-mateo').address).toBe(real);
+    expect(members.find((m) => m.id === 'm-jake').address).not.toBe('not-an-address');
+  });
+});

@@ -15,11 +15,19 @@ const USDC = { code: 'USDC', issuer: null };
 const STORAGE_KEY = 'stellar-split.mock-state';
 
 /**
- * @param {{ delayMs?: number, now?: () => Date, storage?: Storage | null }} [options]
+ * @param {{ delayMs?: number, now?: () => Date, storage?: Storage | null, addresses?: Record<string, string | undefined> }} [options]
  *   storage: when given (sessionStorage in the app), mock data survives a page reload in the same tab.
+ *   addresses: member id → real Testnet address, so a demo payment can reach a funded account.
  */
-export function createMockApi({ delayMs = 300, now = () => new Date(), storage = null } = {}) {
+export function createMockApi({ delayMs = 300, now = () => new Date(), storage = null, addresses = {} } = {}) {
   const state = load() ?? initialState();
+  for (const [memberId, address] of Object.entries(addresses)) {
+    if (!address || !looksLikeStellarAddress(address)) continue;
+    for (const group of state.groups) {
+      const member = group.members.find((m) => m.id === memberId);
+      if (member) member.address = address;
+    }
+  }
   let nextId = 1;
   const newId = (prefix) => `${prefix}-${Date.now().toString(36)}-${nextId++}`;
 

@@ -41,7 +41,6 @@ test("exposes only the phase 1 tools and nothing that pays", async () => {
   const { tools } = await client.listTools();
   assert.deepEqual(tools.map((t) => t.name).sort(), [
     "ledgerly_create_expense",
-    "ledgerly_get_approval",
     "ledgerly_get_balances",
     "ledgerly_list_groups",
     "ledgerly_propose_settlement",
@@ -79,9 +78,23 @@ test("create_expense sends an idempotency key and the split", async () => {
   const r = await client.callTool({ name: "ledgerly_create_expense", arguments: args });
   assert.equal(parse(r).id, "e1");
   assert.match(mock.seen[0].headers["idempotency-key"], /^[A-Za-z0-9_-]{8,}/);
-  assert.deepEqual(mock.seen[0].body.split, args.split);
+  // The API names the fields paidBy, split.type and memberId.
+  assert.deepEqual(mock.seen[0].body, {
+    paidBy: "victor",
+    amount: "42",
+    description: "Electricity",
+    split: { type: "equal", participants: ["victor", "marta"] },
+  });
   await client.callTool({ name: "ledgerly_create_expense", arguments: { ...args, idempotency_key: "retry-key-0001" } });
   assert.equal(mock.seen[1].headers["idempotency-key"], "retry-key-0001");
+  await client.callTool({
+    name: "ledgerly_create_expense",
+    arguments: { ...args, amount: "10", split: { rule: "exact", shares: [{ member: "victor", amount: "4" }, { member: "marta", amount: "6" }] } },
+  });
+  assert.deepEqual(mock.seen[2].body.split, {
+    type: "exact",
+    shares: [{ memberId: "victor", amount: "4" }, { memberId: "marta", amount: "6" }],
+  });
   mock.close();
 });
 
@@ -126,7 +139,6 @@ test("rejects a Stellar secret key in every text-like field", async () => {
     ["ledgerly_create_expense", { ...expense, idempotency_key: FAKE_SECRET }],
     ["ledgerly_get_balances", { group_id: FAKE_SECRET }],
     ["ledgerly_propose_settlement", { group_id: "g1", to: FAKE_SECRET, amount: "5" }],
-    ["ledgerly_get_approval", { approval_id: FAKE_SECRET }],
   ];
   for (const [name, args] of attempts) {
     assert.ok(await rejected(client.callTool({ name, arguments: args })), `${name} accepted a secret key in ${JSON.stringify(args).slice(0, 80)}`);
@@ -136,7 +148,7 @@ test("rejects a Stellar secret key in every text-like field", async () => {
 });
 
 test("surfaces API policy errors without leaking the token", async () => {
-  const mock = await mockApi({ "POST /v1/groups/g1/settlements": { status: 403, body: { code: "policy_daily_cap", message: "daily cap exceeded" } } });
+  const mock = await mockApi({ "POST /v1/groups/g1/settlements": { status: 403, body: { error: { code: "policy_daily_cap", message: "daily cap exceeded" } } } });
   const client = await connect(createApi({ baseUrl: mock.url, token: TOKEN }));
   const r = await client.callTool({ name: "ledgerly_propose_settlement", arguments: { group_id: "g1", to: "marta", amount: "25" } });
   assert.equal(r.isError, true);
@@ -147,16 +159,14 @@ test("surfaces API policy errors without leaking the token", async () => {
   mock.close();
 });
 
-test("propose_settlement can answer pending approval, and get_approval reads it", async () => {
-  const mock = await mockApi({
-    "POST /v1/groups/g1/settlements": { status: 202, body: { status: "pending_approval", approval_id: "ap_1" } },
-    "GET /v1/approvals/ap_1": { body: { id: "ap_1", status: "pending" } },
-  });
+test("propose_settlement returns the intent and never pays", async () => {
+  const intent = { groupId: "g1", from: "bob", to: "marta", amount: "8.00", network: "stellar:testnet", payTo: "G" + "A".repeat(55) };
+  const mock = await mockApi({ "POST /v1/groups/g1/settlements": { status: 200, body: { intent } } });
   const client = await connect(createApi({ baseUrl: mock.url, token: TOKEN }));
-  const p = await client.callTool({ name: "ledgerly_propose_settlement", arguments: { group_id: "g1", to: "marta", amount: "8" } });
-  assert.equal(parse(p).approval_id, "ap_1");
-  const a = await client.callTool({ name: "ledgerly_get_approval", arguments: { approval_id: "ap_1" } });
-  assert.equal(parse(a).status, "pending");
+  const r = await client.callTool({ name: "ledgerly_propose_settlement", arguments: { group_id: "g1", to: "marta", amount: "8" } });
+  assert.deepEqual(parse(r).intent, intent);
+  assert.equal(mock.seen[0].url, "/v1/groups/g1/settlements?dry_run=true");
+  assert.deepEqual(mock.seen[0].body, { to: "marta", amount: "8" });
   mock.close();
 });
 

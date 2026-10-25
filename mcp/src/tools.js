@@ -89,22 +89,11 @@ export function buildServer(api) {
     {
       title: "Propose settlement",
       description:
-        "Returns the settlement intent and the payment requirements for paying `to`, without paying anything. Does not spend money. May answer that the amount needs human approval.",
+        "Returns the settlement intent and the payment requirements for paying `to`, without paying anything. Does not spend money. Approvals are not built yet, so the answer is only the intent.",
       inputSchema: { group_id: id, to: id, amount },
       annotations: readOnly,
     },
     async ({ group_id, to, amount: total }) => fromApi(await api.proposeSettlement(group_id, { to, amount: total })),
-  );
-
-  server.registerTool(
-    "ledgerly_get_approval",
-    {
-      title: "Get approval status",
-      description: "Status of a pending human approval. Does not spend money. The agent cannot approve its own requests.",
-      inputSchema: { approval_id: id },
-      annotations: readOnly,
-    },
-    async ({ approval_id }) => fromApi(await api.getApproval(approval_id)),
   );
 
   return server;

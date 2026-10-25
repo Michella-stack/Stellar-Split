@@ -29,7 +29,7 @@ One MCP container per agent, each with its own key, tokens and network. Agent co
 `ledgerly_settle {group_id, to, amount, idempotency_key}`, annotated as destructive.
 
 1. Validate input as in the existing tools (id and amount rules, secret key rejection).
-2. Ask the API for the settlement intent with a dry run (**UNVERIFIED**, not in the PRD). The MCP stores the intent in its own memory, so the model never supplies payment terms. A 403 `policy_*` stops the flow. A 202 returns an approval id for `ledgerly_get_approval`.
+2. Ask the API for the settlement intent with a dry run (`?dry_run=true`, implemented in the API). The MCP stores the intent in its own memory, so the model never supplies payment terms. A policy denial stops the flow. Approvals and spend policy are not built in the API yet, so there is no 202 approval flow today.
 3. Local checks: network is `stellar:testnet`, asset is the pinned USDC SAC `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` (a config constant), creditor differs from the agent's own address, amount above zero.
 4. Request the payment and expect `402` with `PAYMENT-REQUIRED`.
 5. Compare terms. Exactly one entry must match scheme `exact`, network, asset, `payTo` equal to the intent's creditor, amount equal to the intent amount in 7-decimal units, the intent id in the resource, and the API host. Any difference aborts with nothing signed (FR-38). Field names beyond PRD section 7.1 are **UNVERIFIED**.

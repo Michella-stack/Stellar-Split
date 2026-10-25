@@ -16,11 +16,7 @@ export default function ExpenseScan() {
   const cameraRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const uploadRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const [step, setStep] = useState(/** @type {'choose' | 'scanning' | 'result'} */ ('choose'));
-  const [preview, setPreview] = useState(/** @type {string | null} */ (null));
   const [result, setResult] = useState(/** @type {ReturnType<typeof mockReceiptResult> | null} */ (null));
-
-  // Release the local preview URL when it changes or the screen closes.
-  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview]);
 
   useEffect(() => {
     if (step !== 'scanning') return undefined;
@@ -34,8 +30,8 @@ export default function ExpenseScan() {
   function onFile(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
+    // The photo is never read, displayed or uploaded: scanning is mocked for now.
     if (!file || !file.type.startsWith('image/')) return;
-    setPreview(URL.createObjectURL(file));
     setStep('scanning');
   }
 
@@ -70,8 +66,8 @@ export default function ExpenseScan() {
 
         {step === 'scanning' && (
           <div className="flex flex-col items-center gap-6 py-6" role="status" aria-live="polite">
-            <div className="relative h-72 w-56 overflow-hidden rounded-card bg-surface">
-              {preview && <img src={preview} alt="Your receipt" className="h-full w-full object-cover opacity-70" />}
+            <div className="relative flex h-72 w-56 items-center justify-center overflow-hidden rounded-card bg-surface text-muted">
+              <IconReceipt size={96} />
               <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 animate-[scan_1.8s_ease-in-out_infinite] bg-accent shadow-[0_0_24px_var(--accent)]" />
             </div>
             <p className="text-lg font-semibold">Reading your receipt…</p>

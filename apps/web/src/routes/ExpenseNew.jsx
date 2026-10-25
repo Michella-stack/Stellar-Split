@@ -56,6 +56,8 @@ function ExpenseForm({ detail }) {
   const [touched, setTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState(/** @type {string | null} */ (null));
+  // One key per form: a retry after a timeout cannot create the expense twice.
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const amountCheck = validateAmount(amount);
   const amountError = touched && !amountCheck.ok ? AMOUNT_ERRORS[amountCheck.code] : null;
@@ -82,7 +84,7 @@ function ExpenseForm({ detail }) {
         ? { type: 'equal', participants: ordered }
         : { type: 'exact', shares: exactCheck.shares.map((s) => ({ memberId: s.memberId, amount: s.amount })) };
     try {
-      await createExpense(group.id, { description: description.trim(), amount, paidBy, split, source: prefill?.source ?? 'manual' });
+      await createExpense(group.id, { description: description.trim(), amount, paidBy, split, source: prefill?.source ?? 'manual' }, { idempotencyKey });
       toast(`${description.trim()} added`, { tone: 'success' });
       navigate(`/groups/${group.id}`, { replace: true });
     } catch (e) {

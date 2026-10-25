@@ -1,6 +1,6 @@
-# Agent interface (MCP) - phase 1a, part 1
+# Agent interface (MCP) - non-paying tools
 
-Status: the read, expense and propose tools are built in `mcp/`. It follows PRD section 7 and does not change it. The signer and `ledgerly_settle` are also Phase 1a in the PRD and in story 14, but are not built yet. See `docs/AGENT-WALLETS.md`.
+Status: the read, expense and propose tools are built in `mcp/`. It follows PRD section 7 and does not change it. The signer and `ledgerly_settle` are a stretch goal (story 14 is Phase 2) and are not built. See `docs/AGENT-WALLETS.md` and `docs/DELEGATED-PAYMENTS.md`.
 
 Agents (Hermes, OpenClaw) reach Ledgerly through an MCP server that runs on the agent host and talks to the Ledgerly API with a per-agent credential.
 
@@ -16,26 +16,26 @@ Telegram group -> Hermes / OpenClaw -> ledgerly-mcp (HTTP, same host) -> Ledgerl
 | `ledgerly_get_balances` | No | Yes |
 | `ledgerly_create_expense` (equal and exact splits) | No | Yes |
 | `ledgerly_propose_settlement` | No | Yes (dry run only) |
-| `ledgerly_get_approval` | No | Yes |
-| `ledgerly_settle` (x402 payment, agent signer) | Yes | **No.** Next, still Phase 1a |
+| `ledgerly_settle` (x402 payment, agent signer) | Yes | **No.** Stretch goal, Phase 2 |
 
 There is no signing code and no key handling in this phase. The MCP server cannot move money.
 
-## API contract the server expects
+## API contract
 
-This is the contract `mcp/src/api.js` calls. Items marked **to confirm** are not in the PRD and need the API owner to agree.
+The contract is defined by the API in `apps/api` (see its README). `mcp/src/api.js` follows it, and the tools translate the names a model sees into the API's field names. Checked end to end against the API code of pull request 51: expenses with equal and exact splits, balances, a settlement dry run and an error answer.
 
 | Call | Success | Notes |
 |---|---|---|
-| `GET /v1/groups` | 200 `{ groups: [...] }` | Groups of the credential's agent identity |
-| `GET /v1/groups/{id}/balances` | 200 `{ balances: [{ member, net }] }` | `net` is a decimal string, positive = is owed |
-| `POST /v1/groups/{id}/expenses` | 201 `{ id }` | Body `{ payer, amount, description, split }`. `Idempotency-Key` header required. Server rejects splits that do not sum to `amount` |
-| `POST /v1/groups/{id}/settlements?dry_run=true` | 200 `{ intent, requirements }` or 202 `{ status: "pending_approval", approval_id }` | **To confirm.** Dry run returns the intent and x402 requirements without a 402 and without paying |
-| `GET /v1/approvals/{id}` | 200 `{ id, status }` | |
+| `GET /v1/groups` | 200 `{ groups, totals }` | Groups of the credential's identity |
+| `GET /v1/groups/{id}/balances` | 200 `{ balances: [{ memberId, displayName, address, kind, net }] }` | `net` is a decimal string, positive means the member is owed |
+| `POST /v1/groups/{id}/expenses` | 201 `{ expense }` | Body `{ paidBy, amount, description, split }` with `split` `{ type: "equal", participants }` or `{ type: "exact", shares: [{ memberId, amount }] }`. `Idempotency-Key` header. Expenses created by an agent are marked `source: agent` |
+| `POST /v1/groups/{id}/settlements?dry_run=true` | 200 `{ intent }` | The caller is the payer. Nothing is recorded or paid |
 
-Errors: any non-2xx with `{ code, message }`. Policy denials use 403 (`policy_*` codes), revoked credentials 401. The MCP server passes `code` and `message` to the agent and never the credential.
+Errors: `{ error: { code, message, details? } }`. The MCP server passes `code` and `message` to the agent and never the credential. A `502 UPSTREAM_UNAVAILABLE` means Stellar or the database did not answer and is safe to retry.
 
-Auth: `Authorization: Bearer <agent API credential>`. The API enforces spend policy, group scope and the approval threshold server-side (FR-33, section 7.4). The MCP server does not trust the agent and does not enforce policy itself.
+Not in the API yet: approvals and agent spend policy. There is no approvals route, so the MCP server has no tool for it (a `ledgerly_get_approval` tool was removed because it always answered 404). The PRD still lists it (section 7.2) for when approvals exist.
+
+Auth: `Authorization: Bearer <agent API credential>`, configured on the API as a SHA-256 hash mapped to the agent's address. The MCP server does not trust the agent and does not enforce policy itself.
 
 ## Input rules (enforced before any API call)
 
@@ -73,7 +73,7 @@ mcp_servers:
       Authorization: "Bearer <MCP_AUTH_TOKEN>"
     trust: untrusted
     tools:
-      include: [ledgerly_list_groups, ledgerly_get_balances, ledgerly_create_expense, ledgerly_propose_settlement, ledgerly_get_approval]
+      include: [ledgerly_list_groups, ledgerly_get_balances, ledgerly_create_expense, ledgerly_propose_settlement]
 ```
 
 OpenClaw: register the server under `mcp.servers` (streamable HTTP), then run `openclaw mcp doctor ledgerly --probe`. Whether a static bearer header is accepted or only OAuth is not confirmed.

@@ -1,0 +1,20 @@
+{
+  "name": "@stellar-split/demo-accounts",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Prepares Stellar Testnet demo accounts: XLM from Friendbot, a USDC trustline and Testnet USDC bought on the Testnet DEX.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "demo-accounts": "./demo-accounts.js"
+  },
+  "scripts": {
+    "start": "node demo-accounts.js",
+    "test": "node --test \"*.test.js\""
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "17.2.1"
+  }
+}

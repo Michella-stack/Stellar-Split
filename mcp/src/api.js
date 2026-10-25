@@ -30,24 +30,36 @@ export function createApi({ baseUrl, token, fetchImpl = globalThis.fetch, timeou
       }
     }
     if (res.ok) return { ok: true, status: res.status, data };
+    const err = data?.error ?? data; // the API answers { error: { code, message } }
     return {
       ok: false,
       status: res.status,
       error: {
-        code: String(data?.code ?? `http_${res.status}`).slice(0, 64),
-        message: String(data?.message ?? res.statusText ?? "request failed").slice(0, 300),
+        code: String(err?.code ?? `http_${res.status}`).slice(0, 64),
+        message: String(err?.message ?? res.statusText ?? "request failed").slice(0, 300),
       },
     };
   }
 
   const group = (id) => `/v1/groups/${encodeURIComponent(id)}`;
+
+  // The tools use names that read well for a model; the API names its fields paidBy, split.type and memberId.
+  const toApiExpense = ({ payer, amount, description, split }) => ({
+    paidBy: payer,
+    amount,
+    description,
+    split:
+      split.rule === "equal"
+        ? { type: "equal", participants: split.participants }
+        : { type: "exact", shares: split.shares.map((s) => ({ memberId: s.member, amount: s.amount })) },
+  });
+
   return {
     listGroups: () => call("GET", "/v1/groups"),
     getBalances: (groupId) => call("GET", `${group(groupId)}/balances`),
     createExpense: (groupId, body, idempotencyKey) =>
-      call("POST", `${group(groupId)}/expenses`, { body, headers: { "idempotency-key": idempotencyKey } }),
-    // dry_run returns the settlement intent and payment requirements without paying anything.
+      call("POST", `${group(groupId)}/expenses`, { body: toApiExpense(body), headers: { "idempotency-key": idempotencyKey } }),
+    // dry_run returns the settlement intent (who to pay, how much, which asset) without recording or paying anything.
     proposeSettlement: (groupId, body) => call("POST", `${group(groupId)}/settlements?dry_run=true`, { body }),
-    getApproval: (approvalId) => call("GET", `/v1/approvals/${encodeURIComponent(approvalId)}`),
   };
 }

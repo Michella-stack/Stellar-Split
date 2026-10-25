@@ -17,6 +17,14 @@ Other scripts: `npm test` (Vitest), `npm run lint` (ESLint), `npm run build`, `n
 
 In development, http://localhost:5173/ui shows every UI component in the dark and light themes side by side. It is not part of production builds.
 
+## Against the real API
+
+Run the API (`apps/api`, see its README) and set `VITE_USE_MOCKS=false` and `VITE_API_URL=http://localhost:8080` in `.env`. The API must allow the web origin (`APP_URL=http://localhost:5173`).
+
+Production builds read `.env.production`, which is committed. It holds only public Testnet values, and its API URL is empty because the web app and the API share one origin on Vercel. Stellar Assist stays on sample data, labelled "Preview", until the agent API exists.
+
+This was tested end to end against the API in #51 with an in-memory store: SEP-53 sign-in, profile, a new group, adding a member by address, an expense, and a 0.30 USDC Testnet payment that the API verified on Horizon before recording it ([bd22e9a8…](https://stellar.expert/explorer/testnet/tx/bd22e9a86050c2a720b40cc950b4e0480f264b32ac029175d1c43633ab12efd5)).
+
 ## Before the demo
 
 You need two Testnet accounts in Freighter. The payer is the account you sign in with. The creditor plays "Mateo" in the demo data.

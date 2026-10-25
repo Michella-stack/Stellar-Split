@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { approve, reject } from '../../client/api.js';
+import { assist } from '../../client/api.js';
 import { AgentAvatar } from '../../components/Avatar.jsx';
 import { Button } from '../../components/Button.jsx';
 import { Card } from '../../components/Card.jsx';
@@ -18,7 +18,7 @@ export function ApprovalCard({ approval, recipientName, approvalAbove, onDecided
   async function decide(kind) {
     setBusy(kind);
     try {
-      const result = await (kind === 'approve' ? approve(approval.id) : reject(approval.id));
+      const result = await (kind === 'approve' ? assist.approve(approval.id) : assist.reject(approval.id));
       setDecided(result.approval.status);
       toast(kind === 'approve' ? `Approved: Stellar Assist pays ${recipientName} ${formatUsd(approval.amount)}` : 'Declined. Nothing was paid.', {
         tone: kind === 'approve' ? 'success' : 'info',

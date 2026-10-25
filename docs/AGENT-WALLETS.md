@@ -1,6 +1,6 @@
 # Agent wallets and `ledgerly_settle` (proposal)
 
-Status: proposal for Phase 1a, nothing here is built. It follows PRD section 7 and guardrails 7.4 (FR-30 to FR-38). Stellar testnet only. Anything marked **UNVERIFIED** is an assumption that must be checked before building. No signing code exists, and the API of `@x402/stellar` has not been checked here.
+Status: proposal, nothing here is built. Agent settlement is a stretch goal in `docs/BUILD-FOCUS.md` and `docs/ARCHITECTURE.md`, and stories 14 and 15 are Phase 2. How a person and their agent pay the same debt, and how a double payment is prevented, is in `docs/DELEGATED-PAYMENTS.md` and `docs/adr/`. It follows PRD section 7 and guardrails 7.4 (FR-30 to FR-38). Stellar testnet only. Anything marked **UNVERIFIED** is an assumption that must be checked before building. No signing code exists, and the API of `@x402/stellar` has not been checked here.
 
 ## Current state
 
@@ -29,7 +29,7 @@ One MCP container per agent, each with its own key, tokens and network. Agent co
 `ledgerly_settle {group_id, to, amount, idempotency_key}`, annotated as destructive.
 
 1. Validate input as in the existing tools (id and amount rules, secret key rejection).
-2. Ask the API for the settlement intent with a dry run (**UNVERIFIED**, not in the PRD). The MCP stores the intent in its own memory, so the model never supplies payment terms. A 403 `policy_*` stops the flow. A 202 returns an approval id for `ledgerly_get_approval`.
+2. Ask the API for the settlement intent with a dry run (`?dry_run=true`, implemented in the API). The MCP stores the intent in its own memory, so the model never supplies payment terms. A policy denial stops the flow. Approvals and spend policy are not built in the API yet, so there is no 202 approval flow today.
 3. Local checks: network is `stellar:testnet`, asset is the pinned USDC SAC `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` (a config constant), creditor differs from the agent's own address, amount above zero.
 4. Request the payment and expect `402` with `PAYMENT-REQUIRED`.
 5. Compare terms. Exactly one entry must match scheme `exact`, network, asset, `payTo` equal to the intent's creditor, amount equal to the intent amount in 7-decimal units, the intent id in the resource, and the API host. Any difference aborts with nothing signed (FR-38). Field names beyond PRD section 7.1 are **UNVERIFIED**.

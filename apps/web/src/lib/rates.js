@@ -29,9 +29,11 @@ export function getRates() {
  * Converts a USDC amount (treated as USD) to a rounded whole-unit estimate in another currency.
  * @param {string} usdc decimal string; the sign is ignored
  * @param {string} currency ISO code, e.g. "EUR"
- * @returns {string | null} e.g. "€335", "MXN 6,745", or null when there is no rate
+ * @returns {string | null} e.g. "€335", "MXN 6,745", or null when there is no rate. Also null for USD:
+ *   USDC already reads as dollars, so an estimate would only repeat the amount.
  */
 export function estimate(usdc, currency) {
+  if (currency === 'USD') return null;
   const rate = getRates().rates[currency];
   if (!rate) return null;
   const scale = 10n ** 14n; // 7 decimals on the amount × 7 decimals on the rate

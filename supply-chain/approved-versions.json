@@ -11,6 +11,22 @@
     },
     {
       "ecosystem": "npm",
+      "name": "@stellar/freighter-api",
+      "version": "6.0.1",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "@stellar/stellar-sdk",
+      "version": "17.2.1",
+      "approved": "2026-10-25",
+      "by": "@damcb1",
+      "next_review": "2026-11-25"
+    },
+    {
+      "ecosystem": "npm",
       "name": "@tailwindcss/vite",
       "version": "4.3.3",
       "approved": "2026-10-25",

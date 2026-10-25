@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { containsSecretKey, looksLikeStellarAddress } from './validation.js';
+import { containsSecretKey, isValidStellarAddress, looksLikeStellarAddress } from './validation.js';
 
 // Built at runtime so no seed-shaped literal sits in the repository for secret scanners to flag.
 const fakeSeed = 'S' + 'A'.repeat(55);
@@ -24,5 +24,23 @@ describe('looksLikeStellarAddress', () => {
     assert.equal(looksLikeStellarAddress(address.toLowerCase()), false);
     assert.equal(looksLikeStellarAddress(fakeSeed), false);
     assert.equal(looksLikeStellarAddress(`${address} `), false);
+  });
+});
+
+describe('isValidStellarAddress', () => {
+  it('accepts real addresses', () => {
+    assert.equal(isValidStellarAddress(address), true);
+    assert.equal(isValidStellarAddress('GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'), true);
+  });
+
+  it('rejects a changed character (bad checksum)', () => {
+    assert.equal(isValidStellarAddress('GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA6'), false);
+    assert.equal(isValidStellarAddress(address.slice(0, 10) + (address[10] === 'A' ? 'B' : 'A') + address.slice(11)), false);
+  });
+
+  it('rejects other formats', () => {
+    assert.equal(isValidStellarAddress(fakeSeed), false);
+    assert.equal(isValidStellarAddress('G' + 'A'.repeat(55)), false);
+    assert.equal(isValidStellarAddress(''), false);
   });
 });

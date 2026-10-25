@@ -1,0 +1,57 @@
+name: Web app
+on:
+  pull_request:
+    paths: ["apps/web/**", "packages/shared/**", ".github/workflows/web.yml"]
+  push:
+    branches: [main]
+    paths: ["apps/web/**", "packages/shared/**", ".github/workflows/web.yml"]
+permissions:
+  contents: read
+jobs:
+  shared:
+    name: Shared domain rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      # packages/shared has no dependencies; its tests use node:test.
+      - name: Test
+        if: hashFiles('packages/shared/package.json') != ''
+        run: npm test
+        working-directory: packages/shared
+
+  web:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - name: Install (lockfile only, no install scripts)
+        if: hashFiles('apps/web/package-lock.json') != ''
+        run: npm ci --ignore-scripts
+        working-directory: apps/web
+      - name: Verify registry signatures
+        if: hashFiles('apps/web/package-lock.json') != ''
+        run: npm audit signatures
+        working-directory: apps/web
+      - name: Lint
+        if: hashFiles('apps/web/package-lock.json') != ''
+        run: npm run lint
+        working-directory: apps/web
+      - name: Test
+        if: hashFiles('apps/web/package-lock.json') != ''
+        run: npm test
+        working-directory: apps/web
+      # The build reads .env.example: Testnet values only, no secrets.
+      - name: Build
+        if: hashFiles('apps/web/package-lock.json') != ''
+        run: cp .env.example .env && npm run build
+        working-directory: apps/web

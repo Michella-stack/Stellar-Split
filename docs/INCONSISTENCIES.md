@@ -86,7 +86,7 @@ Every item above is either fixed or explicitly deferred. "Fixed here" means the 
 | 9 | Fixed here | PRD 7.1 step 10 uses the deployed contract's `record_x402_settlement(group, from, to, amount, tx_hash)` |
 | 10 | Deferred to the PRD owner | The indexer is post-hackathon in every document: the PRD "Phase 1: MVP" comes after the Phase 1a hackathon build, and story 21 says Phase 2. Pick one of the two labels when the roadmap is next reviewed |
 | 11 | Fixed earlier | No document says v0.2 any more |
-| 12 | Fixed here | The BUILD-FOCUS owner table is filled in. The PRD "Owner" is the product owner (Victor), while the repository belongs to Michella's account. Both are correct |
+| 12 | Fixed here | The BUILD-FOCUS owner table is filled in (the demo video is not assigned yet). The PRD "Owner" is the product owner (Victor), while the repository belongs to Michella's account. Both are correct |
 | 13 | Fixed earlier | `docs/AGENTS.md`: administration over Tailscale, dashboards through a Cloudflare tunnel behind Authentik, images pinned by digest, and no keys in the containers |
 | 14 | Fixed earlier | The README says the PRD was written under the working name Ledgerly |
 | 15 | Fixed here | The PRD 7.1 example now settles 4.50 USDC, under the 5 USDC approval threshold |

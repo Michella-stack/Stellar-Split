@@ -56,8 +56,10 @@ Signed releases and SLSA provenance, Scorecard targets, fuzzing and formal verif
 | Area | Owner |
 |---|---|
 | Contract or settlement logic | Victor (contract); Viviana (settlement intents in the API) |
-| API and balances | Victor, with Viviana and Sofiia |
+| API and balances | Victor, with Viviana (settlement intents, agent spend policy) |
 | Web app and wallet connection | Damaris |
 | x402 and agent | Victor (MCP server, Hermes, OpenClaw) |
-| README, demo video, pitch | Victor and Damaris (README), Michella (demo video, security docs) |
+| README | Victor and Damaris |
+| Demo video and pitch | Not assigned yet (recording on 26 October) |
+| Security documentation | Michella |
 | Architecture documentation | Sofiia |

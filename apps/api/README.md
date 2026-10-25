@@ -44,7 +44,7 @@ Shapes follow [`apps/web/src/client/README.md`](../web/src/client/README.md). Er
 | `POST /v1/groups/:id/settlements/intents` | `{ to, amount }`: step 1, reserves a settlement intent. `201 { intent }` with `id`, `payTo`, `memo: { type: 'hash', value }` and `expiresAt`. `409 INTENT_IN_PROGRESS` while the payer or the creditor has another reserved intent in the group |
 | `POST /v1/groups/:id/settlements/intents/:intentId/cancel` | Cancels a reserved intent, for example when the signature is rejected in Freighter. Only the payer |
 | `POST /v1/groups/:id/settlements` | `{ intentId, txHash }`: step 2, records the payment after Horizon confirms it. `to` and `amount` may be sent too and must match the intent |
-| `POST /v1/groups/:id/receipts/scan` | `{ imageBase64, mimeType }`: reads a photo of a receipt (demo, issue #87) and returns `{ draft }`. It creates nothing. `503 SCAN_UNAVAILABLE` when there is no `GEMINI_API_KEY` or the reader is down or out of quota |
+| `POST /v1/groups/:id/receipts/scan` | `{ imageBase64, mimeType }`: reads a photo of a receipt (demo, issue #87) and returns `{ draft }`. It creates nothing. `503 SCAN_UNAVAILABLE` when there is no `GEMINI_API_KEY` or the reader is down or out of quota. Needs a session and answers `401` before reading the body. `429 RATE_LIMITED` after 10 scans in 10 minutes by the same person (counted per serverless instance) |
 | `GET /v1/groups/:id/activity` | Expenses and settlements, newest first |
 
 ## Rules enforced here

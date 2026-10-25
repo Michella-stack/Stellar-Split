@@ -18,7 +18,7 @@ cd contracts && cargo fmt --check
 | Suite | Result |
 |---|---|
 | `mcp` tests | 14 of 14 pass (Node 25; CI targets Node 22, not run there) |
-| `supply-chain` tests | 13 of 13 pass |
+| `supply-chain` tests | 53 pass, 2 `todo` (known guard bugs, see below) |
 | Pinned actions check | Pass. Independent grep agrees |
 | Contract `cargo test` | 15 of 15 pass |
 | Contract `cargo clippy -D warnings` | Clean |
@@ -58,9 +58,9 @@ Not tested: stdio transport; HTTP 404, 405, invalid JSON and oversized body; API
 
 ### Version guard (`supply-chain/version-guard.js`)
 
-Covered: exact version, pre-release, deprecated, yanked, cooldowns of 7 days and of 14 days for `@stellar/*`, newer stable past cooldown, older than approved, OSV high and no-severity.
+Covered: exact version, pre-release, deprecated, yanked, version not found, cooldown of 7 days and of 14 days for every sensitive family (`@x402/*`, `@stellar/*`, `soroban-sdk`, `stellar-*`, `*crypto*`, `*sodium*`, `*noble*`) including the exact boundary, newer stable past cooldown, older than approved (policy tested with an `approved-versions.json`-shaped object), OSV critical, high, medium, low and no-severity, fail-closed on registry or OSV errors and timeouts, Cargo ranges, `file:`, `link:` and `workspace:` skips, `compareVersions`, `renderReport`, and `main()` through the CLI against a temporary git repository.
 
-Missing: OSV critical, OSV medium or low passes, fail-closed on registry or OSV errors, version not found, 14-day cooldown for `@x402/*`, `soroban-sdk`, `stellar-*`, `*sodium*`, `*crypto*`, Cargo ranges, `file:` and `workspace:` skips, `main()` and report rendering. `approved-versions.json` is empty, so the policy is only tested with a stub. The guard checks direct dependencies only.
+Known gaps, kept as `todo` tests: a registry release with no publish time passes the cooldown (fail-open), and numeric pre-release identifiers compare lexically (`rc.10` before `rc.2`). The guard checks direct dependencies only.
 
 ### CI
 
@@ -82,7 +82,7 @@ Missing: OSV critical, OSV medium or low passes, fail-closed on registry or OSV 
 4. Contract: `events_emitted_with_exact_topics_and_data`.
 5. Contract: overflow cases at `i128` limits, and `failed_call_leaves_state_unchanged`.
 6. Run `cargo fmt` once and add `cargo fmt --check` to `contracts.yml`.
-7. Version guard: fail-closed on registry or OSV failure, OSV critical and medium, 14-day names.
+7. Version guard: make a missing registry publish time fail closed (the `todo` test shows the bug).
 8. MCP: HTTP edge cases, API timeout and non-JSON bodies, schema bounds.
 9. Add `/mcp/` and `/scripts/` to `CODEOWNERS`; point Dependabot npm at `/mcp`.
 10. Shellcheck job; harden `deploy-testnet.sh`.

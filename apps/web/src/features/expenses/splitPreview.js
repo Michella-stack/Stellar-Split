@@ -2,6 +2,7 @@
 
 import { fromStroops, validateAmount } from '@shared/money.js';
 import { checkExactSplit, splitEqual } from '@shared/splits.js';
+import { containsSecretKey } from '@shared/validation.js';
 
 const dec = (stroops) => fromStroops(stroops, { minDecimals: 2 });
 
@@ -14,6 +15,18 @@ export function cleanAmountInput(raw) {
   const [whole, ...rest] = normalized.split('.');
   if (rest.length === 0) return whole;
   return `${whole}.${rest.join('').slice(0, 7)}`;
+}
+
+/**
+ * The message under "What was it for?", or null. A secret key is refused at once; an empty description only after the
+ * first Save, so the button is never grey without saying why.
+ * @param {string} description
+ * @param {boolean} touched whether Save was pressed
+ */
+export function descriptionError(description, touched) {
+  if (containsSecretKey(description)) return 'This looks like a secret key. Never share it.';
+  if (touched && !description.trim()) return 'Say what it was for.';
+  return null;
 }
 
 /**

@@ -1,0 +1,30 @@
+name: Contract security
+on:
+  pull_request:
+    paths: ["contracts/**", "rust-toolchain.toml", ".github/workflows/contracts.yml"]
+  push:
+    branches: [main]
+    paths: ["contracts/**", "rust-toolchain.toml", ".github/workflows/contracts.yml"]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-10-08
+        with:
+          toolchain: "1.97.0"
+          targets: wasm32v1-none
+          components: clippy
+      - run: cargo install --locked stellar-cli --version "28.1.0"
+      - run: stellar contract build
+        working-directory: contracts
+      - run: cargo clippy --locked --all-targets -- -D warnings
+        working-directory: contracts
+      - run: cargo test --locked
+        working-directory: contracts
+      - run: cargo install --locked cargo-scout-audit --version "0.3.17" && cargo scout-audit
+        working-directory: contracts

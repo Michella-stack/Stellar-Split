@@ -35,3 +35,7 @@ node demo-accounts.js secret alex                   # one secret key, to import 
 | The destination account does not exist on Testnet yet | Fund it with Friendbot (Wallet screen in the app) |
 | The DEX price moved | Run the command again |
 | No XLM→USDC offers on the Testnet DEX | Use https://faucet.circle.com (Stellar Testnet) |
+
+## EURC
+
+This script only handles USDC. Do not try to buy EURC on the Testnet DEX: on 25 October 2026 Horizon found no path for 2 EURC from XLM (about 1 EURC at most), so there is nothing to buy. Use Circle's faucet instead, https://faucet.circle.com (Stellar Testnet, EURC): 10 EURC per request, once every 24 hours per address. The account needs a EURC trustline first (**Settle up → Add EURC trustline** in a EURC group, or Freighter → Manage assets with issuer `GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO`).

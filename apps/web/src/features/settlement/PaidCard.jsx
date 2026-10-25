@@ -1,29 +1,73 @@
+import { useState } from 'react';
 import { Amount } from '../../components/Amount.jsx';
 import { Button, ButtonLink } from '../../components/Button.jsx';
 import { Card } from '../../components/Card.jsx';
 import { IconButton } from '../../components/IconButton.jsx';
-import { IconCopy, IconExternal, IconShare } from '../../components/icons.jsx';
+import { IconCopy, IconDownload, IconExternal, IconShare } from '../../components/icons.jsx';
 import { EXPLORER_TX_URL } from '../../config/env.js';
 import { useCopy } from '../../hooks/useCopy.js';
+import { useToast } from '../../hooks/useToast.js';
+import { downloadBlob, renderReceiptPng } from './receipt.js';
 import { shortAddress } from '../../lib/format.js';
 
 /**
  * Success screen after a confirmed Testnet payment.
- * @param {{ amount: string, recipientName: string, groupId: string, groupName: string, txHash: string, fullyPaid: boolean,
- *   record: { status: 'saving' | 'saved' | 'failed', retry: () => void } }} props
+ * @param {{ amount: string, recipientName: string, recipientAddress: string, groupId: string, groupName: string, txHash: string,
+ *   fullyPaid: boolean, record: { status: 'saving' | 'saved' | 'failed', retry: () => void } }} props
  */
-export function PaidCard({ amount, recipientName, groupId, groupName, txHash, fullyPaid, record }) {
+export function PaidCard({ amount, recipientName, recipientAddress, groupId, groupName, txHash, fullyPaid, record }) {
   const copy = useCopy();
+  const toast = useToast();
+  const [paidAt] = useState(() => new Date());
+  const [busy, setBusy] = useState(/** @type {'save' | 'share' | null} */ (null));
   const explorerUrl = `${EXPLORER_TX_URL}${txHash}`;
+  const filename = `stellar-split-receipt-${txHash.slice(0, 8)}.png`;
 
-  async function share() {
-    const text = `I paid ${recipientName} ${amount} USDC for ${groupName} on Stellar Testnet. Transaction: ${explorerUrl}`;
-    if (typeof navigator.share === 'function') {
-      await navigator.share({ title: 'Stellar Split receipt', text, url: explorerUrl }).catch(() => {});
-    } else {
-      await copy(text, 'Receipt');
+  async function receiptFile() {
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#d4ff3f';
+    const blob = await renderReceiptPng({
+      amount,
+      fromName: 'You',
+      toName: recipientName,
+      toAddress: recipientAddress,
+      groupName,
+      txHash,
+      explorerUrl,
+      date: paidAt,
+      accent,
+    });
+    return new File([blob], filename, { type: 'image/png' });
+  }
+
+  async function save() {
+    setBusy('save');
+    try {
+      downloadBlob(await receiptFile(), filename);
+      toast('Receipt saved', { tone: 'success' });
+    } catch {
+      toast('Could not create the receipt image.', { tone: 'error' });
+    } finally {
+      setBusy(null);
     }
   }
+
+  async function share() {
+    setBusy('share');
+    try {
+      const file = await receiptFile();
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Stellar Split receipt', text: `Paid ${recipientName} ${amount} USDC. ${explorerUrl}` });
+      } else {
+        await copy(explorerUrl, 'Transaction link');
+      }
+    } catch (error) {
+      if (error?.name !== 'AbortError') toast('Sharing did not work here. Save the receipt instead.', { tone: 'error' });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const canShareFiles = typeof navigator !== 'undefined' && typeof navigator.canShare === 'function';
 
   return (
     <div className="flex flex-col gap-6 py-4">
@@ -71,9 +115,14 @@ export function PaidCard({ amount, recipientName, groupId, groupName, txHash, fu
       <ButtonLink to={`/groups/${groupId}`} block>
         Back to group
       </ButtonLink>
-      <Button variant="secondary" block icon={<IconShare size={20} />} onClick={share}>
-        Share receipt
-      </Button>
+      <div className="grid grid-cols-2 gap-3">
+        <Button variant="secondary" loading={busy === 'save'} disabled={busy !== null} icon={<IconDownload size={20} />} onClick={save}>
+          Save receipt
+        </Button>
+        <Button variant="secondary" loading={busy === 'share'} disabled={busy !== null} icon={<IconShare size={20} />} onClick={share}>
+          {canShareFiles ? 'Share' : 'Copy link'}
+        </Button>
+      </div>
     </div>
   );
 }

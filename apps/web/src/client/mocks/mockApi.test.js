@@ -98,20 +98,40 @@ describe('expenses', () => {
   });
 });
 
-describe('settlements', () => {
+describe('settlements (two steps, like the API)', () => {
   const txHash = 'a'.repeat(64);
+  const reserve = (amount = '364.60') => api.createSettlementIntent('casa-alfama', { to: 'm-mateo', amount });
 
-  it('records a payment and squares me with Mateo', async () => {
-    await api.recordSettlement('casa-alfama', { to: 'm-mateo', amount: '364.60', txHash });
-    const { myPosition } = await api.getGroup('casa-alfama');
-    expect(myPosition).toEqual({ net: '0.00', owes: [], owed: [] });
-    const { items } = await api.listActivity('casa-alfama');
-    expect(items[0]).toMatchObject({ type: 'settlement', from: 'm-you', to: 'm-mateo', txHash });
+  it('reserves an intent with the creditor address, a hash memo and a 10 minute expiry', async () => {
+    const { intent } = await reserve();
+    expect(intent).toMatchObject({ to: 'm-mateo', amount: '364.60', status: 'reserved', memo: { type: 'hash' } });
+    expect(intent.memo.value).toMatch(/^[0-9a-f]{64}$/);
+    expect(Date.parse(intent.expiresAt) - Date.parse('2026-10-25T12:00:00Z')).toBe(10 * 60_000);
   });
 
-  it('refuses the same transaction hash twice', async () => {
-    await api.recordSettlement('casa-alfama', { to: 'm-mateo', amount: '100', txHash });
-    await expect(api.recordSettlement('casa-alfama', { to: 'm-mateo', amount: '100', txHash })).rejects.toMatchObject({ status: 409 });
+  it('records the payment once and squares me with Mateo', async () => {
+    const { intent } = await reserve();
+    await api.recordSettlement('casa-alfama', { intentId: intent.id, txHash });
+    expect((await api.getGroup('casa-alfama')).myPosition).toEqual({ net: '0.00', owes: [], owed: [] });
+    const { items } = await api.listActivity('casa-alfama');
+    expect(items[0]).toMatchObject({ type: 'settlement', from: 'm-you', to: 'm-mateo', txHash, intentId: intent.id });
+    await expect(api.recordSettlement('casa-alfama', { intentId: intent.id, txHash })).rejects.toMatchObject({ code: 'DUPLICATE_TX' });
+  });
+
+  it('blocks a second payment with the same person while one is reserved', async () => {
+    await reserve('100');
+    await expect(reserve('50')).rejects.toMatchObject({ code: 'INTENT_IN_PROGRESS', status: 409 });
+  });
+
+  it('frees the creditor when the intent is cancelled, and keeps a late payment for review', async () => {
+    const { intent } = await reserve('100');
+    await api.cancelSettlementIntent('casa-alfama', intent.id);
+    await expect(api.recordSettlement('casa-alfama', { intentId: intent.id, txHash })).rejects.toMatchObject({ code: 'NEEDS_REVIEW' });
+    expect((await reserve('50')).intent.status).toBe('reserved');
+  });
+
+  it('refuses to reserve more than the debt', async () => {
+    await expect(reserve('364.61')).rejects.toMatchObject({ code: 'OVERPAY', status: 422 });
   });
 });
 

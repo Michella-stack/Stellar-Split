@@ -40,6 +40,8 @@ export const {
   acceptInvite,
   listExpenses,
   createExpense,
+  createSettlementIntent,
+  cancelSettlementIntent,
   recordSettlement,
   listActivity,
   getAgent,

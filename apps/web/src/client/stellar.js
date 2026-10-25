@@ -1,6 +1,6 @@
 // All Horizon (Stellar Testnet) access lives here so the settlement path can later move to the contract.
 
-import { Asset, BASE_FEE, Horizon, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
+import { Asset, BASE_FEE, Horizon, Memo, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
 import { toStroops } from '@shared/money.js';
 import { CONFIG, FRIENDBOT_URL, NETWORK_PASSPHRASE } from '../config/env.js';
 
@@ -97,12 +97,17 @@ export async function checkPayment({ from, to, amount }) {
 }
 
 /**
- * Builds an unsigned USDC payment, valid for 3 minutes.
- * @param {{ from: string, to: string, amount: string }} payment
+ * Builds an unsigned USDC payment for a reserved settlement intent. It carries the intent's memo as a
+ * MEMO_HASH and expires at the latest when the intent does, as the API requires.
+ * @param {{ from: string, to: string, amount: string, memoHash: string, notAfter: string }} payment
+ *   memoHash: 64 hex characters from the intent; notAfter: the intent's expiresAt (ISO time)
  * @returns {Promise<{ xdr: string, feeXlm: string }>}
  */
-export async function buildUsdcPayment({ from, to, amount }) {
-  return build(from, Operation.payment({ destination: to, asset: usdcAsset(), amount }));
+export async function buildUsdcPayment({ from, to, amount, memoHash, notAfter }) {
+  return build(from, Operation.payment({ destination: to, asset: usdcAsset(), amount }), {
+    memo: Memo.hash(memoHash),
+    maxTime: Math.min(Math.floor(Date.parse(notAfter) / 1000), Math.floor(Date.now() / 1000) + TX_TIMEOUT_SECONDS),
+  });
 }
 
 /**
@@ -113,7 +118,12 @@ export async function buildUsdcTrustline(from) {
   return build(from, Operation.changeTrust({ asset: usdcAsset() }));
 }
 
-async function build(from, operation) {
+/**
+ * @param {string} from
+ * @param {import('@stellar/stellar-sdk').xdr.Operation} operation
+ * @param {{ memo?: import('@stellar/stellar-sdk').Memo, maxTime?: number }} [options] maxTime in Unix seconds
+ */
+async function build(from, operation, { memo, maxTime } = {}) {
   let account;
   try {
     account = await horizon().loadAccount(from);
@@ -121,10 +131,14 @@ async function build(from, operation) {
     if (error?.response?.status === 404 || error?.name === 'NotFoundError') throw new SettlementError('NOT_FUNDED', 'Account not found');
     throw new SettlementError('NETWORK', 'Could not reach Stellar Testnet');
   }
-  const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: NETWORK_PASSPHRASE })
-    .addOperation(operation)
-    .setTimeout(TX_TIMEOUT_SECONDS)
-    .build();
+  const builder = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+    ...(maxTime ? { timebounds: { minTime: 0, maxTime } } : {}),
+  }).addOperation(operation);
+  if (memo) builder.addMemo(memo);
+  if (!maxTime) builder.setTimeout(TX_TIMEOUT_SECONDS);
+  const tx = builder.build();
   return { xdr: tx.toXDR(), feeXlm: (Number(BASE_FEE) / 1e7).toFixed(7) };
 }
 

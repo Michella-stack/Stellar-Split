@@ -13,6 +13,12 @@ const USDC = { code: 'USDC', issuer: null };
 
 const STORAGE_KEY = 'stellar-split.mock-state';
 
+/** @param {string} text */
+async function sha256Hex(text) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 /**
  * @param {{ delayMs?: number, now?: () => Date, storage?: Storage | null, addresses?: Record<string, string | undefined> }} [options]
  *   storage: when given (sessionStorage in the app), mock data survives a page reload in the same tab.
@@ -57,6 +63,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
 
   const pendingChallenges = new Set();
   const idempotent = new Map();
+  const intents = [];
 
   /** Mock only: the signed-in wallet takes the place of "you" in the fixtures, so the demo data is yours. */
   function becomeMe(address) {
@@ -266,18 +273,63 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
       return reply({ expense: withShares(expense) });
     },
 
-    async recordSettlement(groupId, { to, amount, txHash }) {
+    // Settling is two steps, like the API: reserve an intent, then record the payment with its id.
+    async createSettlementIntent(groupId, { to, amount }) {
       const group = findGroup(groupId);
-      if (!group) return fail('NOT_FOUND', 'Group not found', 404);
+      if (!group || !myMemberId(group)) return fail('NOT_FOUND', 'Group not found', 404);
       const from = myMemberId(group);
-      if (!group.members.some((m) => m.id === to) || to === from) return fail('VALIDATION', 'Unknown recipient', 400, { field: 'to' });
-      if (!/^[0-9a-f]{64}$/.test(txHash ?? '')) return fail('VALIDATION', 'Invalid transaction hash', 400, { field: 'txHash' });
-      if (group.settlements.some((s) => s.txHash === txHash)) return fail('VALIDATION', 'Transaction already recorded', 409, { field: 'txHash' });
+      const recipient = group.members.find((m) => m.id === to);
+      if (!recipient || to === from) return fail('VALIDATION', 'to must be another member of the group', 400, { field: 'to' });
       const check = validateAmount(amount);
       if (!check.ok) return fail('VALIDATION', 'Invalid amount', 400, { field: 'amount', code: check.code });
-      // The real API verifies the transaction on Stellar Testnet before accepting it.
-      const settlement = { id: newId('s'), groupId, from, to, amount, txHash, createdAt: now().toISOString() };
+      const open = intents.filter((i) => i.groupId === groupId && i.status === 'reserved' && Date.parse(i.expiresAt) > now().getTime());
+      if (open.some((i) => i.from === from || i.to === to || i.from === to || i.to === from)) {
+        return fail('INTENT_IN_PROGRESS', 'Another payment with this person is in progress', 409);
+      }
+      const net = balancesOf(group);
+      const debt = -(net.get(from) ?? 0n);
+      const credit = net.get(to) ?? 0n;
+      const limit = debt < credit ? debt : credit;
+      if (debt <= 0n || credit <= 0n || check.stroops > limit) {
+        return fail('OVERPAY', 'The amount is more than you owe this member', 422, { youOwe: dec(debt > 0n ? debt : 0n) });
+      }
+      const id = newId('si');
+      const memo = await sha256Hex(`stellar-split:intent:${id}`);
+      const intent = {
+        id,
+        groupId,
+        from,
+        to,
+        amount: dec(check.stroops),
+        payTo: recipient.address,
+        memo: { type: 'hash', value: memo },
+        status: 'reserved',
+        expiresAt: new Date(now().getTime() + 10 * 60_000).toISOString(),
+      };
+      intents.push(intent);
+      return reply({ intent });
+    },
+
+    async cancelSettlementIntent(groupId, intentId) {
+      const intent = intents.find((i) => i.id === intentId && i.groupId === groupId);
+      if (!intent) return fail('NOT_FOUND', 'Intent not found', 404);
+      if (intent.status !== 'reserved') return fail('INTENT_NOT_OPEN', 'This intent is no longer reserved', 409);
+      intent.status = 'cancelled';
+      return reply({ intent });
+    },
+
+    async recordSettlement(groupId, { intentId, txHash }) {
+      const group = findGroup(groupId);
+      if (!group) return fail('NOT_FOUND', 'Group not found', 404);
+      const intent = intents.find((i) => i.id === intentId && i.groupId === groupId);
+      if (!intent) return fail('INTENT_NOT_FOUND', 'Settlement intent not found', 404);
+      if (!/^[0-9a-f]{64}$/.test(txHash ?? '')) return fail('VALIDATION', 'Invalid transaction hash', 400, { field: 'txHash' });
+      if (group.settlements.some((s) => s.txHash === txHash)) return fail('DUPLICATE_TX', 'This transaction is already recorded', 409);
+      if (intent.status !== 'reserved') return fail('NEEDS_REVIEW', 'The payment no longer matches an open intent', 409);
+      // The real API also checks on Horizon that the transaction carries the intent's memo and time bounds.
+      const settlement = { id: newId('s'), groupId, from: intent.from, to: intent.to, amount: intent.amount, txHash, intentId, createdAt: now().toISOString() };
       group.settlements.push(settlement);
+      intent.status = 'settled';
       return reply({ settlement });
     },
 

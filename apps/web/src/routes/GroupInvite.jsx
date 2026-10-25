@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
-import { createInvite, getGroup } from '../client/api.js';
+import { addMember, createInvite, getGroup } from '../client/api.js';
+import { containsSecretKey } from '@shared/validation.js';
 import { Button, ButtonLink } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { IconCopy, IconShare } from '../components/icons.jsx';
@@ -11,7 +12,6 @@ import { addressError } from '../features/groups/address.js';
 import { useApi } from '../hooks/useApi.js';
 import { useCopy } from '../hooks/useCopy.js';
 import { useToast } from '../hooks/useToast.js';
-import { shortAddress } from '../lib/format.js';
 
 export default function GroupInvite() {
   const { id } = useParams();
@@ -20,18 +20,22 @@ export default function GroupInvite() {
   const group = useApi(() => getGroup(id), `group:${id}`);
   const link = useApi(() => createInvite(id), `invite:${id}`);
   const [address, setAddress] = useState('');
+  const [name, setName] = useState('');
   const [adding, setAdding] = useState(false);
   const error = addressError(address);
+  const nameError = containsSecretKey(name) ? 'This looks like a secret key. Never share it.' : null;
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   async function addByAddress(event) {
     event.preventDefault();
-    if (error || !address.trim()) return;
+    if (error || nameError || !address.trim()) return;
     setAdding(true);
     try {
-      await createInvite(id, { address: address.trim() });
-      toast(`Invite created for ${shortAddress(address.trim())}`, { tone: 'success' });
+      const { member } = await addMember(id, { address: address.trim(), ...(name.trim() ? { displayName: name.trim() } : {}) });
+      toast(`${member.displayName} added to the group`, { tone: 'success' });
       setAddress('');
+      setName('');
+      group.reload();
     } catch (e) {
       toast(e?.code === 'ALREADY_MEMBER' ? 'That address is already in the group.' : 'Could not add that address. Try again.', { tone: 'error' });
     } finally {
@@ -87,7 +91,8 @@ export default function GroupInvite() {
             error={error}
             hint="Ask them to copy it from Freighter. Never paste a secret key."
           />
-          <Button type="submit" variant="outline" loading={adding} disabled={!address.trim() || Boolean(error)}>
+          <TextField label="Their name" optional maxLength={60} value={name} onChange={(e) => setName(e.target.value)} error={nameError} />
+          <Button type="submit" variant="outline" loading={adding} disabled={!address.trim() || Boolean(error) || Boolean(nameError)}>
             Add to group
           </Button>
         </form>

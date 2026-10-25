@@ -17,7 +17,7 @@ The project is `stellar-split` in the Vercel team `vestival's projects`. Deploym
 |---|---|
 | Vercel project and public URL | Working. The health endpoint answered 200 |
 | Content served | The **placeholder page**. The two deployments so far were made by hand and predate the web app, so they carry no commit information |
-| Automatic deploys from GitHub | **Not connected yet.** See the next section |
+| Automatic deploys from GitHub | **Not connected yet.** The workflow for Option B is written and waits for three repository secrets |
 
 ## What is deployed
 
@@ -51,7 +51,26 @@ Vercel deploys from GitHub through the **Vercel GitHub App**. The repository bel
 4. Check *Settings*, *Environment Variables* against the list below.
 5. Push any commit. A deployment appears in Vercel with the commit on it.
 
-**Option B, if the app cannot be installed on that account.** A GitHub Actions workflow that runs the Vercel CLI on every push, using three repository secrets (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`). Only an administrator of the repository can add secrets, so this also needs Michella. Pull requests from forks never receive secrets. It would be a new workflow and needs code owner review. Not written yet.
+**Option B, used while Option A is not possible: GitHub Actions** (`.github/workflows/vercel-deploy.yml`). On every push to `main` it deploys to production, and on every pull request from this repository it makes a preview deployment. Vercel builds it from `vercel.json`, then the job calls `/v1/health` on the new deployment. Pull requests from forks never receive secrets and are not deployed.
+
+To switch it on, two people are needed once:
+
+1. The owner of the Vercel project creates a token at https://vercel.com/account/tokens, scoped to the team `vestival's projects`, with the shortest expiry that is practical, and gives it to Michella privately (not in chat or in the repository).
+2. An administrator of the repository (Michella) adds three secrets in *Settings*, *Secrets and variables*, *Actions*:
+
+| Secret | Value |
+|---|---|
+| `VERCEL_TOKEN` | The token from step 1 |
+| `VERCEL_ORG_ID` | `team_mBzhC3YpoNFezzITJmlHxkGW` (the team id; an identifier, not a secret) |
+| `VERCEL_PROJECT_ID` | The id of project `stellar-split` (*Settings* of the project, *General*) |
+
+Until the secrets exist the workflow skips with a notice and stays green. Remove the Vercel Git integration if Option A is later connected, otherwise every commit deploys twice.
+
+Limits of this option:
+
+- The token can deploy every project in that Vercel team. A pull request from a branch of this repository can change the workflow and read the secrets, so only give write access to people who may deploy. Treat the token as a production credential and rotate it when someone leaves.
+- The Vercel CLI version is pinned in the workflow (`vercel@64.5.0`, past the 7 day cooldown) and has to be bumped by hand.
+- It deploys the source of the commit. It does not wait for the other checks (`web`, `contracts`) to pass: a red check does not stop a deployment. Branch protection on `main` is what keeps broken code out.
 
 ## Environment variables (Vercel project settings)
 
@@ -86,4 +105,4 @@ In Vercel, *Deployments*, pick a previous good deployment and promote it. Or rev
 
 ## Not verified
 
-That Option A works with the personal account setup, the environment variables of the live project, the first deployment of the real web app, and Option B.
+That Option A works with the personal account setup, the environment variables of the live project, the first deployment of the real web app, and Option B end to end: the workflow has been checked for syntax and action pinning but has never run against Vercel.

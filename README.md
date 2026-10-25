@@ -1,14 +1,14 @@
-# Stellar-Split
+# Stellar Split (working name)
 
 Split shared expenses and settle them in USDC on Stellar, built for families and workers who send money across borders, with agent support via x402.
 
 Built at HackMeridian (Lisbon, 25 to 26 October 2026). Track: Genesis, with Stellar Composed.
 
-> **Status: early stage.** The plan and design are written. Application code is being built during the event, and this README will be updated as it lands. Everything runs on **Stellar Testnet only**. No real money is involved and nothing here is financial advice.
+> **Status: early stage, in active development.** A Soroban group contract and the supply-chain checks are in the repository. The web app and the end-to-end demo are being built during the event, and this README is updated as they land. Everything runs on **Stellar Testnet only**. No real money is involved and nothing here is financial advice.
 
 ## Summary
 
-Shared-expense apps record who owes whom, but the money still moves outside the app. Stellar-Split keeps the ledger and the settlement together: a group records expenses, sees who owes whom, and settles in USDC on Stellar. Money goes directly from the person who owes to the person owed. The app never holds user funds.
+Shared-expense apps record who owes whom, but the money still moves outside the app. Stellar Split keeps the ledger and the settlement together: a group records expenses, sees who owes whom, and settles in USDC on Stellar. Money goes directly from the person who owes to the person owed. The app never holds user funds.
 
 ## Problem
 
@@ -30,18 +30,39 @@ Context from public sources (to be checked before the pitch; see `docs/BUILD-FOC
 
 The full plan, what is deferred, and the submission checklist are in [`docs/BUILD-FOCUS.md`](docs/BUILD-FOCUS.md).
 
-## Architecture (planned)
+## Architecture
+
+```mermaid
+flowchart LR
+  U[Group member] --> W[Web app]
+  U -- signs --> F[Freighter wallet]
+  W --> A[API: groups, expenses, balances]
+  F -- signed USDC payment --> S[Stellar Testnet]
+  A --> C[Group contract: records settlements]
+  C --> S
+  AG[Agent, stretch goal] -- pays over x402 --> A
+  A -- verify and settle --> X[x402 facilitator]
+  X --> S
+```
 
 - Web app with Freighter for signing, so the app never sees a secret key.
 - API for groups, expenses and balances.
-- Settlement as a USDC transfer on Stellar Testnet. A Soroban group contract is planned if time allows.
+- Non-custodial Soroban group contract in `contracts/` (Rust) that records expenses and settlements. It never holds a token balance.
+- Settlement in USDC on Stellar Testnet.
 - x402 on Stellar (the `exact` scheme with a facilitator) for agent payments.
 
-Contract IDs, assets and integration details will be listed here once deployed.
+The full design is in [`docs/PRD.md`](docs/PRD.md). Contract IDs and assets will be listed here once confirmed.
+
+| Item | Value |
+|---|---|
+| Network | Stellar Testnet |
+| Settlement asset | USDC (Testnet) |
+| Group contract ID | To be added |
+| Example transaction | To be added |
 
 ## Setup
 
-Not available yet. Install and run steps will be added with the first code.
+Setup steps for the web app will be added as it lands. The contract and its checks live in `contracts/`, and the repository checks are described in [`supply-chain/README.md`](supply-chain/README.md).
 
 ### Environment variables (planned)
 
@@ -64,6 +85,7 @@ Demo steps, the live URL and Testnet transaction evidence will be added here.
 - No secret keys are collected, stored or logged.
 - Amounts are validated: positive, at most seven decimals, and within balance.
 - Secrets live only in a local `.env`, which is ignored by git.
+- Dependencies are pinned and checked in CI. See [`SECURITY.md`](SECURITY.md).
 
 ## Docs
 
@@ -79,7 +101,7 @@ Release tags and artifacts will be signed with the owner's GPG key. The key fing
 
 ## Prior work disclosure
 
-Before the event the team wrote a product requirements document (v0.2, dated 25 October 2026) and reviewed public literature on remittances and stablecoins. No application code for this project was written before the event. A separate earlier Testnet prototype by Michella Warren, called Raven, is not part of this repository.
+Before the event the team wrote a product requirements document (now v0.3, dated 25 October 2026) and reviewed public literature on remittances and stablecoins. No application code for this project was written before the event. A separate earlier Testnet prototype by Michella Warren, called Raven, is not part of this repository.
 
 ## Team
 

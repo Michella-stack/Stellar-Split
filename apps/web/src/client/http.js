@@ -64,6 +64,8 @@ export function createHttpApi({ baseUrl, getToken }) {
     cancelSettlementIntent: (groupId, intentId) =>
       request('POST', `/v1/groups/${enc(groupId)}/settlements/intents/${enc(intentId)}/cancel`),
     recordSettlement: (groupId, input) => request('POST', `/v1/groups/${enc(groupId)}/settlements`, input),
+    // Reads a photo of a receipt and returns a draft. It creates nothing: the person reviews it and saves it as an expense.
+    scanReceipt: (groupId, input) => request('POST', `/v1/groups/${enc(groupId)}/receipts/scan`, input),
     listActivity: (groupId) => request('GET', `/v1/groups/${enc(groupId)}/activity`),
     getAgent: (agentId) => request('GET', `/v1/agents/${enc(agentId)}`),
     updateAgent: (agentId, patch) => request('PATCH', `/v1/agents/${enc(agentId)}`, patch),

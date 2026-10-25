@@ -59,7 +59,7 @@ The project is built by a single maintainer using an AI coding assistant (Claude
 |---|---|
 | NG1 | Fiat on-ramps, card payments or bank integrations. Users bring their own USDC. |
 | NG2 | Native mobile apps. The web app is responsive, that is enough for v1. |
-| NG3 | Receipt OCR, currency conversion or multi-currency balances in v1. Each group has one settlement asset. |
+| NG3 | Currency conversion or multi-currency balances in v1. Each group has one settlement asset. Receipt reading is not part of v1 either, except for a demo version (issue #87) that returns a draft a person must confirm and does not convert currency. |
 | NG4 | Custody of user keys. Ledgerly never holds a human user's private key. |
 | NG5 | A general-purpose agent wallet or agent marketplace. |
 | NG6 | Support for chains other than Stellar. |

@@ -3,6 +3,8 @@
 import { createAuth, parseAgentTokens } from './auth/index.js';
 import { createMemoryRepository, createSupabaseRepository } from './repositories/index.js';
 import { createLedger } from './services/ledger.js';
+import { createReceipts } from './services/receipts.js';
+import { createGeminiExtractor, DEFAULT_MODEL } from './receipts/gemini.js';
 import { createStellar } from './stellar/index.js';
 import { createServer } from 'node:http';
 import { createHandler } from './server.js';
@@ -27,6 +29,9 @@ export function loadConfig(env = process.env) {
     allowedOrigins: (env.ALLOWED_ORIGINS ?? env.APP_URL ?? 'http://localhost:5173').split(',').map((s) => s.trim()).filter(Boolean),
     agentTokens: parseAgentTokens(env.AGENT_TOKENS),
     sessionSecret,
+    // The receipt reader is optional: without a key the scan route answers 503 and the web app shows its sample result.
+    geminiApiKey: env.GEMINI_API_KEY || null,
+    receiptModel: env.RECEIPT_MODEL || DEFAULT_MODEL,
   };
 }
 
@@ -35,16 +40,19 @@ export function handlerFromEnv(env = process.env) {
   const config = loadConfig(env);
   const repo = config.supabase ? createSupabaseRepository(config.supabase) : createMemoryRepository();
   const stellar = createStellar({ horizonUrl: config.horizonUrl, usdcIssuer: config.usdcIssuer });
-  const ledger = createLedger({ repo, stellar, appUrl: config.appUrl, log: (line) => console.log(JSON.stringify(line)) });
+  const log = (line) => console.log(JSON.stringify(line));
+  const ledger = createLedger({ repo, stellar, appUrl: config.appUrl, log });
   const auth = createAuth({ secret: config.sessionSecret, repo, agentTokens: config.agentTokens });
-  return { config, handler: createHandler({ auth, ledger, allowedOrigins: config.allowedOrigins }) };
+  const extractor = config.geminiApiKey ? createGeminiExtractor({ apiKey: config.geminiApiKey, model: config.receiptModel }) : null;
+  const receipts = createReceipts({ extractor, ledger, log });
+  return { config, handler: createHandler({ auth, ledger, receipts, allowedOrigins: config.allowedOrigins }) };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     const { config, handler } = handlerFromEnv();
     createServer(handler).listen(config.port, config.host, () =>
-      console.log(JSON.stringify({ msg: 'stellar-split api listening', host: config.host, port: config.port, store: config.supabase ? 'supabase' : 'memory' })),
+      console.log(JSON.stringify({ msg: 'stellar-split api listening', host: config.host, port: config.port, store: config.supabase ? 'supabase' : 'memory', receiptReader: config.geminiApiKey ? config.receiptModel : 'off' })),
     );
   } catch (err) {
     console.error(err.message);

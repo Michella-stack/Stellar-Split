@@ -16,7 +16,7 @@ const isUpstream = (err) =>
   (err instanceof TypeError && err.message === 'fetch failed') ||
   NETWORK_CODES.has(err?.cause?.code);
 
-function readBody(req) {
+function readBody(req, limit = MAX_BODY) {
   return new Promise((resolve, reject) => {
     let size = 0;
     let refused = false;
@@ -25,7 +25,7 @@ function readBody(req) {
       // Keep draining after the limit, without storing, so the 413 can still be delivered. The response closes the connection.
       if (refused) return;
       size += c.length;
-      if (size > MAX_BODY) {
+      if (size > limit) {
         refused = true;
         chunks.length = 0;
         reject(new ApiError(413, 'VALIDATION', 'Request body too large'));
@@ -37,10 +37,10 @@ function readBody(req) {
 }
 
 /**
- * @param {{ auth: object, ledger: object, allowedOrigins?: string[], log?: (line: object) => void }} deps
+ * @param {{ auth: object, ledger: object, receipts?: object, allowedOrigins?: string[], log?: (line: object) => void }} deps
  */
-export function createHandler({ auth, ledger, allowedOrigins = [], log = (l) => console.log(JSON.stringify(l)) }) {
-  const table = routes({ auth, ledger });
+export function createHandler({ auth, ledger, receipts, allowedOrigins = [], log = (l) => console.log(JSON.stringify(l)) }) {
+  const table = routes({ auth, ledger, receipts });
 
   return async (req, res) => {
     const started = Date.now();
@@ -67,7 +67,7 @@ export function createHandler({ auth, ledger, allowedOrigins = [], log = (l) => 
 
       let body;
       if (req.method === 'POST' || req.method === 'PATCH') {
-        const raw = await readBody(req);
+        const raw = await readBody(req, route[3]?.maxBody);
         // Refuse anything shaped like a secret seed before it is parsed, stored or logged.
         if (containsSecretKey(raw)) throw new ApiError(400, 'SECRET_KEY_REJECTED', 'Never send a Stellar secret key');
         try {

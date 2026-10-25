@@ -99,7 +99,10 @@ function ExpenseForm({ detail }) {
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6 pt-2 pb-8">
       <h1 className="sr-only">Add an expense to {group.name}</h1>
       {prefill?.source === 'scan' && (
-        <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm">Filled in from your receipt. Check the details before saving.</p>
+        <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm">
+          Filled in from your receipt. Check the details before saving.
+          {prefill.hint ? ` ${prefill.hint}` : ''}
+        </p>
       )}
       <AmountInput value={amount} onChange={setAmount} error={amountError} />
       <TextField

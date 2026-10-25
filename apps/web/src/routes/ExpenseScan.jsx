@@ -19,6 +19,7 @@ function describeFailure(error) {
   if (error instanceof PhotoError) return 'We could not open that image. Try another photo or a screenshot.';
   if (error instanceof ApiError && error.code === 'NOT_A_RECEIPT') return 'That does not look like a receipt. Try another photo.';
   if (error instanceof ApiError && error.code === 'SCAN_UNREADABLE') return 'We could not read the total on that receipt. Try a clearer photo, or enter the expense by hand.';
+  if (error instanceof ApiError && error.code === 'RATE_LIMITED') return 'You have scanned a lot of receipts. Wait a few minutes, or enter the expense by hand.';
   if (error instanceof ApiError && error.code === 'UNAUTHORIZED') return 'Your session ended. Sign in again to scan a receipt.';
   return 'Something went wrong while reading the receipt. Try again, or enter the expense by hand.';
 }

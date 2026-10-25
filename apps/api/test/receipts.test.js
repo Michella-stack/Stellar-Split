@@ -311,6 +311,18 @@ test('it needs a session, and only a member can scan: a stranger gets the same 4
   assert.deepEqual(stranger.body, missing.body);
 });
 
+test('a stranger is turned away before the big body is read', async () => {
+  // More than the limit and no session: the answer is 401, not 413, so the body was never read. The reader is never asked.
+  const calls = extractorCalls.length;
+  const res = await fetch(`${base}/v1/groups/${groupId}/receipts/scan`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ imageBase64: 'A'.repeat(MAX_IMAGE_BASE64 + 100_000), mimeType: 'image/jpeg' }),
+  });
+  assert.equal(res.status, 401);
+  assert.equal(extractorCalls.length, calls);
+});
+
 test('the photo is checked before the reader sees it: type, base64, real bytes, size', async () => {
   const calls = extractorCalls.length;
   const bad = [
@@ -418,4 +430,18 @@ test('the handler builds with and without the reader, and a bad RECEIPT_MODEL st
   assert.equal(typeof handlerFromEnv({ ...ENV, GEMINI_API_KEY: API_KEY }).handler, 'function');
   assert.throws(() => handlerFromEnv({ ...ENV, GEMINI_API_KEY: API_KEY, RECEIPT_MODEL: 'bad model!' }), (err) => /RECEIPT_MODEL/.test(err.message) && !err.message.includes(API_KEY));
   assert.throws(() => handlerFromEnv({ ...ENV, GEMINI_API_KEY: API_KEY, RECEIPT_FALLBACK_MODEL: 'bad model!' }), /RECEIPT_FALLBACK_MODEL/);
+});
+
+test('one person can scan 10 receipts in 10 minutes, the 11th is refused, and the window then opens again', async () => {
+  let clock = 1_000_000;
+  const ledger = { requireMember: async () => ({}) };
+  const receipts = createReceipts({ extractor: { extract: async () => receipt() }, ledger, now: () => clock });
+  const person = { kind: 'human', address: ALICE };
+  const photo = { imageBase64: JPEG, mimeType: 'image/jpeg' };
+  for (let i = 0; i < 10; i++) await receipts.scan(person, 'g', photo);
+  await assert.rejects(receipts.scan(person, 'g', photo), (e) => e.status === 429 && e.code === 'RATE_LIMITED');
+  // Someone else has their own count, and an invalid photo does not use up a scan.
+  await receipts.scan({ kind: 'human', address: BOB }, 'g', photo);
+  clock += 10 * 60 * 1000 + 1;
+  await receipts.scan(person, 'g', photo);
 });

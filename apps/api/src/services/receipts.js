@@ -14,6 +14,11 @@ const SIGNATURES = {
   'image/webp': (b) => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP',
 };
 
+// shortcut: counted in this process only, so each warm serverless instance has its own count and a restart clears it.
+// It stops one person draining the free quota by accident or in a loop; upgrade to a database-backed count if the key is ever paid.
+const SCANS_PER_WINDOW = 10;
+const WINDOW_MS = 10 * 60 * 1000;
+
 const invalid = (message, details) => new ApiError(400, 'VALIDATION', message, details);
 
 /**
@@ -21,6 +26,20 @@ const invalid = (message, details) => new ApiError(400, 'VALIDATION', message, d
  *   Without an extractor (no GEMINI_API_KEY) every scan answers 503 SCAN_UNAVAILABLE and the web app uses its sample result.
  */
 export function createReceipts({ extractor = null, ledger, log = () => {}, now = Date.now }) {
+  const recent = new Map(); // address -> timestamps of recent scans
+
+  /** Records one scan for this person, or refuses when they have used up the window. */
+  function spend(address) {
+    const t = now();
+    const times = (recent.get(address) ?? []).filter((x) => t - x < WINDOW_MS);
+    if (times.length >= SCANS_PER_WINDOW) {
+      recent.set(address, times);
+      throw new ApiError(429, 'RATE_LIMITED', 'Too many receipt scans. Try again in a few minutes.');
+    }
+    recent.set(address, [...times, t]);
+    if (recent.size > 1000) for (const [a, ts] of recent) if (ts.every((x) => t - x >= WINDOW_MS)) recent.delete(a);
+  }
+
   return {
     async scan(principal, groupId, input = {}) {
       // Same answer as a missing group for a non-member, so group ids cannot be probed.
@@ -35,6 +54,7 @@ export function createReceipts({ extractor = null, ledger, log = () => {}, now =
       // The bytes must be the kind of image the caller says, so the reader is never handed arbitrary data.
       if (!SIGNATURES[mimeType](Buffer.from(imageBase64.slice(0, 16), 'base64'))) throw invalid('The photo is not a valid image of that type');
 
+      spend(principal.address);
       const started = now();
       try {
         const draft = toDraft(await extractor.extract({ mimeType, data: imageBase64 }));

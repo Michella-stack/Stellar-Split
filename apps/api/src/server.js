@@ -65,6 +65,10 @@ export function createHandler({ auth, ledger, receipts, allowedOrigins = [], log
       const route = matches.find(([m]) => m === req.method);
       if (!route) throw matches.length ? new ApiError(405, 'METHOD_NOT_ALLOWED', 'Method not allowed') : new ApiError(404, 'NOT_FOUND', 'Not found');
 
+      const principal = auth.principal(req.headers.authorization);
+      // A route with a big body (the receipt photo) asks who is calling before it reads a megabyte from a stranger.
+      if (route[3]?.maxBody && !principal) throw Object.assign(new ApiError(401, 'UNAUTHORIZED', 'Sign in first'), { closeConnection: true });
+
       let body;
       if (req.method === 'POST' || req.method === 'PATCH') {
         const raw = await readBody(req, route[3]?.maxBody);
@@ -84,12 +88,12 @@ export function createHandler({ auth, ledger, receipts, allowedOrigins = [], log
         query: url.searchParams,
         headers: req.headers,
         body,
-        principal: auth.principal(req.headers.authorization),
+        principal,
       });
       send(status, out);
     } catch (err) {
       if (err instanceof ApiError) {
-        return send(err.status, { error: { code: err.code, message: err.message, ...(err.details ? { details: err.details } : {}) } }, err.status === 413 ? { connection: 'close' } : {});
+        return send(err.status, { error: { code: err.code, message: err.message, ...(err.details ? { details: err.details } : {}) } }, err.status === 413 || err.closeConnection ? { connection: 'close' } : {});
       }
       log({ t: new Date().toISOString(), level: 'error', path: url.pathname, error: String(err?.code ?? err?.message ?? err).slice(0, 200) });
       const upstream = isUpstream(err);

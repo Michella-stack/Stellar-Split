@@ -26,7 +26,13 @@ async function fakeHorizon(url) {
   const tx = m && chain.get(m[1]);
   if (!tx) return json(404, {});
   if (tx.delayMs) await new Promise((r) => setTimeout(r, tx.delayMs));
-  return m[2] ? json(200, { _embedded: { records: tx.ops } }) : json(200, { successful: tx.successful ?? true, created_at: tx.createdAt ?? new Date().toISOString() });
+  if (m[2]) return json(200, { _embedded: { records: tx.ops } });
+  return json(200, {
+    successful: tx.successful ?? true,
+    created_at: tx.createdAt ?? new Date().toISOString(),
+    ...(tx.memo ? { memo_type: 'hash', memo: tx.memo } : { memo_type: 'none' }),
+    ...(tx.maxTime ? { preconditions: { timebounds: { min_time: '0', max_time: tx.maxTime } } } : {}),
+  });
 }
 
 const agentToken = 'agent-token-for-tests-0123456789';
@@ -150,36 +156,62 @@ test('expenses: equal split, exact mismatch, idempotency', async () => {
   assert.equal((await call('GET', `/v1/groups/${groupId}/expenses`, { token: tokens.bob })).body.expenses.length, 1);
 });
 
-test('settlement: dry run, overpay, unverified payment, verified payment, duplicate', async () => {
+test('settlement: dry run, reservation, payment checks, verified payment, replay', async () => {
   const dry = await call('POST', `/v1/groups/${groupId}/settlements?dry_run=true`, { token: tokens.bob, body: { to: ids.alice, amount: '5' } });
   assert.equal(dry.status, 200);
   assert.equal(dry.body.intent.payTo, alice.address);
   assert.equal(dry.body.intent.network, 'stellar:testnet');
+  assert.equal(dry.body.intent.id, undefined, 'a dry run reserves nothing');
 
   const over = await call('POST', `/v1/groups/${groupId}/settlements?dry_run=true`, { token: tokens.bob, body: { to: ids.alice, amount: '6' } });
   assert.equal(over.body.error.code, 'OVERPAY');
 
+  const reserved = await call('POST', `/v1/groups/${groupId}/settlements/intents`, { token: tokens.bob, body: { to: ids.alice, amount: '5' } });
+  assert.equal(reserved.status, 201);
+  const intent = reserved.body.intent;
+  assert.equal(intent.status, 'reserved');
+  assert.equal(intent.payTo, alice.address);
+  assert.equal(intent.memo.type, 'hash');
+  assert.match(intent.memo.value, /^[0-9a-f]{64}$/);
+  assert.ok(Date.parse(intent.expiresAt) > Date.parse(intent.reservedAt));
+
   const pay = (amount, issuer = USDC_ISSUER) => [{ type: 'payment', from: bob.address, to: alice.address, asset_code: 'USDC', asset_issuer: issuer, amount }];
   const hash = (n) => n.toString(16).padStart(64, '0');
-  chain.set(hash(1), { ops: pay('4.0000000') });
-  chain.set(hash(2), { ops: pay('5.0000000', carol.address) });
-  chain.set(hash(3), { ops: pay('5.0000000'), successful: false });
-  chain.set(hash(4), { ops: pay('5.0000000') });
+  const memo = Buffer.from(intent.memo.value, 'hex').toString('base64');
+  const maxTime = String(Math.floor(Date.parse(intent.expiresAt) / 1000));
+  chain.set(hash(1), { ops: pay('4.0000000'), memo, maxTime });
+  chain.set(hash(2), { ops: pay('5.0000000', carol.address), memo, maxTime });
+  chain.set(hash(3), { ops: pay('5.0000000'), memo, maxTime, successful: false });
+  chain.set(hash(4), { ops: pay('5.0000000'), memo, maxTime });
+  // Review fix 1: an older real payment for the right amount has no memo, or another intent's memo.
+  chain.set(hash(5), { ops: pay('5.0000000') });
+  chain.set(hash(6), { ops: pay('5.0000000'), memo: Buffer.alloc(32, 1).toString('base64'), maxTime });
+  // Valid past the intent's expiry, or with no time bounds: it could reach the chain after the intent expired.
+  chain.set(hash(7), { ops: pay('5.0000000'), memo, maxTime: String(Number(maxTime) + 60) });
+  chain.set(hash(8), { ops: pay('5.0000000'), memo });
 
-  for (const [h, code] of [[hash(1), 'PAYMENT_MISMATCH'], [hash(2), 'PAYMENT_MISMATCH'], [hash(3), 'PAYMENT_FAILED'], [hash(99), 'PAYMENT_NOT_FOUND']]) {
-    const r = await call('POST', `/v1/groups/${groupId}/settlements`, { token: tokens.bob, body: { to: ids.alice, amount: '5', txHash: h } });
-    assert.equal(r.body.error.code, code, `tx ${h.slice(-2)}`);
+  const record = (txHash, extra = {}, token = tokens.bob) =>
+    call('POST', `/v1/groups/${groupId}/settlements`, { token, body: { intentId: intent.id, txHash, ...extra } });
+  for (const [n, code] of [[1, 'PAYMENT_MISMATCH'], [2, 'PAYMENT_MISMATCH'], [3, 'PAYMENT_FAILED'], [99, 'PAYMENT_NOT_FOUND'], [5, 'INTENT_MISMATCH'], [6, 'INTENT_MISMATCH'], [7, 'TIMEBOUNDS_TOO_LONG'], [8, 'TIMEBOUNDS_TOO_LONG']]) {
+    const r = await record(hash(n));
+    assert.equal(r.body.error.code, code, `tx ${n}`);
   }
+  const noIntent = await call('POST', `/v1/groups/${groupId}/settlements`, { token: tokens.bob, body: { to: ids.alice, amount: '5', txHash: hash(4) } });
+  assert.equal(noIntent.status, 404);
+  assert.equal(noIntent.body.error.code, 'INTENT_NOT_FOUND');
+  assert.equal((await record(hash(4), {}, tokens.alice)).body.error.code, 'INTENT_NOT_FOUND', "only the intent's payer can use it");
+  assert.equal((await record(hash(4), { amount: '4' })).status, 400, 'terms in the body must match the intent');
 
-  const ok = await call('POST', `/v1/groups/${groupId}/settlements`, { token: tokens.bob, body: { to: ids.alice, amount: '5', txHash: hash(4) } });
+  const ok = await record(hash(4), { to: ids.alice, amount: '5' });
   assert.equal(ok.status, 201);
+  assert.equal(ok.body.settlement.intentId, intent.id);
   assert.match(ok.body.explorerUrl, /stellar\.expert\/explorer\/testnet\/tx\//);
   const net = (await call('GET', `/v1/groups/${groupId}`, { token: tokens.alice })).body.balances.map((b) => b.net);
   assert.deepEqual(net, ['0.00', '0.00', '0.00']);
 
-  // Debt is now zero, so a replay is refused before the duplicate check.
-  const replay = await call('POST', `/v1/groups/${groupId}/settlements`, { token: tokens.bob, body: { to: ids.alice, amount: '5', txHash: hash(4) } });
-  assert.equal(replay.status, 422);
+  const replay = await record(hash(4));
+  assert.equal(replay.status, 409);
+  assert.equal(replay.body.error.code, 'INTENT_NOT_OPEN');
   const activity = (await call('GET', `/v1/groups/${groupId}/activity`, { token: tokens.alice })).body.items;
   assert.deepEqual(activity.map((i) => i.type).sort(), ['expense', 'settlement']);
 });
@@ -231,25 +263,44 @@ async function groupWithDebt() {
   return { id, m };
 }
 
+// Reserves an intent and returns the transaction fields a correct payment for it carries.
+async function reserve(id, to, amount = '5', token = tokens.bob) {
+  const r = await call('POST', `/v1/groups/${id}/settlements/intents`, { token, body: { to, amount } });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  const { intent } = r.body;
+  return { intent, memo: Buffer.from(intent.memo.value, 'hex').toString('base64'), maxTime: String(Math.floor(Date.parse(intent.expiresAt) / 1000)) };
+}
+
 test('an old payment cannot settle a debt that appeared later', async () => {
   const { id, m } = await groupWithDebt();
+  const { intent } = await reserve(id, m.alice);
+  // A real payment from Bob to Alice for the right amount, made before the intent existed, so without its memo.
   chain.set(hex(1), { ops: payment(bob, alice, '5.0000000'), createdAt: '2026-09-01T10:00:00Z' });
-  const r = await call('POST', `/v1/groups/${id}/settlements`, { token: tokens.bob, body: { to: m.alice, amount: '5', txHash: hex(1) } });
+  const r = await call('POST', `/v1/groups/${id}/settlements`, { token: tokens.bob, body: { intentId: intent.id, txHash: hex(1) } });
   assert.equal(r.status, 422);
-  assert.equal(r.body.error.code, 'PAYMENT_TOO_OLD');
+  assert.equal(r.body.error.code, 'INTENT_MISMATCH');
   const net = (await call('GET', `/v1/groups/${id}`, { token: tokens.alice })).body.balances.map((b) => b.net);
   assert.deepEqual(net, ['5.00', '-5.00']);
 });
 
-test('two concurrent settlements for the same debt: one is recorded, the other is refused as an overpay', async () => {
+test('two concurrent settlements for the same debt: one is recorded, the other is refused', async () => {
   const { id, m } = await groupWithDebt();
-  // The chain answers slowly, so both requests read the debt before either one records.
-  chain.set(hex(2), { ops: payment(bob, alice, '5.0000000'), delayMs: 40 });
-  chain.set(hex(3), { ops: payment(bob, alice, '5.0000000'), delayMs: 40 });
-  const send = (h) => call('POST', `/v1/groups/${id}/settlements`, { token: tokens.bob, body: { to: m.alice, amount: '5', txHash: h } });
+  // Two reservations at once: the database lets one win.
+  const both = await Promise.all([0, 1].map(() => call('POST', `/v1/groups/${id}/settlements/intents`, { token: tokens.bob, body: { to: m.alice, amount: '5' } })));
+  assert.deepEqual(both.map((r) => r.status).sort(), [201, 409]);
+  assert.equal(both.find((r) => r.status === 409).body.error.code, 'INTENT_IN_PROGRESS');
+
+  // Two payments reported for the winning intent at once. The chain answers slowly, so both read the debt before either
+  // one records; recording closes the intent in the same step, so the second is refused.
+  const { intent } = both.find((r) => r.status === 201).body;
+  const memo = Buffer.from(intent.memo.value, 'hex').toString('base64');
+  const maxTime = String(Math.floor(Date.parse(intent.expiresAt) / 1000));
+  chain.set(hex(2), { ops: payment(bob, alice, '5.0000000'), memo, maxTime, delayMs: 40 });
+  chain.set(hex(3), { ops: payment(bob, alice, '5.0000000'), memo, maxTime, delayMs: 40 });
+  const send = (h) => call('POST', `/v1/groups/${id}/settlements`, { token: tokens.bob, body: { intentId: intent.id, txHash: h } });
   const results = await Promise.all([send(hex(2)), send(hex(3))]);
-  assert.deepEqual(results.map((r) => r.status).sort(), [201, 422]);
-  assert.equal(results.find((r) => r.status === 422).body.error.code, 'OVERPAY');
+  assert.deepEqual(results.map((r) => r.status).sort(), [201, 409]);
+  assert.equal(results.find((r) => r.status === 409).body.error.code, 'INTENT_NOT_OPEN');
   const net = (await call('GET', `/v1/groups/${id}`, { token: tokens.alice })).body.balances.map((b) => b.net);
   assert.deepEqual(net, ['0.00', '0.00']);
 });

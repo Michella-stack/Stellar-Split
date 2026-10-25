@@ -1,6 +1,6 @@
 // Ledger rules on top of @stellar-split/shared. Every call takes the authenticated principal { kind, address }.
 
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   checkExactSplit,
   expenseShares,
@@ -21,8 +21,9 @@ export class ApiError extends Error {
 
 const MAX_AMOUNT = toStroops('1000000000000');
 const MAX_MEMBERS = 50;
-// A payment older than this cannot settle a debt (an old payment made outside the app must not count).
-const DEFAULT_MAX_PAYMENT_AGE_MS = 30 * 60_000;
+// A reserved intent blocks other settlements for its debtor and creditor until it is paid, cancelled or expires (ADR 0003).
+const INTENT_TTL_MS = 10 * 60 * 1000;
+const memoFor = (intentId) => createHash('sha256').update(`stellar-split:intent:${intentId}`).digest('hex');
 const pub = ({ idempotencyKey, ...e }) => e;
 const fmt = (stroops) => fromStroops(stroops, { minDecimals: 2 });
 const invalid = (message, details) => new ApiError(400, 'VALIDATION', message, details);
@@ -41,21 +42,8 @@ function amountOf(value, field = 'amount') {
 /**
  * @param {{ repo: object, stellar: object, appUrl?: string, now?: () => Date }} deps
  */
-export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(), maxPaymentAgeMs = DEFAULT_MAX_PAYMENT_AGE_MS }) {
+export function createLedger({ repo, stellar, appUrl = '', now = () => new Date() }) {
   const ts = () => now().toISOString();
-  const queues = new Map();
-
-  // Runs tasks for one key one after another. In-process only: see the note in settle().
-  async function serialised(key, task) {
-    const run = (queues.get(key) ?? Promise.resolve()).catch(() => {}).then(task);
-    const tail = run.catch(() => {});
-    queues.set(key, tail);
-    try {
-      return await run;
-    } finally {
-      if (queues.get(key) === tail) queues.delete(key);
-    }
-  }
 
   async function load(groupId) {
     const group = await repo.getGroup(groupId);
@@ -90,6 +78,43 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
         owed: transfers.filter((t) => t.to === me.id).map((t) => ({ from: t.from, amount: fmt(t.amount) })),
       },
       expenseCount: expenses.length,
+    };
+  }
+
+  /** Checks a payment from `me` against the current balances. Throws OVERPAY when it is more than what is owed. */
+  function terms(members, net, me, input) {
+    const to = members.find((m) => m.id === input.to);
+    if (!to || to.id === me.id) throw invalid('to must be another member of the group');
+    const amount = amountOf(input.amount);
+    if (overpays(net, me.id, to.id, amount)) {
+      const debt = -net.get(me.id);
+      const credit = net.get(to.id);
+      throw new ApiError(422, 'OVERPAY', 'The amount is more than you owe this member', { youOwe: fmt(debt > 0n ? debt : 0n), theyAreOwed: fmt(credit > 0n ? credit : 0n) });
+    }
+    return { to, amount };
+  }
+
+  function overpays(net, fromId, toId, amount) {
+    const debt = -net.get(fromId);
+    const credit = net.get(toId);
+    return debt <= 0n || credit <= 0n || amount > (debt < credit ? debt : credit);
+  }
+
+  function publicIntent(i, me, to) {
+    return {
+      id: i.id,
+      groupId: i.groupId,
+      from: i.from,
+      to: i.to,
+      amount: i.amount,
+      asset: stellar.asset,
+      network: 'stellar:testnet',
+      payFrom: me.address,
+      payTo: to.address,
+      memo: { type: 'hash', value: i.memoHash },
+      status: i.status,
+      reservedAt: i.reservedAt,
+      expiresAt: i.expiresAt,
     };
   }
 
@@ -249,51 +274,81 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     },
 
     /**
-     * Records a settlement after the payment is confirmed on Stellar Testnet. The caller is the payer.
-     * With dryRun, returns the payment intent (who to pay, how much, which asset) without recording anything.
+     * Without dryRun, records the payment for a reserved intent once Stellar Testnet confirms it. The caller is the payer.
+     * With dryRun, returns the payment terms (who to pay, how much, which asset) without reserving or recording anything.
      */
     async settle(principal, groupId, input = {}, { dryRun = false } = {}) {
-      const { group, members, net, me } = await forMember(principal, groupId);
+      const { members, net, me } = await forMember(principal, groupId);
+      if (dryRun) {
+        const { to, amount } = terms(members, net, me, input);
+        return { intent: { groupId, from: me.id, to: to.id, amount: fmt(amount), asset: stellar.asset, network: 'stellar:testnet', payFrom: me.address, payTo: to.address } };
+      }
+
+      const intent = typeof input.intentId === 'string' ? await repo.getIntent(input.intentId) : null;
+      if (!intent || intent.groupId !== groupId || intent.from !== me.id) {
+        throw new ApiError(404, 'INTENT_NOT_FOUND', 'Reserve a settlement intent first: POST /v1/groups/:id/settlements/intents');
+      }
+      if (input.to !== undefined && input.to !== intent.to) throw invalid('to does not match the settlement intent');
+      if (input.amount !== undefined && amountOf(input.amount) !== toStroops(intent.amount)) throw invalid('amount does not match the settlement intent');
+      if (!['reserved', 'expired', 'cancelled'].includes(intent.status)) throw new ApiError(409, 'INTENT_NOT_OPEN', `This settlement intent is ${intent.status}`);
+
+      const to = members.find((m) => m.id === intent.to);
+      const txHash = String(input.txHash ?? '').toLowerCase();
+      if (!/^[0-9a-f]{64}$/.test(txHash)) throw invalid('txHash must be a 64-character hex transaction hash');
+      const check = await stellar.verifyPayment({ txHash, from: me.address, to: to.address, amount: intent.amount, memoHash: intent.memoHash, notAfter: intent.expiresAt });
+      if (!check.ok) throw new ApiError(422, check.code, check.message);
+
+      // The money has moved. If the intent was cancelled, or an expense changed the debt since the reservation,
+      // keep the payment for an operator instead of rejecting it silently or overpaying.
+      if (intent.status === 'cancelled' || overpays(net, me.id, to.id, toStroops(intent.amount))) {
+        await repo.updateIntent(intent.id, { status: 'needs_review', txHash, closedAt: ts() });
+        throw new ApiError(409, 'NEEDS_REVIEW', 'The payment arrived but no longer matches an open debt. It is kept for review.', { txHash });
+      }
+      const settlement = await repo.recordSettlement({ intentId: intent.id, id: randomUUID(), txHash, createdAt: ts() }).catch((err) => {
+        if (err.code === 'DUPLICATE_TX') throw new ApiError(409, 'DUPLICATE_TX', 'This transaction is already recorded');
+        if (err.code === 'INTENT_NOT_OPEN') throw new ApiError(409, 'INTENT_NOT_OPEN', err.message);
+        throw err;
+      });
+      return { settlement, explorerUrl: stellar.explorerTx(txHash) };
+    },
+
+    /**
+     * Reserves a settlement intent: step 1 of a payment, before anything is signed. While it is reserved, nobody else can
+     * settle with this debtor or this creditor in the group, so the debt checked here cannot change under the payment.
+     * The transaction must carry `memo` as a MEMO_HASH and expire (time bounds) no later than `expiresAt`.
+     */
+    async reserveSettlement(principal, groupId, input = {}) {
+      const { members, me } = await forMember(principal, groupId);
       const to = members.find((m) => m.id === input.to);
       if (!to || to.id === me.id) throw invalid('to must be another member of the group');
       const amount = amountOf(input.amount);
-      const debt = -net.get(me.id);
-      const credit = net.get(to.id);
-      if (debt <= 0n || credit <= 0n || amount > (debt < credit ? debt : credit)) {
-        throw new ApiError(422, 'OVERPAY', 'The amount is more than you owe this member', { youOwe: fmt(debt > 0n ? debt : 0n), theyAreOwed: fmt(credit > 0n ? credit : 0n) });
+      const reservedAt = ts();
+      await repo.expireIntents(groupId, reservedAt);
+      const id = randomUUID();
+      const intent = await repo
+        .insertIntent({ id, groupId, from: me.id, to: to.id, amount: fmt(amount), memoHash: memoFor(id), reservedAt, expiresAt: new Date(Date.parse(reservedAt) + INTENT_TTL_MS).toISOString() })
+        .catch((err) => {
+          throw err.code === 'INTENT_IN_PROGRESS' ? new ApiError(409, 'INTENT_IN_PROGRESS', err.message) : err;
+        });
+      // Balances are read after winning the reservation, so no other settlement for these two members can be counted twice.
+      const { net } = await load(groupId);
+      try {
+        terms(members, net, me, input);
+      } catch (err) {
+        await repo.updateIntent(id, { status: 'cancelled', closedAt: ts() });
+        throw err;
       }
-      const intent = { groupId, from: me.id, to: to.id, amount: fmt(amount), asset: stellar.asset, network: 'stellar:testnet', payFrom: me.address, payTo: to.address };
-      if (dryRun) return { intent };
+      return { intent: publicIntent(intent, me, to) };
+    },
 
-      const txHash = String(input.txHash ?? '').toLowerCase();
-      if (!/^[0-9a-f]{64}$/.test(txHash)) throw invalid('txHash must be a 64-character hex transaction hash');
-      const check = await stellar.verifyPayment({ txHash, from: me.address, to: to.address, amount: intent.amount });
-      if (!check.ok) throw new ApiError(422, check.code, check.message);
-
-      // A payment made long ago, or before the group existed, cannot settle a debt that appeared later.
-      // This is the quick fix. The stronger one ties the payment to the intent, for example through the transaction memo.
-      const paidAt = Date.parse(check.ledgerCloseTime);
-      if (!Number.isFinite(paidAt) || paidAt < Date.parse(group.createdAt) || now().getTime() - paidAt > maxPaymentAgeMs) {
-        throw new ApiError(422, 'PAYMENT_TOO_OLD', 'This payment is too old to settle this debt. Pay again from the app.');
-      }
-
-      // The debt was read before the slow chain check. Read it again inside a per-group queue and record in the same step,
-      // so two requests for the same debt cannot both pass the overpay check.
-      // Limit: the queue lives in this process. Several serverless instances need a database-side check as well.
-      return serialised(groupId, async () => {
-        const fresh = await forMember(principal, groupId);
-        const owed = -fresh.net.get(me.id);
-        const credit = fresh.net.get(to.id);
-        if (owed <= 0n || credit <= 0n || amount > (owed < credit ? owed : credit)) {
-          throw new ApiError(422, 'OVERPAY', 'The amount is more than you owe this member', { youOwe: fmt(owed > 0n ? owed : 0n), theyAreOwed: fmt(credit > 0n ? credit : 0n) });
-        }
-        const settlement = await repo
-          .insertSettlement({ id: randomUUID(), groupId, from: me.id, to: to.id, amount: intent.amount, txHash, createdAt: ts() })
-          .catch((err) => {
-            throw err.code === 'DUPLICATE_TX' ? new ApiError(409, 'DUPLICATE_TX', 'This transaction is already recorded') : err;
-          });
-        return { settlement, explorerUrl: stellar.explorerTx(txHash) };
-      });
+    /** Cancels a reserved intent, for example when the person rejects the signature in Freighter. Only the payer can. */
+    async cancelSettlement(principal, groupId, intentId) {
+      const { members, me } = await forMember(principal, groupId);
+      const intent = await repo.getIntent(intentId);
+      if (!intent || intent.groupId !== groupId || intent.from !== me.id) throw new ApiError(404, 'INTENT_NOT_FOUND', 'Settlement intent not found');
+      if (intent.status !== 'reserved') throw new ApiError(409, 'INTENT_NOT_OPEN', `This settlement intent is ${intent.status}`);
+      const cancelled = await repo.updateIntent(intent.id, { status: 'cancelled', closedAt: ts() });
+      return { intent: publicIntent(cancelled, me, members.find((m) => m.id === intent.to)) };
     },
 
     async activity(principal, groupId) {

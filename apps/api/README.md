@@ -10,7 +10,7 @@ node --env-file=.env src/main.js
 npm test                        # node --test, uses an in-memory store and a fake Horizon
 ```
 
-Storage is Supabase when `SUPABASE_URL` is set. Run [`database/migrations/001_ledger.sql`](../../database/migrations/001_ledger.sql) once in the Supabase SQL editor. Without Supabase, `ALLOW_MEMORY_STORE=true` keeps everything in memory, which is lost on restart.
+Storage is Supabase when `SUPABASE_URL` is set. Run [`database/migrations/001_ledger.sql`](../../database/migrations/001_ledger.sql) and then [`002_settlement_intents.sql`](../../database/migrations/002_settlement_intents.sql) once in the Supabase SQL editor. Both can be run again safely. SQL tests for 002 are in [`database/tests/`](../../database/tests/). Without Supabase, `ALLOW_MEMORY_STORE=true` keeps everything in memory, which is lost on restart.
 
 ## Sign-in
 
@@ -40,7 +40,10 @@ Shapes follow [`apps/web/src/client/README.md`](../web/src/client/README.md). Er
 | `POST /v1/groups/:id/invites`, `POST /v1/invites/:code/accept` | Invite links, optionally bound to one address |
 | `GET`, `POST /v1/groups/:id/expenses` | List; create with an equal or exact split. `Idempotency-Key` header makes retries safe |
 | `GET /v1/groups/:id/balances` | Net per member, with address and kind (used by the MCP server) |
-| `POST /v1/groups/:id/settlements` | `{ to, amount, txHash }`: records a payment after Horizon confirms it. `?dry_run=true` returns the payment intent without recording |
+| `POST /v1/groups/:id/settlements?dry_run=true` | `{ to, amount }`: the payment terms, without reserving or recording anything (used by the MCP server) |
+| `POST /v1/groups/:id/settlements/intents` | `{ to, amount }`: step 1, reserves a settlement intent. `201 { intent }` with `id`, `payTo`, `memo: { type: 'hash', value }` and `expiresAt`. `409 INTENT_IN_PROGRESS` while the payer or the creditor has another reserved intent in the group |
+| `POST /v1/groups/:id/settlements/intents/:intentId/cancel` | Cancels a reserved intent, for example when the signature is rejected in Freighter. Only the payer |
+| `POST /v1/groups/:id/settlements` | `{ intentId, txHash }`: step 2, records the payment after Horizon confirms it. `to` and `amount` may be sent too and must match the intent |
 | `GET /v1/groups/:id/activity` | Expenses and settlements, newest first |
 
 ## Rules enforced here
@@ -50,13 +53,16 @@ Shapes follow [`apps/web/src/client/README.md`](../web/src/client/README.md). Er
 - Any request body that contains something shaped like a Stellar secret key is refused (`SECRET_KEY_REJECTED`), both before it is parsed and again on the parsed values, so JSON escapes such as `\u0053` do not get past it.
 - Bodies over 64 KB get `413` with a JSON error and the connection is closed. Wrong types (an array where a string is expected) get `400 VALIDATION`.
 - Stellar or the database being down, slow or overloaded (network failure, timeout, 5xx or 429 from Supabase) is `502 UPSTREAM_UNAVAILABLE`, which is safe to retry. A refused request to Supabase (other 4xx) stays `500`.
-- A settlement is recorded only when Horizon on Stellar Testnet shows a successful USDC payment from the caller's address to the creditor's address for exactly that amount. The amount cannot exceed what the payer owes or what the creditor is owed. Each transaction hash is recorded once.
-- A payment older than 30 minutes, or from before the group existed, cannot settle a debt (`422 PAYMENT_TOO_OLD`), so an old payment made outside the app cannot be replayed against a new debt. The debt is read again, and the settlement recorded, inside a per-group queue, so two requests for the same debt cannot both pass the overpay check.
+- Paying is two steps. First reserve an intent. Then build the payment with the intent's memo as a `MEMO_HASH` and time bounds that end no later than `expiresAt` (for example `setTimebounds(0, expiresAt)` instead of a longer `setTimeout`), sign it, submit it, and send `{ intentId, txHash }`.
+- A settlement is recorded only when Horizon on Stellar Testnet shows a successful USDC payment from the caller's address to the creditor's address for exactly the intent's amount, carrying the intent's memo, with time bounds inside the intent. So an older payment cannot settle a new debt, and a payment cannot reach the chain after its intent expired. Each transaction hash is recorded once.
+- While an intent is reserved, nobody else can settle with its payer or its creditor in that group (unique indexes in the database), and the amount is checked against the balances read after the reservation. So two concurrent payments cannot overpay. Intents expire after 10 minutes.
+- If the payment arrives but no longer matches an open debt (the intent was cancelled, or an expense changed the debt meanwhile), the API answers `409 NEEDS_REVIEW` and keeps the intent as `needs_review` with its transaction hash, instead of recording it or losing it.
 - Testnet only: the API refuses to start with another network and checks the Horizon network passphrase before the first verification.
 
 Not built: approvals (there is no `/v1/approvals` route), agent policies and the x402 settle flow (issues #11 to #13, #19).
 
 ## Known limits
 
-- The per-group queue lives in one process. With several serverless instances, two requests on different instances can still race. A database-side check is needed for that (see `docs/adr/0003-one-open-settlement-intent-per-debt.md`).
-- The age limit is a quick fix. The stronger one is to tie each payment to its settlement intent, for example through the transaction memo, so that a payment can only settle the debt it was made for.
+- A reserved intent blocks other settlements for its payer and its creditor in that group until it is paid, cancelled or expires (10 minutes). That is what makes concurrent payments safe, but it also means each person takes part in one payment at a time per group.
+- Intents in `needs_review` have no route yet: an operator resolves them in the database. A reconciliation job for them is not built.
+- The web app must reserve an intent first and add its memo to the payment (follow-up in #55). Its current `setTimeout` already ends inside the intent when the payment is built right after the reservation. Until then, its payments are refused.

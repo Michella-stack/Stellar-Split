@@ -26,9 +26,11 @@ export function createStellar({ horizonUrl, usdcIssuer, fetchImpl = globalThis.f
 
     /**
      * Finds one successful USDC payment from `from` to `to` for exactly `amount` in the transaction.
+     * The transaction must carry `memoHash` as a MEMO_HASH and end its time bounds by `notAfter`: that proves it
+     * was built for this intent, after the reservation, and could not reach the chain once the intent expired.
      * @returns {Promise<{ ok: true, ledgerCloseTime: string } | { ok: false, code: string, message: string }>}
      */
-    async verifyPayment({ txHash, from, to, amount }) {
+    async verifyPayment({ txHash, from, to, amount, memoHash, notAfter }) {
       if (!networkChecked) {
         const root = await get('/');
         if (root?.network_passphrase !== TESTNET_PASSPHRASE) {
@@ -39,6 +41,14 @@ export function createStellar({ horizonUrl, usdcIssuer, fetchImpl = globalThis.f
       const tx = await get(`/transactions/${txHash}`);
       if (!tx) return { ok: false, code: 'PAYMENT_NOT_FOUND', message: 'Transaction not found on Stellar Testnet' };
       if (tx.successful !== true) return { ok: false, code: 'PAYMENT_FAILED', message: 'The transaction failed on chain' };
+      const memo = tx.memo_type === 'hash' && tx.memo ? Buffer.from(tx.memo, 'base64').toString('hex') : null;
+      if (memo !== memoHash) {
+        return { ok: false, code: 'INTENT_MISMATCH', message: 'The transaction memo does not match this settlement intent' };
+      }
+      const maxTime = Number(tx.preconditions?.timebounds?.max_time ?? (tx.valid_before ? Date.parse(tx.valid_before) / 1000 : 0));
+      if (!(maxTime > 0) || maxTime * 1000 > Date.parse(notAfter)) {
+        return { ok: false, code: 'TIMEBOUNDS_TOO_LONG', message: 'The transaction must expire no later than the settlement intent' };
+      }
       const ops = (await get(`/transactions/${txHash}/operations?limit=200`))?._embedded?.records ?? [];
       const want = toStroops(amount);
       const match = ops.find(

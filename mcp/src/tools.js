@@ -19,11 +19,22 @@ export function toUnits(v) {
   return BigInt(whole) * 10_000_000n + BigInt(frac.padEnd(7, "0"));
 }
 
+// Each member may appear once in a split, as the API requires. A payer outside the split stays valid:
+// someone can pay for the others without taking a share.
+const distinct = (values) => new Set(values).size === values.length;
+
 const split = z.discriminatedUnion("rule", [
-  z.object({ rule: z.literal("equal"), participants: z.array(id).min(1).max(50) }),
+  z.object({
+    rule: z.literal("equal"),
+    participants: z.array(id).min(1).max(50).refine(distinct, "each participant may appear only once"),
+  }),
   z.object({
     rule: z.literal("exact"),
-    shares: z.array(z.object({ member: id, amount })).min(1).max(50),
+    shares: z
+      .array(z.object({ member: id, amount }))
+      .min(1)
+      .max(50)
+      .refine((shares) => distinct(shares.map((x) => x.member)), "each member may have only one share"),
   }),
 ]);
 

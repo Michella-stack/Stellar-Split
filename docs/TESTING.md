@@ -54,7 +54,7 @@ README versus code: `expense_hash` scope and the 50-entry delta limit are undocu
 
 Tested: tool list and annotations, credential attached and never returned, idempotency key, amount and id validation, exact-split mismatch, secret key in every id and text field (added after the audit found it was only checked in `description`), policy errors, dry run, approvals, network error, HTTP 401 and loopback guard, startup validation (`main.js`).
 
-Added afterwards in `mcp/test/gaps.test.js`: stdio transport (initialize, tools/list, exit when stdin closes); HTTP 404, 405, invalid JSON, empty and oversized body, and the order of those checks; API timeout, non-JSON and empty error bodies, truncation of long errors, both error shapes; untrusted API text passed through to the model as data; schema bounds (50 participants, description length, idempotency key length); duplicate participants and a payer missing from the split (both accepted today, pinned by a test).
+Added afterwards in `mcp/test/gaps.test.js`: stdio transport (initialize, tools/list, exit when stdin closes); HTTP 404, 405, invalid JSON, empty and oversized body, and the order of those checks; API timeout, non-JSON and empty error bodies, truncation of long errors, both error shapes; untrusted API text passed through to the model as data; schema bounds (50 participants, description length, idempotency key length); duplicate participants or shares (rejected by the schema, like the API) and a payer outside the split (accepted on purpose: someone can pay for the others).
 
 Still open: the API client does not redact the credential if the API itself echoes it in an error message (`test.todo`).
 

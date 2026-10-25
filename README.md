@@ -66,7 +66,11 @@ Copy `.env.example` to `.env` when it exists. Never commit `.env`.
 
 ## Demo
 
-Demo steps, the live URL and Testnet transaction evidence will be added here.
+**Live URL: https://stellar-split-sooty.vercel.app** (Stellar Testnet only). API health: [`/v1/health`](https://stellar-split-sooty.vercel.app/v1/health).
+
+The web app and the API run as one Vercel project. How it is built, how every commit is meant to deploy by itself, what is configured and the current status are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+Demo steps and the Testnet transaction evidence will be added here.
 
 ## Security
 
@@ -83,6 +87,7 @@ Design rules the code must follow (enforced as each part lands):
 - [Judging criteria](docs/JUDGING.md)
 - [Build focus](docs/BUILD-FOCUS.md)
 - [Agents: setup and access](docs/AGENTS.md)
+- [Deployment on Vercel](docs/DEPLOYMENT.md)
 - [Group contract](contracts/README.md)
 - [Security policy](SECURITY.md)
 - [Supply chain checks](supply-chain/README.md)

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { toStroops, validateAmount } from '@shared/money.js';
 import { getGroup, recordSettlement } from '../client/api.js';
-import { buildUsdcPayment, buildUsdcTrustline, checkPayment, submitSigned, usdcAsset } from '../client/stellar.js';
+import { buildUsdcPayment, buildUsdcTrustline, checkPayment, loadBalances, submitSigned, usdcAsset } from '../client/stellar.js';
 import { Amount } from '../components/Amount.jsx';
 import { Button, ButtonLink } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
-import { IconChevronRight } from '../components/icons.jsx';
+import { IconChevronRight, IconExternal } from '../components/icons.jsx';
 import { LoadError, Loading } from '../components/LoadState.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { MemberAvatar } from '../features/balances/MemberAvatar.jsx';
@@ -17,6 +17,7 @@ import { useApi } from '../hooks/useApi.js';
 import { useToast } from '../hooks/useToast.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { formatUsd, shortAddress } from '../lib/format.js';
+import { USDC_FAUCET_URL } from '../config/env.js';
 import { estimate } from '../lib/rates.js';
 
 export default function Settle() {
@@ -62,6 +63,11 @@ function SettleFlow({ detail, memberId }) {
   const [addingTrustline, setAddingTrustline] = useState(false);
   const [notice, setNotice] = useState(/** @type {string | null} */ (null));
   const reviewedEpoch = useRef(wallet.epoch);
+  const [balanceVersion, setBalanceVersion] = useState(0);
+  const balances = useApi(
+    () => (wallet.address ? loadBalances(wallet.address) : Promise.resolve(null)),
+    `balances:${wallet.address}:${wallet.epoch}:${balanceVersion}`,
+  );
 
   // Account or network changed after review: the pending payment is no longer valid.
   useEffect(() => {
@@ -121,6 +127,7 @@ function SettleFlow({ detail, memberId }) {
       setStep('submitting');
       const result = await submitSigned(signedXdr);
       setPaid({ hash: result.hash, amount });
+      setBalanceVersion((v) => v + 1);
       setStep('paid');
       saveRecord(result.hash, amount);
     } catch (error) {
@@ -136,6 +143,7 @@ function SettleFlow({ detail, memberId }) {
       const { signedXdr } = await wallet.sign(xdr, { kind: 'trustline', signer: wallet.address, assetCode: asset.getCode(), assetIssuer: asset.getIssuer() });
       await submitSigned(signedXdr);
       toast('USDC trustline added. Get testnet USDC from the faucet, then pay.', { tone: 'success' });
+      setBalanceVersion((v) => v + 1);
       setProblem(null);
       setStep('review');
     } catch (error) {
@@ -161,6 +169,7 @@ function SettleFlow({ detail, memberId }) {
         <PaidCard
           amount={paid.amount}
           recipientName={recipient.displayName}
+          recipientAddress={recipient.address}
           groupId={group.id}
           groupName={group.name}
           txHash={paid.hash}
@@ -206,6 +215,7 @@ function SettleFlow({ detail, memberId }) {
   }
 
   const busy = step === 'checking' || step === 'signing' || step === 'submitting';
+  const available = availability(balances.data, check.ok ? amount : null, debt);
   const busyLabel = { checking: 'Checking balances…', signing: 'Confirm in Freighter…', submitting: 'Sending to Stellar…' }[step];
   const myMember = members.find((m) => m.id === me);
 
@@ -238,6 +248,16 @@ function SettleFlow({ detail, memberId }) {
           </div>
         )}
 
+        <AvailableBalance
+          state={balances.loading ? { kind: 'loading' } : balances.error ? { kind: 'error' } : available}
+          recipientName={recipient.displayName}
+          onPayWhatIHave={(value) => {
+            setEditing(true);
+            setAmount(value);
+          }}
+          onRetry={balances.reload}
+        />
+
         <ul className="flex flex-col gap-1 text-center">
           {leavesYou && <li>Leaves you ≈ {leavesYou} <span className="text-muted">estimate</span></li>}
           {theyGet && (
@@ -267,7 +287,7 @@ function SettleFlow({ detail, memberId }) {
         </Card>
 
         <div className="flex flex-col gap-3" aria-live="polite">
-          <Button block loading={busy} disabled={!check.ok || busy} onClick={confirm}>
+          <Button block loading={busy} disabled={!check.ok || busy || available.blocking} onClick={confirm}>
             {busy ? busyLabel : 'Confirm in Freighter'}
           </Button>
           {!editing && (
@@ -282,6 +302,90 @@ function SettleFlow({ detail, memberId }) {
       </div>
     </>
   );
+}
+
+/**
+ * What the payer's balances mean for this payment. Only "blocking" states disable Confirm; the full check
+ * runs again right before Freighter opens.
+ * @param {any} balances result of loadBalances, or null
+ * @param {string | null} amount valid amount or null
+ * @param {string} debt
+ */
+function availability(balances, amount, debt) {
+  if (!balances) return { kind: 'unknown', blocking: false };
+  if (!balances.funded) return { kind: 'not-funded', blocking: true };
+  if (balances.usdc === null) return { kind: 'no-trustline', blocking: false };
+  const have = toStroops(balances.usdc);
+  const max = have < toStroops(debt) ? balances.usdc : debt;
+  if (amount && toStroops(amount) > have) return { kind: 'short', usdc: balances.usdc, max, blocking: true };
+  return { kind: 'ok', usdc: balances.usdc, blocking: false };
+}
+
+/** @param {{ state: any, recipientName: string, onPayWhatIHave: (amount: string) => void, onRetry: () => void }} props */
+function AvailableBalance({ state, recipientName, onPayWhatIHave, onRetry }) {
+  const box = 'rounded-2xl px-4 py-3 text-center';
+  if (state.kind === 'loading') {
+    return (
+      <p role="status" className={`${box} bg-surface text-muted`}>
+        Checking your balance…
+      </p>
+    );
+  }
+  if (state.kind === 'error') {
+    return (
+      <p className={`${box} bg-surface`}>
+        Could not read your balance.{' '}
+        <button type="button" onClick={onRetry} className="min-h-11 font-semibold underline">
+          Try again
+        </button>
+      </p>
+    );
+  }
+  if (state.kind === 'not-funded') {
+    return (
+      <p role="alert" className={`${box} border-2 border-owe`}>
+        Your wallet isn’t on Testnet yet. Fund it from the{' '}
+        <Link to="/wallet" className="font-semibold underline">
+          Wallet screen
+        </Link>
+        .
+      </p>
+    );
+  }
+  if (state.kind === 'no-trustline') {
+    return (
+      <p className={`${box} bg-surface`}>
+        <span className="font-semibold">Available: no USDC yet.</span> Your wallet needs a USDC trustline; you can add it when you confirm.
+      </p>
+    );
+  }
+  if (state.kind === 'short') {
+    return (
+      <div role="alert" className={`${box} flex flex-col items-center gap-2 border-2 border-owe`}>
+        <p>
+          <span className="font-semibold">Not enough USDC.</span> You have {formatUsd(state.usdc)} available.
+        </p>
+        {toStroops(state.max) > 0n ? (
+          <Button variant="secondary" onClick={() => onPayWhatIHave(state.max)}>
+            Pay {formatUsd(state.max)} to {recipientName} instead
+          </Button>
+        ) : (
+          <a href={USDC_FAUCET_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 font-semibold underline">
+            Get testnet USDC <IconExternal size={16} />
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        )}
+      </div>
+    );
+  }
+  if (state.kind === 'ok') {
+    return (
+      <p className={`${box} bg-surface`}>
+        Available: <span className="font-semibold tabular-nums">{formatUsd(state.usdc)}</span> <span className="font-mono text-sm text-muted">USDC</span>
+      </p>
+    );
+  }
+  return null;
 }
 
 /** @param {{ term: string, children: import('react').ReactNode }} props */

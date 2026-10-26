@@ -1,5 +1,7 @@
 /* Checks each [data-svc] row from the browser. CORS-blocked answers show "Check manually". */
 (function () {
+  // Fixed list so no URL is read from the DOM into a link.
+  var LINKS = { api: 'https://stellar-split-sooty.vercel.app/v1/health', horizon: 'https://horizon-testnet.stellar.org/' };
   var rows = document.querySelectorAll('[data-svc]');
   var stamp = document.getElementById('status-time');
 
@@ -10,7 +12,7 @@
     if (state === 'manual') {
       pill.appendChild(document.createTextNode(' '));
       var a = document.createElement('a');
-      var link = row.getAttribute('data-link') || ''; a.href = /^https:\/\//.test(link) ? link : '#'; a.textContent = 'open'; a.rel = 'noopener';
+      a.href = LINKS[row.getAttribute('data-svc')] || '#'; a.textContent = 'open'; a.rel = 'noopener';
       pill.appendChild(a);
     }
   }

@@ -25,11 +25,13 @@ function columnPath(x, top, width) {
 /**
  * Columns of money spent per day, week or month. One series, one colour; the focused column stays solid and the rest step back.
  * The readout appears on hover, tap and keyboard focus, and the same numbers are in the table below the chart.
- * @param {{ buckets: { start: Date, end: Date, total: bigint, count: number }[], period: 'day' | 'week' | 'month', label: string }} props
+ * Amounts are in the group's asset unless `currency` names another one, as on the summary across groups.
+ * @param {{ buckets: { start: Date, end: Date, total: bigint, count: number }[], period: 'day' | 'week' | 'month', label: string, currency?: string }} props
  */
-export function SpendChart({ buckets, period, label }) {
+export function SpendChart({ buckets, period, label, currency }) {
   const { t } = useT();
-  const code = useAssetCode();
+  const assetCode = useAssetCode();
+  const code = currency ?? assetCode;
   const [active, setActive] = useState(/** @type {number | null} */ (null));
 
   const units = buckets.map((b) => Number(fromStroops(b.total, { minDecimals: 0 })));

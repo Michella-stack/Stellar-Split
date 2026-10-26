@@ -65,6 +65,12 @@ export function routes({ auth, ledger, receipts }) {
     ['GET', /^\/v1\/groups$/, async (ctx) => ok(await ledger.listGroups(need(ctx)))],
     ['POST', /^\/v1\/groups$/, async (ctx) => created(await ledger.createGroup(need(ctx), ctx.body))],
     ['GET', /^\/v1\/groups\/([\w-]{1,64})$/, async (ctx) => ok(await ledger.getGroup(need(ctx), ctx.params[0]))],
+    ['PATCH', /^\/v1\/groups\/([\w-]{1,64})$/, async (ctx) => ok(await ledger.updateGroup(need(ctx), ctx.params[0], ctx.body))],
+    ['DELETE', /^\/v1\/groups\/([\w-]{1,64})$/, async (ctx) => ok(await ledger.deleteGroup(need(ctx), ctx.params[0]))],
+    ['DELETE', /^\/v1\/groups\/([\w-]{1,64})\/members\/([\w-]{1,64})$/, async (ctx) => {
+      await ledger.removeMember(need(ctx), ctx.params[0], ctx.params[1]);
+      return [204];
+    }],
     ['POST', /^\/v1\/groups\/([\w-]{1,64})\/members$/, async (ctx) => created(await ledger.addMember(need(ctx), ctx.params[0], ctx.body))],
     ['POST', /^\/v1\/groups\/([\w-]{1,64})\/invites$/, async (ctx) => created(await ledger.createInvite(need(ctx), ctx.params[0], ctx.body))],
     ['POST', /^\/v1\/invites\/([\w-]{1,64})\/accept$/, async (ctx) => ok(await ledger.acceptInvite(need(ctx), ctx.params[0]))],

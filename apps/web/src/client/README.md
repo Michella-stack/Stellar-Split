@@ -22,6 +22,9 @@ These shapes are the web team's proposal until the API team confirms them. If th
 | `listGroups()` | `GET /v1/groups` | `{ groups: GroupSummary[] (each with asset), totals: { youOwe, youAreOwed } (USDC groups), otherTotals: [{ asset, youOwe, youAreOwed }] (e.g. EURC) }` |
 | `createGroup({ name, type, asset? })` | `POST /v1/groups` | `GroupDetail` |
 | `getGroup(id)` | `GET /v1/groups/:id` | `GroupDetail` |
+| `updateGroup(id, { name?, type? })` | `PATCH /v1/groups/:id` | `GroupDetail`. Only the person who created the group; `403 FORBIDDEN` for anyone else |
+| `deleteGroup(id)` | `DELETE /v1/groups/:id` | `{ result: 'deleted' }` for a group with no expenses or payments, `{ result: 'archived' }` when it has any. An archived group answers `404` to everyone and its rows are kept. Only the creator. Needs migration 005 for the archive |
+| `removeMember(id, memberId)` | `DELETE /v1/groups/:id/members/:memberId` | `204`. The creator removes anyone, a member can remove themselves. `409 MEMBER_HAS_HISTORY` when they appear in an expense or payment, `409 CREATOR_CANNOT_LEAVE` for the creator |
 | `createInvite(id, { address? })` | `POST /v1/groups/:id/invites` | `{ inviteUrl, code }`. With `address`, only that wallet can accept. Links use `/invite/CODE`, and the web serves both `/invite/:code` and `/join/:code` |
 | `addMember(id, { address, displayName? })` | `POST /v1/groups/:id/members` | `{ member: Member }`. Adds a wallet directly; the name defaults to the short address |
 | `acceptInvite(code)` | `POST /v1/invites/:code/accept` | `{ groupId, alreadyMember }` |

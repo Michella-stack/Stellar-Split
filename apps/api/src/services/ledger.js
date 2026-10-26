@@ -48,7 +48,8 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
 
   async function load(groupId) {
     const group = await repo.getGroup(groupId);
-    if (!group) throw new ApiError(404, 'NOT_FOUND', 'Group not found');
+    // An archived group is gone for everyone; its rows stay in the database as history.
+    if (!group || group.archivedAt) throw new ApiError(404, 'NOT_FOUND', 'Group not found');
     const [members, expenses, settlements] = await Promise.all([
       repo.listMembers(groupId),
       repo.listExpenses(groupId),
@@ -56,6 +57,10 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     ]);
     const net = netBalances(members.map((m) => m.id), expenses, settlements);
     return { group, members, expenses, settlements, net };
+  }
+
+  function onlyCreator(principal, group) {
+    if (group.createdBy !== principal.address) throw new ApiError(403, 'FORBIDDEN', 'Only the person who created the group can do this');
   }
 
   async function forMember(principal, groupId) {
@@ -246,6 +251,55 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
       return detail(await forMember(principal, groupId));
     },
 
+    async updateGroup(principal, groupId, input = {}) {
+      const { group } = await forMember(principal, groupId);
+      onlyCreator(principal, group);
+      const patch = {};
+      if (input.name !== undefined) patch.name = text(input.name, 'name', 80);
+      if (input.type !== undefined) {
+        if (!['flat', 'trip', 'other'].includes(input.type)) throw invalid('type must be flat, trip or other');
+        patch.type = input.type;
+      }
+      if (Object.keys(patch).length === 0) throw invalid('Send a name or a type to change');
+      await repo.updateGroup(groupId, patch);
+      return detail(await forMember(principal, groupId));
+    },
+
+    /** Deletes a group with no history. With expenses or payments it is archived instead, so the record of them is kept. */
+    async deleteGroup(principal, groupId) {
+      const { group } = await forMember(principal, groupId);
+      onlyCreator(principal, group);
+      try {
+        await repo.deleteGroup(groupId);
+        return { result: 'deleted' };
+      } catch (err) {
+        if (err.code !== 'HAS_HISTORY') throw err;
+        await repo.archiveGroup(groupId, ts());
+        return { result: 'archived' };
+      }
+    },
+
+    /** The creator removes anyone; a member can remove themselves. Only a member with no expenses or payments can go. */
+    async removeMember(principal, groupId, memberId) {
+      const { group, members, expenses, settlements, me } = await forMember(principal, groupId);
+      const target = members.find((m) => m.id === memberId);
+      if (!target) throw new ApiError(404, 'NOT_FOUND', 'Member not found');
+      if (target.id !== me.id) onlyCreator(principal, group);
+      if (target.address === group.createdBy) {
+        throw new ApiError(409, 'CREATOR_CANNOT_LEAVE', 'The person who created the group cannot leave it. Delete the group instead');
+      }
+      const inHistory =
+        expenses.some((e) => e.paidBy === memberId || e.createdBy === memberId || e.shares.some((s) => s.memberId === memberId)) ||
+        settlements.some((x) => x.from === memberId || x.to === memberId);
+      const blocked = () => new ApiError(409, 'MEMBER_HAS_HISTORY', 'This member appears in expenses or payments, so they cannot be removed');
+      if (inHistory) throw blocked();
+      try {
+        await repo.deleteMember(memberId);
+      } catch (err) {
+        throw err.code === 'HAS_HISTORY' ? blocked() : err;
+      }
+    },
+
     async addMember(principal, groupId, input = {}) {
       const { members } = await forMember(principal, groupId);
       return { member: await addMemberRow(groupId, members, input) };
@@ -264,6 +318,8 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     async acceptInvite(principal, code) {
       const invite = typeof code === 'string' ? await repo.getInvite(code) : null;
       if (!invite || (invite.address && invite.address !== principal.address)) throw new ApiError(404, 'NOT_FOUND', 'Invite not found');
+      const target = await repo.getGroup(invite.groupId);
+      if (!target || target.archivedAt) throw new ApiError(404, 'NOT_FOUND', 'Invite not found');
       const members = await repo.listMembers(invite.groupId);
       if (members.some((m) => m.address === principal.address)) return { groupId: invite.groupId, alreadyMember: true };
       await addMemberRow(invite.groupId, members, { address: principal.address, kind: principal.kind });

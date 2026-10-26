@@ -341,3 +341,35 @@ describe('agent links', () => {
     expect(await codeOf(link())).toBe('NO_ERROR');
   });
 });
+
+describe('managing a group', () => {
+  const ADDRESS = 'GBJUR7XO7CGUIJ3QHWH6JZ2DA2CDL4PJKB27IRSRGOOH2EQIJ47JA2QW';
+
+  it('renames a group and refuses an empty name', async () => {
+    const { group } = await api.createGroup({ name: 'Trip', type: 'trip' });
+    const renamed = await api.updateGroup(group.id, { name: ' Lisbon ', type: 'flat' });
+    expect(renamed.group).toMatchObject({ name: 'Lisbon', type: 'flat' });
+    await expect(api.updateGroup(group.id, { name: ' ' })).rejects.toMatchObject({ code: 'VALIDATION' });
+  });
+
+  it('deletes an empty group for good and archives one with expenses', async () => {
+    const { group } = await api.createGroup({ name: 'Empty', type: 'other' });
+    expect(await api.deleteGroup(group.id)).toEqual({ result: 'deleted' });
+    await expect(api.getGroup(group.id)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+    expect(await api.deleteGroup('casa-alfama')).toEqual({ result: 'archived' });
+    await expect(api.getGroup('casa-alfama')).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect((await api.listGroups()).groups.some((g) => g.id === 'casa-alfama')).toBe(false);
+  });
+
+  it('removes a member with no history, keeps one with history, and the creator cannot leave', async () => {
+    const { group } = await api.createGroup({ name: 'Crew', type: 'other' });
+    const { member } = await api.addMember(group.id, { address: ADDRESS, displayName: 'Ana' });
+    expect((await api.getGroup(group.id)).members).toHaveLength(2);
+    await api.removeMember(group.id, member.id);
+    expect((await api.getGroup(group.id)).members).toHaveLength(1);
+
+    await expect(api.removeMember(group.id, 'm-you')).rejects.toMatchObject({ code: 'CREATOR_CANNOT_LEAVE' });
+    await expect(api.removeMember('casa-alfama', 'm-mateo')).rejects.toMatchObject({ code: 'MEMBER_HAS_HISTORY' });
+  });
+});

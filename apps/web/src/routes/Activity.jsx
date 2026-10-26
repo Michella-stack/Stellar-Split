@@ -1,16 +1,14 @@
 import { useParams } from 'react-router';
 import { getGroup, listActivity } from '../client/api.js';
-import { Amount } from '../components/Amount.jsx';
 import { AssetProvider } from '../components/AssetProvider.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
-import { IconCheck, IconInbox } from '../components/icons.jsx';
-import { ListRow } from '../components/ListRow.jsx';
+import { IconInbox } from '../components/icons.jsx';
 import { LoadError, Loading } from '../components/LoadState.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { ExpenseRow } from '../features/expenses/ExpenseRow.jsx';
+import { SettlementRow } from '../features/settlement/SettlementRow.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { useT } from '../hooks/useT.js';
-import { formatDate, memberName, shortAddress } from '../lib/format.js';
 
 export default function Activity() {
   const { t } = useT();
@@ -54,32 +52,5 @@ export default function Activity() {
         )}
       </div>
     </>
-  );
-}
-
-/** @param {{ item: any, detail: any }} props */
-function SettlementRow({ item, detail }) {
-  const { t } = useT();
-  const byId = new Map(detail.members.map((m) => [m.id, m]));
-  const from = memberName(byId.get(item.from), detail.me);
-  const to = memberName(byId.get(item.to), detail.me);
-  return (
-    <ListRow
-      leading={
-        <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent">
-          <IconCheck size={20} />
-        </span>
-      }
-      title={
-        item.from === detail.me
-          ? t('activity.paidTo', { to })
-          : item.to === detail.me
-            ? t('activity.paidYou', { from })
-            : t('activity.paidOther', { from, to })
-      }
-      subtitle={`${item.demo ? `${t('activity.demoPayment', { date: formatDate(item.createdAt) })}` : `${shortAddress(item.txHash)} · ${formatDate(item.createdAt)}`}`}
-      to={`/groups/${detail.group.id}/settlements/${item.id}`}
-      trailing={<Amount value={item.amount} size="sm" />}
-    />
   );
 }

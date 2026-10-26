@@ -10,7 +10,7 @@
     if (state === 'manual') {
       pill.appendChild(document.createTextNode(' '));
       var a = document.createElement('a');
-      a.href = row.getAttribute('data-link'); a.textContent = 'open'; a.rel = 'noopener';
+      var link = row.getAttribute('data-link') || ''; a.href = /^https:\/\//.test(link) ? link : '#'; a.textContent = 'open'; a.rel = 'noopener';
       pill.appendChild(a);
     }
   }

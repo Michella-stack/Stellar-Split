@@ -75,7 +75,7 @@
 <tr><td>API</td><td>Refuse service, or record wrong data in the off-chain ledger</td><td>Move funds. It records a settlement only after Horizon shows a matching USDC payment with the reserved intent's memo</td></tr>
 <tr><td>Database (Supabase)</td><td>Store the off-chain ledger</td><td>Be read from the browser. The service role key is held only by the API, and the browser gets no database credential</td></tr>
 <tr><td>Recorder key</td><td>Record an x402 settlement on the contract</td><td>Move tokens</td></tr>
-<tr><td>Agents</td><td>Propose and make payments inside the limits you set</td><td>Hold a Stellar key in their runtime. They run in containers without one, and each agent's key stays on the host outside the container</td></tr>
+<tr><td>Agents</td><td>Read balances and propose payments. Paying on their own, inside your limits, is the next step</td><td>Hold a Stellar key in their runtime. They run in containers without one, and each agent's key stays on the host outside the container</td></tr>
 <tr><td>x402 facilitator (when used)</td><td>Censor a payment</td><td>Steal. It can only submit authorizations the payer signed</td></tr>
 </table>
 
@@ -123,7 +123,7 @@
     <div class="footer-grid">
       <div>
         <a class="brand" href="/"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split</a>
-        <p class="muted" style="margin-top:16px;max-width:300px">Split shared bills and settle them in USDC or EURC on Stellar. A hackathon project, running on Stellar Testnet.</p>
+        <p class="muted" style="margin-top:16px;max-width:300px">Split shared bills and settle them in USDC on Stellar, with EURC ready. A hackathon project, running on Stellar Testnet.</p>
       </div>
       <div>
         <h3>Product</h3>

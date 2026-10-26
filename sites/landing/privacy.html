@@ -74,7 +74,7 @@
 <li><strong>Your profile.</strong> A display name and a home currency. An email address is optional and only stored if you type it in.</li>
 <li><strong>Group data.</strong> Group names and types, members (display name and address), invites, expenses (description, amount, who paid, how it is split) and settlements (amount and transaction hash).</li>
 <li><strong>Agent links.</strong> If you link a Stellar Assist agent, the owner address and the agent address.</li>
-<li><strong>Receipt photos.</strong> If you scan a receipt, the photo goes to Google's Gemini API to read the total and line items. Our API does not store or log the photo. It logs only that a scan happened, its size in bytes, how long it took and whether it worked.</li>
+<li><strong>Receipt photos.</strong> If you scan a receipt, the photo goes to Google's Gemini API to read the total and line items. Our API does not store or log the photo. It logs only that a scan happened, its size in bytes, how long it took, whether it worked and any warnings the reader returned. No photo content is logged.</li>
 <li><strong>Request logs.</strong> The API logs the method, path, status code and duration of each request. Our hosting provider also handles technical data such as IP addresses to deliver the site.</li>
 <li><strong>Browser storage.</strong> Small settings kept on your device. The full list is on the <a href="/cookies.html">cookies page</a>.</li>
 </ul>
@@ -127,7 +127,7 @@
     <div class="footer-grid">
       <div>
         <a class="brand" href="/"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split</a>
-        <p class="muted" style="margin-top:16px;max-width:300px">Split shared bills and settle them in USDC or EURC on Stellar. A hackathon project, running on Stellar Testnet.</p>
+        <p class="muted" style="margin-top:16px;max-width:300px">Split shared bills and settle them in USDC on Stellar, with EURC ready. A hackathon project, running on Stellar Testnet.</p>
       </div>
       <div>
         <h3>Product</h3>

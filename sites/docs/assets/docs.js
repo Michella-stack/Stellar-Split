@@ -57,7 +57,7 @@
   }
 
   // Syntax highlighting: one tokenizer for JSON, bash, JavaScript and Python. Escapes everything it emits.
-  var esc = function (s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+  var esc = function (s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
   var KW = /^(const|let|var|await|async|function|return|if|else|new|import|from|export|true|false|null|None|True|False|def|for|in|print|curl|export)$/;
   var RE = /(#[^\n]*|\/\/[^\n]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*\b)|(\s-{1,2}[A-Za-z][\w-]*)/g;
   document.querySelectorAll('pre code').forEach(function (code) {

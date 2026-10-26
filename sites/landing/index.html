@@ -70,7 +70,7 @@
       <div>
         <p class="eyebrow">Shared bills, settled on Stellar</p>
         <h1 class="display hero-title">Split the bill.<br /><span class="accent">Not the risk.</span></h1>
-        <p class="lede">Track what your group owes. Let Stellar Assist, our AI agent, pay within limits you set. Settle in USDC straight from one wallet to another. The app never holds your money.</p>
+        <p class="lede">Track what your group owes. Settle in USDC straight from one wallet to another. Next, Stellar Assist, our AI agent, pays small bills within limits you set. The app never holds your money.</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="https://stellar-split-sooty.vercel.app">Open the app</a>
           <a class="btn btn-ghost" href="https://stellar-split-docs.vercel.app">Read the docs</a>
@@ -119,8 +119,8 @@
         <p>Ledger, AI agent and settlement in one app.</p>
       </div>
       <ol class="steps">
-        <li class="step step-track"><span class="step-n">1</span><h3>Track</h3><p>Add an expense, split it equally or by exact amounts, or snap the receipt. Everyone sees who owes whom, with an estimate in their own currency.</p></li>
-        <li class="step step-program"><span class="step-n">2</span><h3>Program</h3><p>Stellar Assist pays small bills from its own wallet within limits you set. Anything above your limit waits for your OK.</p></li>
+        <li class="step step-track"><span class="step-n">1</span><h3>Track</h3><p>Add an expense, split it equally or by exact amounts, or snap the receipt (beta). Everyone sees who owes whom, with an estimate in their own currency.</p></li>
+        <li class="step step-program"><span class="step-n">2</span><h3>Program</h3><p>Stellar Assist is designed to pay small bills from its own wallet within limits you set. Anything above your limit waits for your OK. In preview today.</p></li>
         <li class="step step-settle"><span class="step-n">3</span><h3>Settle</h3><p>Pay in USDC on Stellar, signed in your Freighter wallet and sent straight to the person you owe. The fee is under a cent.</p></li>
       </ol>
     </div>
@@ -158,8 +158,8 @@
       </div>
       <div class="chat card" aria-label="Example conversation with Stellar Assist, sample data">
         <div class="chat-head"><span class="chat-avatar" aria-hidden="true">S</span><div><strong>Stellar Assist</strong><span class="eyebrow">Chat . sample</span></div></div>
-        <p class="bubble me">Split the $90 internet bill</p>
-        <p class="bubble">3 ways is $30 each. Pay your share?</p>
+        <p class="bubble me">Split the $30 internet bill</p>
+        <p class="bubble">4 ways is $7.50 each. Pay your share to Mateo?</p>
         <p class="bubble me">Confirm</p>
         <div class="approval">
           <p class="eyebrow">Needs your OK . above your $5.00 limit</p>
@@ -167,7 +167,7 @@
           <p class="muted small">Your internet share to Mateo</p>
           <div class="approval-actions"><span class="btn btn-ghost btn-sm">Decline</span><span class="btn btn-primary btn-sm">Approve</span></div>
         </div>
-        <p class="bubble">Summary: you owe $344.60 and are owed $36.00.</p>
+        <p class="bubble">Summary: you owe $364.60 and are owed $36.00.</p>
       </div>
     </div>
   </section>
@@ -187,7 +187,7 @@
       </ol>
       <div class="grid grid-3 trust-cards">
         <article class="card"><h3>Non-custodial</h3><p class="muted">The app never holds funds or keys. Every payment goes straight from the person who owes to the person owed.</p></article>
-        <article class="card"><h3>Limits outside the model</h3><p class="muted">Spend limits live in a tested policy engine on the server side, never in the prompt. Prompt injection tests cover the agent tools.</p></article>
+        <article class="card"><h3>Limits outside the model</h3><p class="muted">Spend limits live in a tested policy engine on the server side, never in the prompt. Text from the API reaches the agent as data, not instructions.</p></article>
         <article class="card"><h3>Supply chain checks</h3><p class="muted">Pinned dependencies and GitHub Actions, plus contract scans on every change.</p></article>
       </div>
       <p><a class="link-arrow" href="/security.html">Read the security model</a></p>
@@ -201,8 +201,8 @@
         <h2 id="dev-h" class="display">An open API and an MCP server for your agents.</h2>
         <p class="lede">Build on the same rules as the app. Read balances, record expenses, and let your agent settle within the limits its owner sets.</p>
         <ul class="ticks">
-          <li><strong>REST API</strong> under <code>/v1</code>, with wallet-based sessions and rate limits.</li>
-          <li><strong>MCP server</strong> that exposes groups, balances, expenses and settlement proposals to any MCP client. It cannot move money.</li>
+          <li><strong>REST API</strong> under <code>/v1</code>, with wallet-based sessions and idempotent expense creation.</li>
+          <li><strong>MCP server</strong> that exposes groups, balances, expenses and settlement proposals to any MCP client. Without a signer key on the host it can only read and propose.</li>
           <li><strong>Settlement you can verify</strong> on Horizon or Stellar Expert by memo and transaction hash.</li>
         </ul>
         <div class="cta-row">
@@ -233,7 +233,7 @@ curl https://stellar-split-sooty.vercel.app/v1/health
         <h2 id="why-h" class="display">Stable, direct and checked.</h2>
       </div>
       <div class="grid grid-3">
-        <article class="card"><h3>Digital dollars</h3><p class="muted">USDC holds its value. A euro option, EURC, is ready in the app and turns on per network.</p></article>
+        <article class="card"><h3>Digital dollars</h3><p class="muted">USDC holds its value. A euro option, EURC, is built and switched on per deployment once its issuer is set.</p></article>
         <article class="card"><h3>Person to person</h3><p class="muted">No bank in between. A Stellar payment confirms in seconds, for a fee under a cent.</p></article>
         <article class="card"><h3>In your currency</h3><p class="muted">Live estimates show $364.60 as about &euro;325 or MXN 6,812, so nobody does the maths.</p></article>
       </div>
@@ -248,10 +248,10 @@ curl https://stellar-split-sooty.vercel.app/v1/health
       </div>
       <ul class="team">
         <li><span class="avatar av-orange" aria-hidden="true">VE</span><strong>Victor Estival</strong><span class="muted">Product and GTM</span></li>
-        <li><span class="avatar av-violet" aria-hidden="true">MW</span><strong>Michella Warren</strong><span class="muted">Data science, product, security</span></li>
+        <li><span class="avatar av-violet" aria-hidden="true">MW</span><strong>Michella Warren</strong><span class="muted">Data science, product and security</span></li>
         <li><span class="avatar av-green" aria-hidden="true">DC</span><strong>Damaris Castro</strong><span class="muted">Product, UX and front end</span></li>
-        <li><span class="avatar av-pink" aria-hidden="true">VA</span><strong>Viviana Andrango</strong><span class="muted">API, settlement and policy</span></li>
-        <li><span class="avatar av-cyan" aria-hidden="true">SV</span><strong>Sofiia Varich</strong><span class="muted">Architecture and full stack</span></li>
+        <li><span class="avatar av-pink" aria-hidden="true">VA</span><strong>Viviana Andrango</strong><span class="muted">Developer: settlement and spend policy</span></li>
+        <li><span class="avatar av-cyan" aria-hidden="true">SV</span><strong>Sofiia Varich</strong><span class="muted">IT architect</span></li>
       </ul>
       <p><a class="link-arrow" href="/team.html">Meet the team</a></p>
     </div>
@@ -292,7 +292,7 @@ curl https://stellar-split-sooty.vercel.app/v1/health
     <div class="footer-grid">
       <div>
         <a class="brand" href="/"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split</a>
-        <p class="muted footer-about">Split shared bills and settle them in USDC or EURC on Stellar. A hackathon project, running on Stellar Testnet.</p>
+        <p class="muted footer-about">Split shared bills and settle them in USDC on Stellar, with EURC ready. A hackathon project, running on Stellar Testnet.</p>
       </div>
       <div>
         <h3>Product</h3>

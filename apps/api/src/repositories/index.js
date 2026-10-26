@@ -7,6 +7,7 @@ const coded = (code, message) => Object.assign(new Error(message), { code });
 const duplicateTx = () => coded('DUPLICATE_TX', 'Settlement already recorded');
 const inProgress = () => coded('INTENT_IN_PROGRESS', 'Another settlement is in progress for this debtor or creditor');
 const agentLinked = () => coded('AGENT_ALREADY_LINKED', 'This agent is already linked');
+const hasHistory = () => coded('HAS_HISTORY', 'The group or member has expenses or payments');
 const notOpen = () => coded('INTENT_NOT_OPEN', 'The settlement intent is not open');
 
 export function createMemoryRepository() {
@@ -26,9 +27,24 @@ export function createMemoryRepository() {
     getGroup: async (id) => copy(t.groups.find((g) => g.id === id)),
     listGroupsByAddress: async (address) => {
       const ids = new Set(t.members.filter((m) => m.address === address).map((m) => m.groupId));
-      return t.groups.filter((g) => ids.has(g.id)).map(copy);
+      return t.groups.filter((g) => ids.has(g.id) && !g.archivedAt).map(copy);
+    },
+    updateGroup: async (id, patch) => copy(Object.assign(t.groups.find((g) => g.id === id), patch)),
+    archiveGroup: async (id, at) => copy(Object.assign(t.groups.find((g) => g.id === id), { archivedAt: at })),
+    /** Throws HAS_HISTORY when the group has expenses, payments or settlement intents; the Supabase foreign keys do the same. */
+    deleteGroup: async (id) => {
+      if (['expenses', 'settlements', 'intents'].some((table) => byGroup(table, id).length > 0)) throw hasHistory();
+      t.members = t.members.filter((m) => m.groupId !== id);
+      t.invites = t.invites.filter((i) => i.groupId !== id);
+      t.groups = t.groups.filter((g) => g.id !== id);
     },
     insertMember: async (m) => (t.members.push(structuredClone(m)), copy(m)),
+    /** Throws HAS_HISTORY when an expense, settlement or intent points at the member. */
+    deleteMember: async (id) => {
+      const used = t.expenses.some((e) => e.paidBy === id || e.createdBy === id) || t.settlements.some((x) => x.from === id || x.to === id) || t.intents.some((i) => i.from === id || i.to === id);
+      if (used) throw hasHistory();
+      t.members = t.members.filter((m) => m.id !== id);
+    },
     listMembers: async (groupId) => byGroup('members', groupId).map(copy),
     insertInvite: async (i) => (t.invites.push(structuredClone(i)), copy(i)),
     getInvite: async (code) => copy(t.invites.find((i) => i.code === code)),
@@ -143,9 +159,31 @@ export function createSupabaseRepository({ url, serviceKey, fetchImpl = globalTh
     getGroup: (id) => one('groups', `id=${eq(id)}`),
     listGroupsByAddress: async (address) => {
       const ids = [...new Set((await select('members', `address=${eq(address)}`)).map((m) => m.groupId))];
-      return ids.length ? select('groups', `id=in.(${ids.map(encodeURIComponent).join(',')})`) : [];
+      // Filtered here rather than in the query, so listing keeps working before migration 005 adds archived_at.
+      return ids.length ? (await select('groups', `id=in.(${ids.map(encodeURIComponent).join(',')})`)).filter((g) => !g.archivedAt) : [];
+    },
+    updateGroup: async (id, patch) => mapKeys((await req('PATCH', `/groups?id=${eq(id)}`, mapKeys(patch, snake), 'return=representation'))?.[0], camel),
+    archiveGroup: async (id, at) => mapKeys((await req('PATCH', `/groups?id=${eq(id)}`, { archived_at: at }, 'return=representation'))?.[0], camel),
+    // One statement per table. The members delete fails as a whole (23503) when any expense, settlement or intent points at a member.
+    deleteGroup: async (id) => {
+      try {
+        await req('DELETE', `/members?group_id=${eq(id)}`);
+        await req('DELETE', `/invites?group_id=${eq(id)}`);
+        await req('DELETE', `/groups?id=${eq(id)}`);
+      } catch (err) {
+        if (err.pgCode === '23503') throw hasHistory();
+        throw err;
+      }
     },
     insertMember: (m) => insert('members', m),
+    deleteMember: async (id) => {
+      try {
+        await req('DELETE', `/members?id=${eq(id)}`);
+      } catch (err) {
+        if (err.pgCode === '23503') throw hasHistory();
+        throw err;
+      }
+    },
     listMembers: (groupId) => select('members', `group_id=${eq(groupId)}&order=created_at`),
     insertInvite: (i) => insert('invites', i),
     getInvite: (code) => one('invites', `code=${eq(code)}`),

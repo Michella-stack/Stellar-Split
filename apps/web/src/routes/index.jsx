@@ -32,6 +32,7 @@ export const routes = [
           { path: 'groups', lazy: screen(() => import('./Groups.jsx')) },
           { path: 'groups/new', lazy: screen(() => import('./GroupNew.jsx')) },
           { path: 'groups/:id', lazy: screen(() => import('./Group.jsx')) },
+          { path: 'groups/:id/settings', lazy: screen(() => import('./GroupSettings.jsx')) },
           { path: 'groups/:id/invite', lazy: screen(() => import('./GroupInvite.jsx')) },
           { path: 'groups/:id/expenses/new', lazy: screen(() => import('./ExpenseNew.jsx')) },
           { path: 'groups/:id/expenses/scan', lazy: screen(() => import('./ExpenseScan.jsx')) },

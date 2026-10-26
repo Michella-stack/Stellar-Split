@@ -53,6 +53,10 @@ export function createHttpApi({ baseUrl, getToken }) {
     listGroups: () => request('GET', '/v1/groups'),
     createGroup: (input) => request('POST', '/v1/groups', input),
     getGroup: (groupId) => request('GET', `/v1/groups/${enc(groupId)}`),
+    updateGroup: (groupId, patch) => request('PATCH', `/v1/groups/${enc(groupId)}`, patch),
+    // Answers { result: 'deleted' } for a group with no history and { result: 'archived' } when it has expenses or payments.
+    deleteGroup: (groupId) => request('DELETE', `/v1/groups/${enc(groupId)}`),
+    removeMember: (groupId, memberId) => request('DELETE', `/v1/groups/${enc(groupId)}/members/${enc(memberId)}`),
     createInvite: (groupId, input = {}) => request('POST', `/v1/groups/${enc(groupId)}/invites`, input),
     addMember: (groupId, input) => request('POST', `/v1/groups/${enc(groupId)}/members`, input),
     acceptInvite: (code) => request('POST', `/v1/invites/${enc(code)}/accept`),

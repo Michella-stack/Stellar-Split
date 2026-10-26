@@ -38,6 +38,8 @@ Shapes follow [`apps/web/src/client/README.md`](../web/src/client/README.md). Er
 | `GET /v1/me`, `PATCH /v1/me` | Profile: `displayName`, `homeCurrency`, `email` |
 | `GET /v1/groups`, `POST /v1/groups` | My groups with my net and totals; create a group (the creator joins) |
 | `GET /v1/groups/:id` | Group, members, balances, my suggested transfers |
+| `PATCH /v1/groups/:id`, `DELETE /v1/groups/:id` | Creator only. Rename or change the type; delete a group with no history, or archive one that has expenses or payments (needs `database/migrations/005_group_archive.sql`) |
+| `DELETE /v1/groups/:id/members/:memberId` | The creator removes anyone and a member can leave. Refused with `MEMBER_HAS_HISTORY` once they appear in an expense or payment, and the creator cannot leave |
 | `POST /v1/groups/:id/members` | Add a member by Stellar address (`kind: human` or `agent`) |
 | `POST /v1/groups/:id/invites`, `POST /v1/invites/:code/accept` | Invite links, optionally bound to one address |
 | `GET`, `POST /v1/groups/:id/expenses` | List; create with an equal or exact split. `Idempotency-Key` header makes retries safe |

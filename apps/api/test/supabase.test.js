@@ -81,3 +81,25 @@ test('an id that is not a uuid is a missing row, not a server error', async () =
   assert.equal(await repo.getGroup('undefined'), null);
   await assert.rejects(createSupabaseRepository({ url: 'https://x.supabase.co', serviceKey: 'k', fetchImpl: async () => new Response('{"code":"XX000"}', { status: 400 }) }).getGroup('g'));
 });
+
+test('deleting a group or member that has history becomes HAS_HISTORY; archiving writes archived_at', async () => {
+  const sent = [];
+  const refuse = async (url, init) => {
+    sent.push(`${init.method} ${new URL(url).pathname.split('/').pop()}`);
+    return new Response(JSON.stringify({ code: '23503', message: 'foreign key violation' }), { status: 409 });
+  };
+  const repo = createSupabaseRepository({ url: 'https://x.supabase.co', serviceKey: 'k', fetchImpl: refuse });
+  await assert.rejects(() => repo.deleteGroup('g1'), (err) => err.code === 'HAS_HISTORY');
+  assert.deepEqual(sent, ['DELETE members'], 'stops at the first refusal, so nothing else is deleted');
+  await assert.rejects(() => repo.deleteMember('m1'), (err) => err.code === 'HAS_HISTORY');
+
+  const bodies = [];
+  const accept = async (url, init) => {
+    bodies.push({ method: init.method, body: init.body && JSON.parse(init.body) });
+    return new Response(JSON.stringify([{ id: 'g1', archived_at: '2026-10-26T00:00:00.000Z' }]), { status: 200 });
+  };
+  const ok = createSupabaseRepository({ url: 'https://x.supabase.co', serviceKey: 'k', fetchImpl: accept });
+  const group = await ok.archiveGroup('g1', '2026-10-26T00:00:00.000Z');
+  assert.equal(group.archivedAt, '2026-10-26T00:00:00.000Z');
+  assert.deepEqual(bodies[0], { method: 'PATCH', body: { archived_at: '2026-10-26T00:00:00.000Z' } });
+});

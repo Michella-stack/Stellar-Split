@@ -11,21 +11,25 @@ import { useToast } from '../../hooks/useToast.js';
 import { DEMO } from '../../lib/demoMode.js';
 import { downloadBlob, renderReceiptPng } from './receipt.js';
 import { useAssetCode } from '../../lib/asset.js';
-import { shortAddress } from '../../lib/format.js';
+import { formatDate, shortAddress } from '../../lib/format.js';
 
 /**
  * Success screen after a confirmed Testnet payment.
  * @param {{ amount: string, recipientName: string, recipientAddress: string, groupId: string, groupName: string, txHash: string,
  *   fullyPaid: boolean, record: { status: 'saving' | 'saved' | 'failed' | 'review', retry: () => void },
- *   next?: { memberId: string, name: string, queue: string[], done: number, total: number } | null }} props
+ *   next?: { memberId: string, name: string, queue: string[], done: number, total: number } | null,
+ *   history?: { title: string, body: string, paidAt: Date } | null }} props
  *   next: the following payment of a "Settle all" queue
+ *   history: set when the card is opened later from Activity. It replaces the headline and body, hides the save status and
+ *   the next payment, and sends the back button to Activity. `paidAt` is the date the payment was recorded.
  */
-export function PaidCard({ amount, recipientName, recipientAddress, groupId, groupName, txHash, fullyPaid, record, next = null }) {
+export function PaidCard({ amount, recipientName, recipientAddress, groupId, groupName, txHash, fullyPaid, record, next = null, history = null }) {
   const { t } = useT();
   const code = useAssetCode();
   const copy = useCopy();
   const toast = useToast();
-  const [paidAt] = useState(() => new Date());
+  const [now] = useState(() => new Date());
+  const paidAt = history?.paidAt ?? now;
   const [busy, setBusy] = useState(/** @type {'save' | 'share' | null} */ (null));
   const explorerUrl = `${EXPLORER_TX_URL}${txHash}`;
   const filename = `stellar-split-receipt-${txHash.slice(0, 8)}.png`;
@@ -81,9 +85,15 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
     <div className="flex flex-col gap-6 py-4">
       <Card tone="accent" as="section" aria-labelledby="paid-title" className="flex flex-col gap-3">
         <h1 id="paid-title" className="font-display-wide text-4xl">
-          {fullyPaid ? t('balance.allSquare') : t('paid.sent')}
+          {history ? history.title : fullyPaid ? t('balance.allSquare') : t('paid.sent')}
         </h1>
-        <p>{fullyPaid ? t('paid.fullBody', { name: recipientName, group: groupName }) : t('paid.partialBody', { name: recipientName, group: groupName })}</p>
+        <p>
+          {history
+            ? history.body
+            : fullyPaid
+              ? t('paid.fullBody', { name: recipientName, group: groupName })
+              : t('paid.partialBody', { name: recipientName, group: groupName })}
+        </p>
         <Amount value={amount} size="lg" tone="inherit" />
       </Card>
 
@@ -98,6 +108,9 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
           </IconButton>
         </div>
         {DEMO && <p className="text-sm text-muted">{t('paid.demoNote')}</p>}
+        {history ? (
+          <p className="text-sm text-muted">{formatDate(paidAt)}</p>
+        ) : (
         <p role="status" className="text-sm text-muted">
           {record.status === 'saving' && t('paid.saving')}
           {record.status === 'saved' && t('paid.saved')}
@@ -113,6 +126,7 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
             </span>
           )}
         </p>
+        )}
       </Card>
 
       {!DEMO && (
@@ -126,7 +140,11 @@ export function PaidCard({ amount, recipientName, recipientAddress, groupId, gro
           <span className="sr-only">{t('common.opensNewTab')}</span>
         </a>
       )}
-      {next ? (
+      {history ? (
+        <ButtonLink to={`/groups/${groupId}/activity`} block>
+          {t('paid.backToActivity')}
+        </ButtonLink>
+      ) : next ? (
         <>
           <p role="status" className="text-center text-sm text-muted">
             {t('paid.progress', { done: next.done, total: next.total })}

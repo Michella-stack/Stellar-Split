@@ -9,11 +9,17 @@ describe('draftToPrefill', () => {
     expect(draftToPrefill(draft({ currency: 'USD', usdc: '58.14' }))).toEqual({ amount: '58.14', description: 'Pingo Doce', hint: null, source: 'scan' });
   });
 
-  it('leaves the amount empty in any other currency and says what the receipt total was', () => {
+  it('fills a ticket in another known currency in that currency, to be converted by the form', () => {
     const prefill = draftToPrefill(draft());
+    expect(prefill).toMatchObject({ amount: '58.14', currency: 'EUR', source: 'scan' });
+    expect(prefill.hint).toBe('The receipt is in EUR. It will be converted to USDC at the rate shown; you can change it.');
+  });
+
+  it('leaves the amount empty only for a currency the app cannot convert, and says what the total was', () => {
+    const prefill = draftToPrefill(draft({ currency: 'JPY' }));
     expect(prefill.amount).toBe('');
-    expect(prefill.hint).toBe('The receipt total is EUR 58.14. Enter the amount in USDC.');
-    expect(prefill.source).toBe('scan');
+    expect(prefill.currency).toBeUndefined();
+    expect(prefill.hint).toBe('The receipt total is JPY 58.14. Enter the amount in USDC.');
   });
 
   it('copes with a missing merchant or currency, and keeps the description within the form limit', () => {
@@ -29,17 +35,20 @@ describe('a EURC group', () => {
     expect(draftToPrefill(draft(), 'EURC')).toEqual({ amount: '58.14', description: 'Pingo Doce', hint: null, source: 'scan' });
   });
 
-  it('leaves the amount empty for any other currency and asks for it in EURC', () => {
-    for (const currency of ['USD', 'GBP', null]) {
+  it('converts a ticket in dollars or pounds, and asks by hand only for an unknown currency', () => {
+    for (const currency of ['USD', 'GBP']) {
       const prefill = draftToPrefill(draft({ currency, usdc: currency === 'USD' ? '58.14' : null }), 'EURC');
-      expect(prefill.amount, String(currency)).toBe('');
-      expect(prefill.hint).toBe(`The receipt total is ${[currency, '58.14'].filter(Boolean).join(' ')}. Enter the amount in EURC.`);
+      expect(prefill, currency).toMatchObject({ amount: '58.14', currency });
+      expect(prefill.hint).toBe(`The receipt is in ${currency}. It will be converted to EURC at the rate shown; you can change it.`);
     }
+    const unknown = draftToPrefill(draft({ currency: null }), 'EURC');
+    expect(unknown.amount).toBe('');
+    expect(unknown.hint).toBe('The receipt total is 58.14. Enter the amount in EURC.');
   });
 
-  it('does not fill a USDC group from a ticket in euros', () => {
-    expect(draftToPrefill(draft(), 'USDC').amount).toBe('');
-    expect(draftToPrefill(draft()).amount).toBe('');
+  it('converts a ticket in euros for a USDC group instead of leaving it empty', () => {
+    expect(draftToPrefill(draft(), 'USDC')).toMatchObject({ amount: '58.14', currency: 'EUR' });
+    expect(draftToPrefill(draft())).toMatchObject({ amount: '58.14', currency: 'EUR' });
   });
 });
 

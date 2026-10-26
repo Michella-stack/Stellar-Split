@@ -1,16 +1,20 @@
 import { useId } from 'react';
 import { useT } from '../../hooks/useT.js';
 import { ASSETS, useAssetCode } from '../../lib/asset.js';
+import { CURRENCY_SYMBOL } from './currency.js';
 import { cleanAmountInput } from './splitPreview.js';
 
 /**
  * Large amount entry in the group's asset. Only digits and one decimal point, up to 7 decimals.
- * @param {{ value: string, onChange: (value: string) => void, error?: string | null, label?: string }} props
+ * Shows the group's asset unless `currency` says the expense is typed in another one (ADR 0011).
+ * @param {{ value: string, onChange: (value: string) => void, error?: string | null, label?: string, currency?: string | null }} props
  */
-export function AmountInput({ value, onChange, error, label }) {
+export function AmountInput({ value, onChange, error, label, currency = null }) {
   const { t } = useT();
   const id = useId();
-  const code = useAssetCode();
+  const assetCode = useAssetCode();
+  const code = currency ?? assetCode;
+  const symbol = currency ? (CURRENCY_SYMBOL[currency] ?? '') : ASSETS[assetCode].symbol;
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-sm font-medium">
@@ -18,7 +22,7 @@ export function AmountInput({ value, onChange, error, label }) {
       </label>
       <div className="flex items-baseline gap-2 rounded-card bg-surface px-5 py-4 focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-text">
         <span aria-hidden="true" className="font-display-wide text-5xl text-muted">
-          {ASSETS[code].symbol}
+          {symbol}
         </span>
         <input
           id={id}

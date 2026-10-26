@@ -14,6 +14,10 @@ export function ExpenseRow({ expense, members, meId }) {
   const code = useAssetCode();
   const payer = members.find((m) => m.id === expense.paidBy);
   const myShare = expense.shares?.find((s) => s.memberId === meId)?.amount;
+  // An expense entered in another currency shows what was typed first, then what it counts for in the group (ADR 0011).
+  const total = expense.original
+    ? t('expense.row.converted', { original: formatMoney(expense.original.amount, expense.original.currency), amount: formatMoney(expense.amount, code) })
+    : formatMoney(expense.amount, code);
   return (
     <ListRow
       leading={
@@ -24,8 +28,8 @@ export function ExpenseRow({ expense, members, meId }) {
       title={expense.description}
       subtitle={
         payer?.id === meId
-          ? t('expense.row.paidYou', { amount: formatMoney(expense.amount, code), date: formatDate(expense.createdAt) })
-          : t('expense.row.paidOther', { name: memberName(payer, meId), amount: formatMoney(expense.amount, code), date: formatDate(expense.createdAt) })
+          ? t('expense.row.paidYou', { amount: total, date: formatDate(expense.createdAt) })
+          : t('expense.row.paidOther', { name: memberName(payer, meId), amount: total, date: formatDate(expense.createdAt) })
       }
       trailing={
         myShare ? (

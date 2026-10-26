@@ -11,17 +11,18 @@ import { Chip } from '../components/Chip.jsx';
 import { IconCheck } from '../components/icons.jsx';
 import { LoadError, Loading } from '../components/LoadState.jsx';
 import { Segmented } from '../components/Segmented.jsx';
-import { TextField } from '../components/TextField.jsx';
+import { SelectField, TextField } from '../components/TextField.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { MemberAvatar } from '../features/balances/MemberAvatar.jsx';
 import { AmountInput } from '../features/expenses/AmountInput.jsx';
+import { CURRENCY_SYMBOL, convertedAmount, convertExactShares, currencyOfAsset, EXPENSE_CURRENCIES, rateFor, rateProblem } from '../features/expenses/currency.js';
 import { cleanAmountInput, descriptionError as describeProblem, equalPreview, exactStatus } from '../features/expenses/splitPreview.js';
 import { useApi } from '../hooks/useApi.js';
 import { useT } from '../hooks/useT.js';
 import { useToast } from '../hooks/useToast.js';
 import { ASSETS, useAssetCode } from '../lib/asset.js';
 import { formatMoney, memberName } from '../lib/format.js';
-import { useEstimate } from '../hooks/useRates.js';
+import { useEstimate, useRates } from '../hooks/useRates.js';
 
 const AMOUNT_ERRORS = {
   INVALID_FORMAT: 'expense.errFormat',
@@ -52,6 +53,7 @@ function ExpenseForm({ detail }) {
   const { t } = useT();
   const code = useAssetCode();
   const estimate = useEstimate();
+  const { rates: ratesPerUsd, source: ratesSource } = useRates();
   const navigate = useNavigate();
   const toast = useToast();
   const prefill = useLocation().state?.prefill;
@@ -59,6 +61,11 @@ function ExpenseForm({ detail }) {
   const humans = members.filter((m) => m.kind === 'human').map((m) => m.id);
 
   const [amount, setAmount] = useState(prefill?.amount ?? '');
+  const groupCurrency = currencyOfAsset(code);
+  // The currency the amount is typed in. The group's own unless the person (or a scanned ticket) says otherwise (ADR 0011).
+  const [currency, setCurrency] = useState(prefill?.currency ?? groupCurrency);
+  const [typedRate, setTypedRate] = useState('');
+  const [editingRate, setEditingRate] = useState(false);
   const [description, setDescription] = useState(prefill?.description ?? '');
   const [paidBy, setPaidBy] = useState(me);
   const [splitType, setSplitType] = useState('equal');
@@ -71,15 +78,20 @@ function ExpenseForm({ detail }) {
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const amountCheck = validateAmount(amount);
+  const foreign = currency !== groupCurrency;
+  const used = rateFor({ currency, groupCurrency, ratesPerUsd, typed: typedRate });
+  const rateError = editingRate && typedRate !== '' && rateProblem(typedRate) ? t('expense.rateInvalid') : null;
+  // What the group's balance gets: the amount itself, or the amount converted once at the rate in use.
+  const groupAmount = foreign ? convertedAmount(amount, used?.rate) : amount;
   const amountError = touched && !amountCheck.ok ? t(AMOUNT_ERRORS[amountCheck.code]) : null;
   // The helper decides when to complain; the words come from the translations.
   const problem = describeProblem(description, touched);
   const descriptionError = !problem ? null : containsSecretKey(description) ? t('secret.warningShort') : t('expense.descriptionRequired');
   const ordered = members.map((m) => m.id).filter((mid) => participants.includes(mid));
-  const equal = equalPreview(amount, ordered, paidBy);
+  const equal = equalPreview(groupAmount, ordered, paidBy);
   const exactCheck = exactStatus(amount, exact);
   const splitOk = splitType === 'equal' ? Boolean(equal) : exactCheck.state === 'ok';
-  const canSave = amountCheck.ok && description.trim() && !descriptionError && splitOk;
+  const canSave = amountCheck.ok && Boolean(groupAmount) && !rateError && description.trim() && !descriptionError && splitOk;
   const byId = new Map(members.map((m) => [m.id, m]));
 
   function toggleParticipant(memberId) {
@@ -92,12 +104,15 @@ function ExpenseForm({ detail }) {
     if (!canSave) return;
     setSaving(true);
     setServerError(null);
+    // Shares typed in the expense's currency are converted together, so they add up to exactly the converted amount.
+    const exactShares = exactCheck.shares.map((s) => ({ memberId: s.memberId, amount: s.amount }));
     const split =
       splitType === 'equal'
         ? { type: 'equal', participants: ordered }
-        : { type: 'exact', shares: exactCheck.shares.map((s) => ({ memberId: s.memberId, amount: s.amount })) };
+        : { type: 'exact', shares: foreign ? convertExactShares(exactShares, used.rate) : exactShares };
+    const money = foreign ? { original: { amount, currency, rate: used.rate } } : { amount };
     try {
-      await createExpense(group.id, { description: description.trim(), amount, paidBy, split, source: prefill?.source ?? 'manual' }, { idempotencyKey });
+      await createExpense(group.id, { description: description.trim(), ...money, paidBy, split, source: prefill?.source ?? 'manual' }, { idempotencyKey });
       toast(t('expense.added', { description: description.trim() }), { tone: 'success' });
       navigate(`/groups/${group.id}`, { replace: true });
     } catch (e) {
@@ -117,7 +132,49 @@ function ExpenseForm({ detail }) {
           {prefill.hint ? ` ${prefill.hint}` : ''}
         </p>
       )}
-      <AmountInput value={amount} onChange={setAmount} error={amountError} />
+      <AmountInput value={amount} onChange={setAmount} error={amountError} currency={foreign ? currency : null} />
+      <SelectField
+        label={t('expense.currency')}
+        value={currency}
+        onChange={(e) => {
+          setCurrency(e.target.value);
+          setTypedRate('');
+          setEditingRate(false);
+        }}
+        options={EXPENSE_CURRENCIES.map((c) => ({
+          value: c,
+          label: c === groupCurrency ? t('expense.currencyGroup', { currency: c, asset: code }) : `${c} · ${t(`currency.${c}`)}`,
+        }))}
+        hint={foreign ? undefined : t('expense.currencyHint', { asset: code })}
+      />
+      {foreign && used && (
+        <Card className="flex flex-col gap-3" aria-live="polite">
+          <p className="font-semibold">
+            {amountCheck.ok && groupAmount
+              ? t('expense.converted', { amount: formatMoney(amount, currency), result: formatMoney(groupAmount, code), asset: code })
+              : t('expense.convertedEmpty', { asset: code })}
+          </p>
+          <p className="text-sm text-muted">
+            {t('expense.rateLine', { group: groupCurrency, rate: used.rate, currency })} ·{' '}
+            {used.custom ? t('expense.rateYours') : ratesSource === 'live' ? t('expense.rateLive') : t('expense.rateSample')}
+          </p>
+          <p className="text-sm text-muted">{t('expense.rateFixed')}</p>
+          {editingRate ? (
+            <TextField
+              label={t('expense.rateLabel', { group: groupCurrency, currency })}
+              inputMode="decimal"
+              value={typedRate}
+              onChange={(e) => setTypedRate(cleanAmountInput(e.target.value))}
+              error={rateError}
+              hint={t('expense.rateHint')}
+            />
+          ) : (
+            <Button variant="ghost" onClick={() => setEditingRate(true)}>
+              {t('expense.changeRate')}
+            </Button>
+          )}
+        </Card>
+      )}
       <TextField
         label={t('expense.what')}
         placeholder={t('expense.whatPlaceholder')}
@@ -197,7 +254,7 @@ function ExpenseForm({ detail }) {
                 </span>
                 <span className="flex items-center gap-1 rounded-input border-2 border-line bg-bg px-3 focus-within:border-text">
                   <span aria-hidden="true" className="text-muted">
-                    {ASSETS[code].symbol}
+                    {foreign ? (CURRENCY_SYMBOL[currency] ?? '') : ASSETS[code].symbol}
                   </span>
                   <input
                     inputMode="decimal"
@@ -211,7 +268,7 @@ function ExpenseForm({ detail }) {
               </label>
             ))}
           </Card>
-          <ExactSummary status={exactCheck} amount={amount} />
+          <ExactSummary status={exactCheck} amount={amount} unit={foreign ? currency : code} />
         </div>
       )}
 
@@ -228,11 +285,10 @@ function ExpenseForm({ detail }) {
   );
 }
 
-/** @param {{ status: ReturnType<typeof exactStatus>, amount: string }} props */
-function ExactSummary({ status, amount }) {
+/** @param {{ status: ReturnType<typeof exactStatus>, amount: string, unit: string }} props unit: the currency the shares are typed in */
+function ExactSummary({ status, amount, unit }) {
   const { t } = useT();
-  const code = useAssetCode();
-  const formatUsd = (v) => formatMoney(v, code);
+  const formatUsd = (v) => formatMoney(v, unit);
   const total = validateAmount(amount).ok ? formatUsd(amount) : null;
   const params = { total, sum: formatUsd(status.sum), difference: formatUsd(status.difference) };
   const text = {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatUsd, initials, shortAddress, signOf } from './format.js';
+import { formatMoney, formatUsd, initials, shortAddress, signOf } from './format.js';
 
 describe('formatUsd', () => {
   it.each([
@@ -61,5 +61,15 @@ describe('formatMoney', () => {
     expect(formatMoney('-364.6', 'USDC')).toBe('$364.60');
     expect(formatMoney('1172.2000000', 'EURC')).toBe('€1,172.20');
     expect(formatMoney('0.005', 'EURC')).toBe('€0.01');
+  });
+});
+
+describe('formatMoney in the currency of an expense (ADR 0011)', () => {
+  it('uses the symbol where there is one and the code in front where there is not', () => {
+    expect(formatMoney('20', 'EUR')).toBe('€20.00');
+    expect(formatMoney('20', 'GBP')).toBe('£20.00');
+    expect(formatMoney('1234.5', 'MXN')).toBe('MXN\u00a01,234.50');
+    expect(formatMoney('20', 'USDC')).toBe('$20.00');
+    expect(formatMoney('20')).toBe('$20.00');
   });
 });

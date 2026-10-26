@@ -1,6 +1,7 @@
 # 0010. One settlement asset per group: USDC or EURC
 
 - **Status:** Accepted, 2026-10-25. Decided by Victor Estival and built by Michella Warren (PR #105, issue #98). Not yet tested with a real EURC payment through Freighter.
+- **Amended by:** [ADR 0011](0011-expenses-can-be-entered-in-another-currency.md): expenses can be entered in another currency and are converted when saved. The group's asset, and everything about settling, is as decided here.
 - **Related:** ADR 0003, `docs/DEPLOYMENT.md`, `database/migrations/003_group_asset.sql`, issue #98.
 
 ## Context

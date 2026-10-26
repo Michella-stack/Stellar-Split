@@ -3,6 +3,9 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   checkExactSplit,
+  convertToStroops,
+  currencyOfAsset,
+  EXPENSE_CURRENCIES,
   expenseShares,
   fromStroops,
   netBalances,
@@ -22,16 +25,44 @@ export class ApiError extends Error {
 
 const MAX_AMOUNT = toStroops('1000000000000');
 const MAX_MEMBERS = 50;
+const MIN_RATE = toStroops('0.001');
+const MAX_RATE = toStroops('1000000');
 // A reserved intent blocks other settlements for its debtor and creditor until it is paid, cancelled or expires (ADR 0003).
 const INTENT_TTL_MS = 10 * 60 * 1000;
 const memoFor = (intentId) => createHash('sha256').update(`stellar-split:intent:${intentId}`).digest('hex');
-const pub = ({ idempotencyKey, ...e }) => e;
+// An expense entered in another currency keeps what was typed and the rate, next to the amount in the group's asset (ADR 0011).
+const pub = ({ idempotencyKey, originalAmount, originalCurrency, rate, ...e }) => ({
+  ...e,
+  ...(originalAmount ? { original: { amount: originalAmount, currency: originalCurrency, rate } } : {}),
+});
 const fmt = (stroops) => fromStroops(stroops, { minDecimals: 2 });
 const invalid = (message, details) => new ApiError(400, 'VALIDATION', message, details);
 
 function text(value, field, max) {
   if (typeof value !== 'string' || value.trim().length === 0 || value.length > max) throw invalid(`${field} must be 1 to ${max} characters`);
   return value.trim();
+}
+
+/**
+ * The amount of a new expense in the group's asset. Normally it is `input.amount`. With `input.original` ({ amount, currency, rate })
+ * it is converted here, once, and the original and the rate are kept on the expense; a client that also sends `amount` must have
+ * converted it the same way (AMOUNT_RATE_MISMATCH otherwise), so what is stored is always what the rate says.
+ * @returns {{ total: bigint, original: { originalAmount: string, originalCurrency: string, rate: string } | null }}
+ */
+function expenseAmount(input, groupCurrency) {
+  if (input.original === undefined || input.original === null) return { total: amountOf(input.amount), original: null };
+  const o = input.original;
+  const others = EXPENSE_CURRENCIES.filter((c) => c !== groupCurrency);
+  if (typeof o !== 'object' || !others.includes(o.currency)) throw invalid(`original.currency must be one of: ${others.join(', ')}`);
+  const typed = amountOf(o.amount, 'original.amount');
+  const rate = validateAmount(o.rate);
+  if (!rate.ok || rate.stroops < MIN_RATE || rate.stroops > MAX_RATE) throw invalid('original.rate must be between 0.001 and 1000000', { field: 'original.rate' });
+  const total = convertToStroops(o.amount, o.rate);
+  if (total <= 0n || total > MAX_AMOUNT) throw invalid('The converted amount must be positive and within the limit', { field: 'original.amount' });
+  if (input.amount !== undefined && input.amount !== fmt(total)) {
+    throw new ApiError(400, 'AMOUNT_RATE_MISMATCH', 'amount is not original.amount converted at original.rate', { expected: fmt(total) });
+  }
+  return { total, original: { originalAmount: fmt(typed), originalCurrency: o.currency, rate: fromStroops(rate.stroops, { minDecimals: 0 }) } };
 }
 
 function amountOf(value, field = 'amount') {
@@ -332,9 +363,9 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     },
 
     async createExpense(principal, groupId, input = {}, idempotencyKey) {
-      const { members, me } = await forMember(principal, groupId);
+      const { members, me, group } = await forMember(principal, groupId);
       const ids = new Set(members.map((m) => m.id));
-      const total = amountOf(input.amount);
+      const { total, original } = expenseAmount(input, currencyOfAsset(group.asset ?? stellar.asset.code));
       if (!ids.has(input.paidBy)) throw invalid('paidBy must be a member of the group');
       const split = input.split ?? {};
       let clean;
@@ -369,6 +400,7 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
         groupId,
         description: text(input.description, 'description', 200),
         amount,
+        ...original,
         paidBy: input.paidBy,
         split: clean,
         shares,

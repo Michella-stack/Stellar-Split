@@ -1,6 +1,6 @@
 # Wallets: Freighter now, more wallets later
 
-Status: analysis and roadmap, 2026-10-25, with the **spike result of 2026-10-26 in section 7**. **Paused**: nothing here is built. The decision is in [ADR 0008](adr/0008-more-wallets-after-freighter-is-roadmap.md). Network: Stellar Testnet only.
+Status: analysis and roadmap, 2026-10-25, with the **spike result of 2026-10-26 in section 7** and the **reading of Blux in section 8**. **Paused**: nothing here is built. The decision is in [ADR 0008](adr/0008-more-wallets-after-freighter-is-roadmap.md). Network: Stellar Testnet only.
 
 ## 1. Where we are
 
@@ -55,7 +55,7 @@ Half a day, in a branch, no merge. It turns the estimates above into numbers.
 
 ## 6. Not verified
 
-Every effort number; which wallets sign messages; how the kit's interface behaves under our CSP; the real bundle size; what Blux offers beyond its docs page; how the kit handles our "refuse on another network" rule.
+Every effort number; which wallets sign messages; how the kit's interface behaves under our CSP; the real bundle size; what Blux offers beyond its docs page (read on 2026-10-26, see section 8); how the kit handles our "refuse on another network" rule.
 
 ## 7. Spike result, 2026-10-26
 
@@ -118,4 +118,46 @@ Section 2 called it more code and more dependencies for no benefit. Measured for
 ### Still not verified
 
 No real wallet was run, so: that xBull's, Lobstr's or Hana's `signMessage` returns a signature our API accepts; how each behaves on Testnet and on another network; the popups and frames under the CSP; mobile and hardware wallets; the size of our own adapters inside the app. Every effort number of section 3 is still an estimate.
+
+## 8. Blux, and signing in without a wallet (2026-10-26)
+
+Section 2 listed Blux as "not recommended" and section 6 said it had not been read. It has now been read (its documentation, its npm packages and its licence). Nothing was installed in the app.
+
+### The need worth keeping
+
+**People without a Stellar wallet cannot use the app.** Signing in with Google, email or a passkey would remove that barrier, and the team liked it. That need is separate from Blux, and it stays open. Blux is one way to meet it, and **today it does not fit** (below).
+
+### What Blux is (read from its documentation and packages)
+
+- `@bluxcc/core` and `@bluxcc/react`, version 0.3.9, published 2026-10-03. A login modal and hooks that offer email, social accounts (Google, Apple and others), passkeys, or an existing wallet (Freighter, xBull, Lobstr, Albedo, Hana, HOT, WalletConnect, hardware wallets). Signing a transaction, signing a message (`signMessage`, with a confirmation modal) and signing Soroban authorisation entries.
+- It needs an **App ID** from its dashboard (the only required setting), and a server **App Secret** for its server API. The network defaults to **Mainnet**; how to select Testnet is not on the pages read.
+- Its server API (`POST /server/wallets/verify`) answers whether an address belongs to a user of the project, with `wallet_type` **`custodial` or `external`**. It sends the address and the app credentials to `api.blux.cc`.
+
+### Why it does not fit today
+
+1. **Licence.** `@bluxcc/core` is under the **Business Source License 1.1** with **Additional Use Grant: None**. Production use is "strictly prohibited" until the Change Date (the earlier of 2028-02-05 or a date the licensor sets, then AGPL-3.0). Production use is any deployment that serves third parties, **commercial or not**, or supports business operations in any way. Copying or redistributing the code is also forbidden, which includes bundling it into a public web app. Using it needs a commercial licence from `support@blux.cc`. This repository is MIT and public.
+2. **Custody.** The documentation refers to **"Blux-provisioned custodial accounts"** for people who sign in without a wallet. That is the keys held by a third party that ADR 0008 point 3 ruled out: the app is built around each person signing with their own key (`checkIntent`, the agent caps and the on-chain checks assume it).
+3. **An outside account.** App ID, App Secret and a dashboard we would not control, and the addresses of our users sent to its servers.
+4. **Supply chain.** Installing it in an empty project (with the peers npm installs) gives **283 packages and 19 `npm audit` findings (13 low, 6 moderate, none high)**, better than the kit of section 7. Three transitive packages have install scripts (`bufferutil`, `utf-8-validate`, `secp256k1`). Licences in the tree: `@lobstrco/signer-extension-api` GPL-3.0, `rpc-websockets` LGPL-3.0, four packages with no licence declared (`@hot-wallet/sdk`, `@near-wallet-selector/core`, `eyes`, `text-encoding-utf-8`), and the WalletConnect packages "see licence".
+
+### Not verified
+
+Who holds the keys of an email, social or passkey account, and whether it can be exported (the documentation does not say); the format of its `signMessage` signature and whether our API would accept it (SEP-53 is not mentioned); how to select Testnet; what it needs from our CSP and from domains; its price (the documentation read shows none, and the React readme mentions phone sign-in only on a paid plan); anything that needs the product running. None of it was run.
+
+### What would have to be true to revisit it
+
+1. A **written licence** from Blux that covers a deployed demo and, later, production. Asking is the team's decision, not something to assume.
+2. **A new ADR on custody**: whether people who sign in with Google or email may hold a custodial account at all, and what that does to `checkIntent`, the agent caps, who is responsible for a payment, and the privacy note on the expense form.
+3. Testnet confirmed, and a message signature our API accepts (or the challenge transaction fallback of ADR 0005).
+4. The same checks as section 5: CSP, bundle, audit, licences.
+
+### Other ways to meet the same need (not evaluated)
+
+Listed so the need is not tied to one vendor. None has been read or tried.
+
+- **Passkey smart accounts** (a Soroban account controlled by a passkey on the person's device), which the Stellar developer skills list among the standard options. If the key stays on the device this can stay non-custodial, which is the point of looking at it.
+- A **Blux licence** under the conditions above, accepting custodial accounts for people without a wallet and keeping Freighter and other wallets for the rest.
+- **Sign-in only**, with email or Google to identify a person and a wallet still needed to pay. Smaller, and does not move any money.
+
+Sources: [Blux documentation](https://docs.blux.cc), [server API: verify a wallet](https://docs.blux.cc/api/verify-wallet), [users](https://docs.blux.cc/api/users), [sign a message](https://docs.blux.cc/javascript/usage/sign-message), the `LICENSE` file inside `@bluxcc/core` 0.3.9 on npm, and [bluxcc on GitHub](https://github.com/bluxcc).
 

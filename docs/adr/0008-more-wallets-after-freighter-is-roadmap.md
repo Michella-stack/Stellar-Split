@@ -41,3 +41,11 @@ The half-day spike of point 4 was done (`docs/WALLETS.md` section 7). The decisi
 - **Licences need a decision:** Lobstr's SDK 2.0.0 is GPL-3.0 and xBull's SDK 0.4.0 declares none, in an MIT repository.
 - Not verified, because no real wallet was run: that those signatures are accepted by the API, the wallets' popups under the CSP, Testnet behaviour.
 
+## Update, 2026-10-26: Blux was read
+
+Point 3 and the Blux entry in "Alternatives considered" said Blux had not been read in detail. It has (`docs/WALLETS.md` section 8). The decision stands, with better grounds:
+
+- **Licence.** `@bluxcc/core` is Business Source License 1.1 with no additional use grant: production use, including a public deployment that is not commercial, is prohibited before 2028-02-05 without a commercial licence from Blux. This repository is MIT.
+- **Custody.** Its documentation calls the accounts it creates for email, social and passkey sign-in "custodial". That is the model point 3 rules out.
+- **The need stays.** People without a wallet cannot use the app, and signing in with Google or email was liked. That is a separate item, open, and Blux is only one way to meet it. To revisit Blux it takes a written licence and **a new ADR on custody**, as point 3 already said.
+

@@ -11,6 +11,7 @@ const amount = z
   .string()
   .regex(/^\d{1,12}(\.\d{1,7})?$/, "amount must be a positive decimal with at most 7 decimals")
   .refine((v) => toUnits(v) > 0n, "amount must be greater than zero");
+const idempotencyKey = z.string().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/).refine(noSecret, "looks like a Stellar secret key");
 const text = (max) => z.string().min(1).max(max).refine(noSecret, "looks like a Stellar secret key");
 
 // 7 decimals, like USDC on Stellar. BigInt avoids float rounding in the sum check.
@@ -45,7 +46,7 @@ const fail = (error, status = 0) => ({
 });
 const fromApi = (r) => (r.ok ? reply(r.data) : fail(r.error, r.status));
 
-export function buildServer(api) {
+export function buildServer(api, { settler } = {}) {
   const server = new McpServer({ name: "ledgerly", version: "0.1.0" });
   const readOnly = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
@@ -78,7 +79,7 @@ export function buildServer(api) {
         amount,
         description: text(200),
         split,
-        idempotency_key: z.string().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/).refine(noSecret, "looks like a Stellar secret key").optional(),
+        idempotency_key: idempotencyKey.optional(),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
@@ -106,6 +107,26 @@ export function buildServer(api) {
     },
     async ({ group_id, to, amount: total }) => fromApi(await api.proposeSettlement(group_id, { to, amount: total })),
   );
+
+  if (settler) {
+    server.registerTool(
+      "ledgerly_settle",
+      {
+        title: "Settle a debt",
+        description:
+          "Pays `amount` to member `to` from the agent's own wallet on Stellar testnet and records it. SPENDS MONEY and cannot be undone. Maximum 25 per call. Use on_behalf_of to pay a linked owner's debt. The payment terms are checked against the reserved intent before anything is signed.",
+        inputSchema: { group_id: id, to: id, amount, on_behalf_of: id.optional(), idempotency_key: idempotencyKey.optional() },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+      },
+      async (args) => {
+        try {
+          return reply(await settler(args));
+        } catch (e) {
+          return fail({ code: String(e.code ?? "settle_failed"), message: String(e.message), ...e.extra });
+        }
+      },
+    );
+  }
 
   return server;
 }

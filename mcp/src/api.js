@@ -34,6 +34,7 @@ export function createApi({ baseUrl, token, fetchImpl = globalThis.fetch, timeou
     return {
       ok: false,
       status: res.status,
+      ...(res.status === 402 ? { data } : {}), // a 402 carries the payment terms in its body
       error: {
         code: String(err?.code ?? `http_${res.status}`).slice(0, 64),
         message: String(err?.message ?? res.statusText ?? "request failed").slice(0, 300),
@@ -60,6 +61,12 @@ export function createApi({ baseUrl, token, fetchImpl = globalThis.fetch, timeou
     createExpense: (groupId, body, idempotencyKey) =>
       call("POST", `${group(groupId)}/expenses`, { body: toApiExpense(body), headers: { "idempotency-key": idempotencyKey } }),
     // dry_run returns the settlement intent (who to pay, how much, which asset) without recording or paying anything.
+    reserveIntent: (groupId, body) => call("POST", `${group(groupId)}/settlements/intents`, { body }),
+    // Without a payment header the API answers 402 with the terms; with one it verifies the transaction and records it.
+    x402: (groupId, intentId, paymentSignature) =>
+      call("POST", `${group(groupId)}/settlements/intents/${encodeURIComponent(intentId)}/x402`, {
+        headers: paymentSignature ? { "payment-signature": paymentSignature } : {},
+      }),
     proposeSettlement: (groupId, body) => call("POST", `${group(groupId)}/settlements?dry_run=true`, { body }),
   };
 }

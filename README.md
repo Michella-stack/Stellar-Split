@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="apps/web/public/logo-horizontal-dark.svg" />
+    <img src="apps/web/public/logo-horizontal-light.svg" alt="Stellar Split" height="56" />
+  </picture>
+</p>
+
 # Stellar-Split
 
 Split shared expenses and settle them in USDC (or EURC, for euro groups) on Stellar, built for families and workers who send money across borders, with agent support via x402.

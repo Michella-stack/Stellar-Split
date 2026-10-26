@@ -19,6 +19,8 @@ Built at HackMeridian (Lisbon, 25 to 26 October 2026). Track: Genesis, with Stel
 | Agent payments (to and from the agent) and EURC, with transactions | [Agent payments and EURC on Testnet](#agent-payments-and-eurc-on-testnet) |
 | How we map to the judging criteria | [docs/JUDGING.md](docs/JUDGING.md) |
 
+> **Note for the judges: what is built and what is planned.** Everything under [What works today](#what-works-today) runs and was checked on Stellar Testnet, and the transactions are listed below. The [Roadmap](#roadmap) at the end of this README is **not built**: it records what we chose to leave out during the event and why, for example sign-in with email or social accounts, more wallets than Freighter, fiat ramps and on-chain limits for agents. Where the app shows something planned, such as the "More wallets" list on the connect screen, it is labelled "Coming soon" and does nothing. What we could not verify is listed in [docs/TESTING.md](docs/TESTING.md) and, for agents, in [docs/AGENT-MCP-ROLLOUT.md](docs/AGENT-MCP-ROLLOUT.md#status-of-the-rollout-26-october-2026).
+
 No wallet? Open the app and choose the demo: the whole app runs on sample data, without Freighter and without touching Stellar. With Freighter on Testnet you can settle real Testnet USDC and see the transaction on Stellar Expert.
 
 The app, the website and the docs are three separate Vercel deployments. The website and the docs live in [`sites/landing`](sites/landing) and [`sites/docs`](sites/docs) as static files and do not change the app.
@@ -45,8 +47,8 @@ Context from public sources (to be checked before the pitch; see `docs/BUILD-FOC
 | API: sign-in with a signed message, groups, members, expenses, balances, two-step settlements (a reserved intent, then the payment with its memo) recorded only after Horizon confirms it | [`apps/api`](apps/api/README.md) | Live at the URL above, with Supabase |
 | Shared money, split and balance rules used by both | [`packages/shared`](packages/shared/README.md) | Merged |
 | Non-custodial Soroban group contract | [`contracts/group`](contracts/README.md) | Deployed on Testnet (below) |
-| MCP server for agents: groups, balances, expenses, settlement proposals. It cannot move money | [`mcp`](docs/AGENT-INTERFACE.md) | Merged, not yet connected to the agents |
-| Hermes Agent and OpenClaw on Telegram | [`docs/AGENTS.md`](docs/AGENTS.md) | Running for the team; payments are the stretch goal |
+| MCP server for agents: groups, balances, expenses, settlement proposals and, only when it holds the agent's signer key, `ledgerly_settle` (pays within the caps the API enforces) | [`mcp`](docs/AGENT-INTERFACE.md) | Merged, and connected to Hermes and OpenClaw on the agent host. Payments by an agent are shown on Testnet [below](#agent-payments-and-eurc-on-testnet) |
+| Hermes Agent and OpenClaw on Telegram | [`docs/AGENTS.md`](docs/AGENTS.md) | Running for the team, each with its own MCP server. They read balances and record expenses; OpenClaw asks the owner to approve on Telegram before it records one. The Telegram agents have **not** paid yet: OpenClaw's payment tool is hidden until that approval is trusted with a payment |
 | Demo accounts: funded Testnet accounts with a USDC trustline and Testnet USDC, without a faucet | [`scripts/demo-accounts`](scripts/demo-accounts/README.md) | Merged |
 
 ### Testnet evidence
@@ -191,6 +193,42 @@ Planned after the hackathon: release tags and artifacts will be signed with the 
 ## Team
 
 Michella Warren, Victor Estival, Damaris Castro, Viviana Andrango, Sofiia Varich.
+
+## Roadmap
+
+Planned, **not built**. Nothing in this section runs today. Each row says how far the thinking has gone: *Decided* (an ADR or the PRD says what to do), *Measured* (a spike produced numbers) or *Idea* (nothing decided). The order inside a group is not a promise. Reasons and numbers are in the linked documents.
+
+### Next: people and wallets
+
+| Item | Where we are | What blocks it |
+|---|---|---|
+| **Sign in without a wallet: email, social accounts or a passkey.** Lower the barrier for people who have never installed Freighter | *Idea.* Hosted wallet services such as **Blux**, Privy and Dfns were looked at ([docs/WALLETS.md](docs/WALLETS.md), [ADR 0008](docs/adr/0008-more-wallets-after-freighter-is-roadmap.md)) | They keep the keys with a third party, which breaks the model the app is built on: the person signs every payment and `checkIntent` checks what is signed. Blux's terms and Testnet support were not read. A passkey-based smart account that stays non-custodial is the option worth a spike. Needs its own ADR before any code |
+| **More wallets than Freighter:** xBull, Lobstr, Hana, then Albedo | *Measured* ([spike, 26 Oct](docs/WALLETS.md#7-spike-result-2026-10-26)). The kit costs 387 more packages and 29 audit findings, and its picker is blocked by our CSP; each wallet's own SDK costs 7 packages and none. The connect screen already lists them as "Coming soon" | Only wallets that sign messages (xBull, Lobstr, Hana) work without an API change. Albedo needs a challenge-transaction sign-in. The Lobstr SDK version the kit pins is GPL-3.0 and xBull's declares no licence, and this repository is MIT. No real wallet has been run |
+| **Fiat on- and off-ramps** through Stellar anchors (SEP-24 and SEP-38) | *Decided* in the PRD (phases 3 and 4) | An anchor to test against, and legal review before mainnet. The anchor would hold the fiat and do KYC; the app would stay non-custodial |
+
+### Next: agents
+
+| Item | Where we are | What blocks it |
+|---|---|---|
+| **Agent payments from Telegram**, within the caps | The MCP server pays and the API enforces the caps; verified on Testnet with the agent wallet. Hermes and OpenClaw are connected | Link each agent to its owner in the app, run the Telegram tests (HA-3, HA-6, OC-6) and the first payment, and name the owner of the shared agents ([ADR 0002](docs/adr/0002-shared-agents-for-the-demo.md)) |
+| **Approvals, velocity checks, audit log and a kill switch** in the API | *Decided* (PRD, phase 2). Today the only approval is the agent runtime's own prompt on Telegram, and the caps are enforced by the API | Not built. The caps count euros and dollars as the same number ([ADR 0010](docs/adr/0010-one-settlement-asset-per-group.md)) |
+| **On-chain limits for agents**, so that a compromised API or key cannot spend more than the owner allowed | *Decided* as the direction ([ADR 0006](docs/adr/0006-on-chain-delegated-payment-roadmap.md): a token allowance, or smart accounts with a spending-limit policy) | Not verified that the demo asset supports the allowance, or that x402 can carry it |
+| **x402 through a facilitator** and metered endpoints | *Decided* (PRD). Today the API checks the payment itself on Horizon | A facilitator key and a test of the full scheme |
+
+### Later: platform and mainnet
+
+| Item | Where we are |
+|---|---|
+| Settle through the Soroban group contract instead of a plain transfer plus the API's ledger | The contract is deployed on Testnet; the plain transfer came first on purpose ([docs/BUILD-FOCUS.md](docs/BUILD-FOCUS.md)) |
+| Indexer and reconciliation of payments against the chain | *Decided* (PRD) |
+| Public OpenAPI, API keys with scopes, OAuth and webhooks | *Decided* (PRD, phase 3) |
+| Mainnet: external audit, multisig admin with a timelock, signed releases and SLSA provenance | *Decided* (PRD, phase 4). Release signing is planned, see [Release signing key](#release-signing-key) |
+| Product: recurring expenses, several admins per group, expense dates, CSV export, more currencies | *Idea* (PRD, phases 3 and 4) |
+
+### What we will not do
+
+- **Hold user funds.** Money goes from the person who owes to the person owed, signed by that person.
+- **Add two currencies in one balance without a stored rate.** A group settles in one asset and a converted expense keeps its original amount and rate ([ADR 0010](docs/adr/0010-one-settlement-asset-per-group.md), [ADR 0011](docs/adr/0011-expenses-can-be-entered-in-another-currency.md)).
 
 ## Licence
 

@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Agents and MCP | Stellar Split Docs</title>
+<meta name="description" content="Stellar Assist and the Stellar Split MCP server: install, run with Docker or Node, environment variables, tools, spend caps, agent links, agent wallets and prompt injection protections." />
+<link rel="canonical" href="https://stellar-split-docs.vercel.app/agents.html" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Stellar Split Docs" />
+<meta property="og:title" content="Agents and MCP | Stellar Split Docs" />
+<meta property="og:description" content="Stellar Assist and the Stellar Split MCP server: install, run with Docker or Node, environment variables, tools, spend caps, agent links, agent wallets and prompt injection protections." />
+<meta property="og:url" content="https://stellar-split-docs.vercel.app/agents.html" />
+<meta property="og:image" content="https://stellar-split-docs.vercel.app/assets/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="color-scheme" content="dark light" />
+<meta name="theme-color" content="#0b0b0d" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<script src="/assets/theme-init.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" />
+<link rel="stylesheet" href="/assets/site.css" />
+<link rel="stylesheet" href="/assets/docs.css" />
+<link rel="stylesheet" href="/assets/consent.css" />
+<script src="/assets/site.js" defer></script>
+<script src="/assets/docs.js" defer></script>
+<script src="/assets/consent.js" defer></script>
+</head>
+<body class="page-agents">
+<a class="skip" href="#main">Skip to content</a>
+<div class="notice" role="note">Stellar Testnet only. No real money moves. <a href="https://stellar-split-site.vercel.app/terms.html#testnet">What this means</a></div>
+<header class="site-header">
+  <div class="wrap" style="max-width:1440px">
+    <a class="brand" href="/" aria-label="Stellar Split Docs home"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs<span class="tag">TESTNET</span></a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="/quickstart.html">Quickstart</a>
+      <a href="/api.html">API</a>
+      <a href="/agents.html" aria-current="page">Agents</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="https://stellar-split-site.vercel.app">Website</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" type="button" data-search aria-label="Search the docs (Ctrl K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="icon-btn hide-sm" href="https://github.com/Michella-stack/Stellar-Split" aria-label="Source code on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5Z"/></svg>
+      </a>
+      <a class="btn btn-primary btn-sm hide-sm" href="https://stellar-split-sooty.vercel.app">Open the app</a>
+      <button class="icon-btn menu-btn" type="button" aria-controls="nav" aria-expanded="false" aria-label="Menu" data-menu>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<div class="docs-shell">
+  <nav class="docs-sidebar" id="docs-sidebar" aria-label="Documentation"><button class="search-btn" type="button" data-search aria-label="Search the docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search<kbd>Ctrl K</kbd></button><h2>Get started</h2><ul><li><a href="/index.html">Introduction</a></li><li><a href="/quickstart.html">Quickstart</a></li><li><a href="/authentication.html">Authentication</a></li><li><a href="/concepts.html">Concepts</a></li></ul><h2>Reference</h2><ul><li><a href="/api.html">API reference</a></li><li><a href="/errors.html">Errors and limits</a></li></ul><h2>Build</h2><ul><li><a href="/integrations.html">Integrations</a></li><li><a href="/agents.html" aria-current="page">Agents and MCP</a></li><li><a href="/security.html">Security</a></li></ul><h2>Project</h2><ul><li><a href="/changelog.html">Changelog</a></li></ul><h2>Elsewhere</h2><ul><li><a href="https://stellar-split-site.vercel.app">Website</a></li><li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li><li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li></ul></nav>
+  <div class="drawer-scrim" aria-hidden="true"></div>
+  <main class="docs-main" id="main" tabindex="-1">
+    <button class="sidebar-btn" type="button" data-sidebar aria-controls="docs-sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>All docs pages</button>
+    <nav class="crumbs" aria-label="Breadcrumb" style="margin-top:16px"><ol><li><a href="/">Docs</a></li><li>Build</li><li aria-current="page">Agents and MCP</li></ol></nav>
+    <article>
+<h1>Agents and MCP</h1>
+<p class="lead">Stellar Assist is the agent side of Stellar Split. It runs in your own Hermes or OpenClaw assistant and you talk to it on Telegram. It reaches the API through an MCP server that holds its credential, so the model never sees a token or a key.</p>
+<div class="callout testnet" role="note"><strong>Status</strong><p>The MCP server and its tools are built. Paying through an agent (<code>ledgerly_settle</code>) is built and runs only when a signer file is configured, on Testnet, at most 25 per call. Approvals and per-agent policy screens are <strong>planned</strong>: the Assist screens in the web app run on labelled sample data until their API exists.</p></div>
+<h2 id="stellar-assist">Stellar Assist</h2>
+<ul>
+<li>Lists your groups, reads balances and records expenses from a chat message.</li>
+<li>Proposes a settlement: who to pay and how much, without paying.</li>
+<li>When its operator gives it a signer, pays within the server caps from its own Testnet account, on your behalf once you link it.</li>
+</ul>
+<h2 id="mcp-server">The MCP server</h2>
+<p>Code in <a href="https://github.com/Michella-stack/Stellar-Split/tree/main/mcp"><code>mcp/</code></a>. Node 22 or newer, ES modules, dependencies <code>@modelcontextprotocol/sdk</code>, <code>@stellar/stellar-sdk</code> and <code>zod</code>. Tool names keep the project's earlier name, <code>ledgerly_*</code>.</p>
+<h3 id="run-node">Run with Node</h3>
+<pre><code class="lang-bash">git clone https://github.com/Michella-stack/Stellar-Split.git
+cd Stellar-Split/mcp
+npm ci &amp;&amp; npm test
+
+# stdio (default), for a local MCP client
+LEDGERLY_API_URL=https://stellar-split-sooty.vercel.app LEDGERLY_TOKEN=&lt;agent token&gt; npm start
+
+# streamable HTTP on 127.0.0.1:8787/mcp
+LEDGERLY_API_URL=https://stellar-split-sooty.vercel.app LEDGERLY_TOKEN=&lt;agent token&gt; \
+  MCP_TRANSPORT=http MCP_AUTH_TOKEN=&lt;random&gt; npm start</code></pre>
+<h3 id="run-docker">Run with Docker</h3>
+<p><code>mcp/Dockerfile</code> builds the image. <code>mcp/compose.example.yml</code> runs one MCP container per agent: non-root, read-only filesystem, <code>cap_drop: ALL</code>, <code>no-new-privileges</code>, 256 MB, on an internal network shared only with that agent. Never publish its port.</p>
+<pre><code class="lang-bash">docker build -t ledgerly-mcp:local mcp/
+cp mcp/compose.example.yml ~/stellar-agents/mcp-hermes/docker-compose.yml
+# .env from scripts/agent-mcp/new-agent-token.sh (writes the tokens, prints only the AGENT_TOKENS line)
+docker network create --internal mcp-hermes
+AGENT=hermes MCP_IMAGE=ledgerly-mcp:local SIGNER_FILE=/path/to/key docker compose up -d</code></pre>
+<h3 id="env">Environment variables</h3>
+<table><thead><tr><th scope="col">Variable</th><th scope="col">Required</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>LEDGERLY_API_URL</code></td><td>Yes</td><td>API origin. Must be https unless it is localhost</td></tr><tr><td><code>LEDGERLY_TOKEN</code></td><td>Yes</td><td>The agent token. Stays in this process, never returned to the model</td></tr><tr><td><code>MCP_TRANSPORT</code></td><td>No</td><td><code>stdio</code> (default) or <code>http</code></td></tr><tr><td><code>MCP_HTTP_HOST</code>, <code>MCP_HTTP_PORT</code></td><td>No</td><td>Default <code>127.0.0.1</code> and <code>8787</code>. Endpoint <code>/mcp</code>, POST only</td></tr><tr><td><code>MCP_AUTH_TOKEN</code></td><td>If the host is not loopback</td><td>Bearer token the agent sends to the MCP server</td></tr><tr><td><code>LEDGERLY_SIGNER_FILE</code></td><td>No</td><td>Path to a file with the agent's Testnet secret key. Read once at start. Unset means no <code>ledgerly_settle</code></td></tr><tr><td><code>LEDGERLY_HORIZON_URL</code></td><td>No</td><td>Default <code>https://horizon-testnet.stellar.org</code></td></tr></tbody></table>
+<h3 id="transport">Transport</h3>
+<p>stdio, or stateless streamable HTTP: one server and transport per request, nothing kept between calls. HTTP clients must send <code>Accept: application/json, text/event-stream</code> (otherwise the SDK answers 406). Wrong or missing bearer: <code>401</code>. A method other than POST: <code>405</code>. Body over 1 MB: <code>400</code>.</p>
+<h2 id="tools">Tools</h2>
+<table><thead><tr><th scope="col">Tool</th><th scope="col">Inputs</th><th scope="col">Output</th><th scope="col">Spends money</th></tr></thead><tbody><tr><td><code>ledgerly_list_groups</code></td><td>none</td><td>The <code>GET /v1/groups</code> body</td><td>No (read only)</td></tr><tr><td><code>ledgerly_get_balances</code></td><td><code>group_id</code></td><td><code>{ balances: [{ memberId, displayName, address, kind, net }] }</code></td><td>No (read only)</td></tr><tr><td><code>ledgerly_create_expense</code></td><td><code>group_id</code>, <code>payer</code>, <code>amount</code>, <code>description</code> (1 to 200), <code>split</code>, <code>idempotency_key</code>?</td><td><code>{ expense }</code></td><td>No</td></tr><tr><td><code>ledgerly_propose_settlement</code></td><td><code>group_id</code>, <code>to</code>, <code>amount</code></td><td>Dry-run <code>{ intent }</code>; reserves nothing</td><td>No (read only)</td></tr><tr><td><code>ledgerly_settle</code></td><td><code>group_id</code>, <code>to</code>, <code>amount</code>, <code>on_behalf_of</code>?, <code>idempotency_key</code>?</td><td>Transaction hash, explorer link, status</td><td>Yes. Only with a signer file</td></tr></tbody></table>
+<p><code>split</code> is <code>{ rule: "equal", participants: [id] }</code> or <code>{ rule: "exact", shares: [{ member, amount }] }</code>, 1 to 50 distinct members. Ids match <code>^[A-Za-z0-9_-]{1,64}$</code>. Amounts are positive decimals with up to 12 integer digits and 7 decimals. Exact shares are summed with integers before any call. Text that looks like a secret key is refused. Without <code>idempotency_key</code>, the server makes a random one, so asking twice creates two expenses.</p>
+<p>Errors come back as a tool error with <code>{ status, error: { code, message } }</code>, passed through from the API.</p>
+<h2 id="client-config">Client configuration</h2>
+<h3 id="hermes">Hermes</h3>
+<pre><code class="lang-bash"># ~/.hermes/config.yaml
+mcp_servers:
+  ledgerly:
+    url: "http://ledgerly-mcp:8787/mcp"
+    headers:
+      Authorization: "Bearer &lt;MCP_AUTH_TOKEN&gt;"
+    trust: untrusted
+    tools:
+      include: [ledgerly_list_groups, ledgerly_get_balances, ledgerly_create_expense, ledgerly_propose_settlement]</code></pre>
+<p><code>trust: untrusted</code> makes tools without <code>readOnlyHint</code> ask before they run. Check the key names against your pinned Hermes version.</p>
+<h3 id="openclaw">OpenClaw</h3>
+<p>Register the server under <code>mcp.servers.ledgerly</code> with <code>url</code>, <code>transport: "streamable-http"</code> (set it, or OpenClaw may fall back to SSE) and <code>headers</code>, then probe it:</p>
+<pre><code class="lang-bash">openclaw mcp doctor ledgerly --probe</code></pre>
+<p>Use <code>toolFilter.exclude</code> to hide <code>ledgerly_settle</code> from an agent that should not pay.</p>
+<h3 id="desktop-clients">Claude Desktop, Cursor and other stdio clients</h3>
+<p>The repository does not ship configs for these. Any MCP client that starts a stdio server can run it the same way. A generic entry looks like this; adapt it to your client's config format:</p>
+<pre><code class="lang-json">{
+  "mcpServers": {
+    "ledgerly": {
+      "command": "node",
+      "args": [
+        "/path/to/Stellar-Split/mcp/src/main.js"
+      ],
+      "env": {
+        "LEDGERLY_API_URL": "https://stellar-split-sooty.vercel.app",
+        "LEDGERLY_TOKEN": "&lt;agent token&gt;"
+      }
+    }
+  }
+}</code></pre>
+<div class="callout warning" role="note"><strong>Tokens in client config</strong><p>A desktop config file stores the agent token in plain text on your machine. Use a Testnet agent with small funds, and leave <code>LEDGERLY_SIGNER_FILE</code> unset unless you mean the client to pay.</p></div>
+<h2 id="spend-policy">Spend policy</h2>
+<table><thead><tr><th scope="col">Rule</th><th scope="col">Value</th><th scope="col">Enforced</th></tr></thead><tbody><tr><td>Per payment</td><td>25</td><td>API (<code>AGENT_CAP_PER_PAYMENT</code>) and the MCP server (hard ceiling)</td></tr><tr><td>Rolling 24 hours</td><td>50</td><td>API (<code>AGENT_CAP_PER_DAY</code>)</td></tr><tr><td>Rolling 30 days</td><td>200</td><td>API (<code>AGENT_CAP_PER_MONTH</code>)</td></tr><tr><td>Ask me first above a threshold <span class="planned">Planned</span></td><td>Proposed 5</td><td>Not built: no approvals route</td></tr><tr><td>Per-agent limits set by the owner <span class="planned">Planned</span></td><td></td><td>Not built: caps are fixed defaults</td></tr></tbody></table>
+<p>Caps count over all the agent's groups. Reserved, settled, expired and in-review intents count, because they may have moved money. A refused reservation is cancelled at once. Every denial is logged as <code>agent_spend_denied</code>. People are not capped. An agent can only pay members of groups it belongs to.</p>
+<h2 id="approvals">Approval flow <span class="planned">Planned</span></h2>
+<p>The design: above the ask-me-first threshold the API holds the payment as a pending approval, you approve or reject it in the app, and it expires after an hour. An agent can never approve its own request, because approving needs a person's session and agent tokens get <code>403</code> on person-only routes. None of this is in the API yet: there is no <code>/v1/approvals</code> route, and the MCP server has no approval tool.</p>
+<h2 id="agent-links">Linking an agent to you</h2>
+<ol>
+<li>The operator registers the agent's address and token hash in <code>AGENT_TOKENS</code>.</li>
+<li>You call <code>POST /v1/agents/link/challenge</code> with <code>{ agentAddress }</code> and sign the message in Freighter.</li>
+<li>You send <code>POST /v1/agents/link</code> with the message and signature.</li>
+<li>The agent can now reserve intents with <code>onBehalfOf</code> set to your member id: the debt stays yours, the agent pays from its own account, and its caps count.</li>
+<li>Revoke at any time with <code>DELETE /v1/me/agents/:address</code>.</li>
+</ol>
+<h2 id="settle-flow">How ledgerly_settle pays</h2>
+<ol>
+<li>Validates input, then reserves an intent through the API. The model never supplies payment terms.</li>
+<li>Asks the x402-style route for terms and expects <code>402</code>.</li>
+<li>Exactly one <code>accepts</code> entry must match the intent and the pinned config: scheme <code>exact</code>, network <code>stellar:testnet</code>, a pinned USDC or EURC issuer, <code>payTo</code>, amount, intent id and API host. Any difference aborts with nothing signed.</li>
+<li>Signs one classic payment with the intent memo as <code>MEMO_HASH</code> and time bounds up to the intent expiry, and submits it to Horizon Testnet. Each intent id is signed at most once per process.</li>
+<li>Retries with <code>PAYMENT-SIGNATURE</code>. The API verifies it on Horizon and records the settlement.</li>
+</ol>
+<h2 id="agent-wallets">Agent wallets</h2>
+<ul>
+<li>Each agent has its own funded Testnet account with a trustline. Its key stays on the host, outside the agent container.</li>
+<li>The key file is mounted read-only into the MCP container only (<code>/run/secrets/signer</code>, mode 0400), read once at start, and never put in an environment variable, a log or tool output.</li>
+<li>The agent container gets no key mount, no Docker socket and no host paths.</li>
+<li>Funding is by hand: Friendbot for XLM, Circle's faucet for test USDC. There is no agent-callable funding tool.</li>
+</ul>
+<h2 id="x402">x402 with a facilitator <span class="planned">Planned</span></h2>
+<p>Today's x402 flow is x402-style and self-verified: the API answers 402, the agent sends a classic Stellar payment, and the API checks it on Horizon. There is no external facilitator, no Soroban authorization entry, no <code>@x402/*</code> package, and the contract's <code>record_x402_settlement</code> is not called. Those are on the roadmap.</p>
+<h2 id="prompt-injection">Prompt injection protections</h2>
+<p>Tool output contains text written by people (expense descriptions, names), and it reaches the model. Treat it as untrusted. The defences do not rely on the model behaving:</p>
+<ul>
+<li>The API enforces membership and spend caps for the agent token, whatever the model asks.</li>
+<li>The agent token and the signer key stay in the MCP process. The model never sees them.</li>
+<li>The MCP server checks payment terms against the reserved intent and pinned config before it signs.</li>
+<li>Secret-key-shaped text is refused by the MCP inputs and by the API.</li>
+<li>Write tools prompt in Hermes (<code>trust: untrusted</code>) and OpenClaw (approval mode <code>prompt</code>). That prompt is a convenience, not a security boundary: an agent with shell, file or HTTP tools can read <code>MCP_AUTH_TOKEN</code> from its own config. Turn off agent tools you do not need.</li>
+<li>Known gap: <code>ledgerly_create_expense</code> can name any member as payer, so an injected instruction can record a false expense. It cannot move money.</li>
+</ul>
+      <div class="page-meta"><span>Last updated 26 October 2026</span><a href="https://github.com/Michella-stack/Stellar-Split/tree/main/sites/docs/agents.html">Edit this page on GitHub</a></div>
+      <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/integrations.html"><small>Previous</small>Integrations</a><a class="next" href="/security.html"><small>Next</small>Security</a></nav>
+    </article>
+  </main>
+  <aside class="docs-toc" aria-label="On this page"><h2>On this page</h2><ul data-depth="3"></ul></aside>
+</div>
+<div class="search-modal" role="dialog" aria-modal="true" aria-label="Search the docs">
+  <div class="search-panel">
+    <label class="sr-only" for="search-input">Search the docs</label>
+    <input id="search-input" type="search" placeholder="Search endpoints, errors, tools..." autocomplete="off" />
+    <ul class="search-results" aria-live="polite"></ul>
+  </div>
+</div>
+<footer class="site-footer">
+  <div class="wrap" style="max-width:1440px">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="/"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs</a>
+        <p class="muted" style="margin-top:16px;max-width:300px">Split shared bills and settle them in USDC on Stellar, with EURC ready. A hackathon project, running on Stellar Testnet.</p>
+      </div>
+      <div>
+        <h3>Product</h3>
+        <ul>
+          <li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#how">How it works</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#assist">Stellar Assist</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Developers</h3>
+        <ul>
+          <li><a href="/">Documentation</a></li>
+          <li><a href="/api.html">API reference</a></li>
+          <li><a href="/agents.html">Agents and MCP</a></li>
+          <li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Trust</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/security.html">Security</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/status.html">Status</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/team.html">Team</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/press.html">Press kit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/privacy.html">Privacy</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/terms.html">Terms</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/cookies.html">Cookies</a></li>
+          <li><button class="linklike" type="button" data-cookie-settings>Cookie settings</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 The Stellar Split team. Built at HackMeridian, Lisbon. MIT licensed.</span>
+      <span>Stellar Testnet only. Test tokens have no value. Not financial advice.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

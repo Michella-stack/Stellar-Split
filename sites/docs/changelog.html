@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Changelog | Stellar Split Docs</title>
+<meta name="description" content="What changed in Stellar Split, day by day, from the git history during HackMeridian 2026." />
+<link rel="canonical" href="https://stellar-split-docs.vercel.app/changelog.html" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Stellar Split Docs" />
+<meta property="og:title" content="Changelog | Stellar Split Docs" />
+<meta property="og:description" content="What changed in Stellar Split, day by day, from the git history during HackMeridian 2026." />
+<meta property="og:url" content="https://stellar-split-docs.vercel.app/changelog.html" />
+<meta property="og:image" content="https://stellar-split-docs.vercel.app/assets/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="color-scheme" content="dark light" />
+<meta name="theme-color" content="#0b0b0d" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<script src="/assets/theme-init.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" />
+<link rel="stylesheet" href="/assets/site.css" />
+<link rel="stylesheet" href="/assets/docs.css" />
+<link rel="stylesheet" href="/assets/consent.css" />
+<script src="/assets/site.js" defer></script>
+<script src="/assets/docs.js" defer></script>
+<script src="/assets/consent.js" defer></script>
+</head>
+<body class="page-changelog">
+<a class="skip" href="#main">Skip to content</a>
+<div class="notice" role="note">Stellar Testnet only. No real money moves. <a href="https://stellar-split-site.vercel.app/terms.html#testnet">What this means</a></div>
+<header class="site-header">
+  <div class="wrap" style="max-width:1440px">
+    <a class="brand" href="/" aria-label="Stellar Split Docs home"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs<span class="tag">TESTNET</span></a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="/quickstart.html">Quickstart</a>
+      <a href="/api.html">API</a>
+      <a href="/agents.html">Agents</a>
+      <a href="/changelog.html" aria-current="page">Changelog</a>
+      <a href="https://stellar-split-site.vercel.app">Website</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" type="button" data-search aria-label="Search the docs (Ctrl K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="icon-btn hide-sm" href="https://github.com/Michella-stack/Stellar-Split" aria-label="Source code on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5Z"/></svg>
+      </a>
+      <a class="btn btn-primary btn-sm hide-sm" href="https://stellar-split-sooty.vercel.app">Open the app</a>
+      <button class="icon-btn menu-btn" type="button" aria-controls="nav" aria-expanded="false" aria-label="Menu" data-menu>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<div class="docs-shell">
+  <nav class="docs-sidebar" id="docs-sidebar" aria-label="Documentation"><button class="search-btn" type="button" data-search aria-label="Search the docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search<kbd>Ctrl K</kbd></button><h2>Get started</h2><ul><li><a href="/index.html">Introduction</a></li><li><a href="/quickstart.html">Quickstart</a></li><li><a href="/authentication.html">Authentication</a></li><li><a href="/concepts.html">Concepts</a></li></ul><h2>Reference</h2><ul><li><a href="/api.html">API reference</a></li><li><a href="/errors.html">Errors and limits</a></li></ul><h2>Build</h2><ul><li><a href="/integrations.html">Integrations</a></li><li><a href="/agents.html">Agents and MCP</a></li><li><a href="/security.html">Security</a></li></ul><h2>Project</h2><ul><li><a href="/changelog.html" aria-current="page">Changelog</a></li></ul><h2>Elsewhere</h2><ul><li><a href="https://stellar-split-site.vercel.app">Website</a></li><li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li><li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li></ul></nav>
+  <div class="drawer-scrim" aria-hidden="true"></div>
+  <main class="docs-main" id="main" tabindex="-1">
+    <button class="sidebar-btn" type="button" data-sidebar aria-controls="docs-sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>All docs pages</button>
+    <nav class="crumbs" aria-label="Breadcrumb" style="margin-top:16px"><ol><li><a href="/">Docs</a></li><li>Project</li><li aria-current="page">Changelog</li></ol></nav>
+    <article>
+<h1>Changelog</h1>
+<p class="lead">Built from the git history of the repository, newest first. Dates are commit dates.</p>
+<h2 id="d-2026-10-26">26 October 2026</h2>
+
+<ul><li>SITE: scaffold the product site and docs as independent static sites</li><li>API: remove two flaky tests</li></ul>
+<h2 id="d-2026-10-25">25 October 2026</h2>
+<p><strong>Highlights</strong></p><ul><li>Agents can be linked to a person with a signed message and pay that person's debts within the caps.</li><li>The MCP server gained <code>ledgerly_settle</code>, which pays a reserved intent from the agent's own Testnet account.</li><li>Groups can settle in USDC or EURC, one asset per group.</li><li>Agent spend caps are enforced on the server: 25 per payment, 50 per day, 200 per 30 days.</li><li>Settlement intents tie every payment to one reserved debt.</li><li>Receipt photos can prefill an expense (demo).</li><li>The MCP server ships as a Docker image with a one-agent Compose example.</li><li>The web app speaks English, Spanish and Portuguese.</li></ul><p><strong>All changes</strong></p>
+<ul><li>WEB: map the API's agent link error codes</li><li>WEB: Your agent card on the wallet screen (link by signature, list, revoke with confirm)</li><li>WEB: agent link endpoints in client and mock API, agent-link message signing</li><li>Ledgerly_settle in the agent interface, signer mount in compose example</li><li>MCP: add ledgerly_settle with terms check, classic payment and single-sign guard</li><li>MCP: add @stellar/stellar-sdk 17.2.1 (approved version)</li><li>Make payer_address part of the immutable intent terms</li><li>Document agent link and x402 endpoints</li><li>Test agent links, on-behalf intents and the x402 handshake</li><li>Agent pays owner's debt: onBehalfOf intents and x402-style handshake</li><li>Add agent links: SEP-53 link challenge, storage and migration 004</li><li>ADR 0010 one settlement asset per group, EURC in the deployment notes</li><li>WEB: turn on the EURC option in the production build</li><li>WEB: stop before signing when the API names another asset than this app pays in</li><li>WEB: settle a group in EURC (<a href="https://github.com/Michella-stack/Stellar-Split/issues/98">#98</a>)</li><li>Record what was checked on the live deployment (variables, database, token expiry)</li><li>API: settle a group in USDC or EURC, one asset per group (<a href="https://github.com/Michella-stack/Stellar-Split/issues/98">#98</a>)</li><li>WEB: QR code on the invite screen</li><li>API: the scan route needs a session first and is limited to 10 per 10 minutes</li><li>API: authenticate before reading the receipt photo, and limit scans per person</li><li>WEB: translate the expense description hint</li><li>WEB: English, Spanish and Portuguese</li><li>MCP: token script and Compose example for one agent's MCP server</li><li>API: default the receipt reader to gemini-3.6-flash and retry once with 3.5 flash-lite (<a href="https://github.com/Michella-stack/Stellar-Split/issues/87">#87</a>)</li><li>WEB: say why Save expense is off when the description is empty</li><li>WEB: describe settle all and address links</li><li>WEB: open addresses on Stellar Expert</li><li>WEB: settle all of a group's debts one after another</li><li>MCP: Dockerfile for the MCP server, built and smoke-tested in CI</li><li>Fix the MCP rollout plan after two independent reviews</li><li>ADR 0009, the MCP server runs next to each agent</li><li>Plan to connect Hermes and OpenClaw to the MCP server</li><li>API: refuse the in-memory store in production (<a href="https://github.com/Michella-stack/Stellar-Split/issues/80">#80</a>)</li><li>WEB: describe live exchange rates</li><li>WEB: redraw estimates when live rates arrive and say where they come from</li><li>WEB: load live exchange rates, with a fixed table as fallback</li><li>API: an id that is not a uuid is a 404, not a 500 (<a href="https://github.com/Michella-stack/Stellar-Split/issues/79">#79</a>)</li><li>WEB: document demo mode</li><li>WEB: simulate payments in demo mode and never link them to an explorer</li><li>WEB: sign in the sample person without Freighter in demo mode</li><li>WEB: add a demo mode switch and sample-data client</li><li>Read a photo of a receipt with Gemini and prefill the expense (<a href="https://github.com/Michella-stack/Stellar-Split/issues/87">#87</a>)</li><li>Record that production runs on Supabase (<a href="https://github.com/Michella-stack/Stellar-Split/issues/79">#79</a>)</li><li>Owners for the video, receipt scanning and contract settle</li><li>WEB: harden settlement intents after the review of #70</li><li>PRD: add fiat on- and off-ramps through Stellar anchors to the roadmap</li><li>More Stellar wallets are a paused roadmap item (ADR 0007)</li><li>Correct the BUILD-FOCUS owner table</li><li>SECURITY: add one-page review map for the team and Sofiia</li><li>Resolve the documentation inconsistencies (<a href="https://github.com/Michella-stack/Stellar-Split/issues/47">#47</a>)</li><li>API: enforce agent spend caps on the server (<a href="https://github.com/Michella-stack/Stellar-Split/issues/13">#13</a>)</li><li>Confirm the Testnet USDC token contract and list the demo accounts (<a href="https://github.com/Michella-stack/Stellar-Split/issues/43">#43</a>)</li><li>WEB: simulated Telegram check with Confirm and Cancel in Stellar Assist chat (<a href="https://github.com/Michella-stack/Stellar-Split/issues/75">#75</a>)</li><li>MCP: reject duplicate participants and shares in expense splits</li><li>README: live status, Testnet USDC asset and settlement evidence</li><li>SECURITY: call the user-facing agent Stellar Assist</li><li>WEB: show a loading state while the first lazy screen loads</li><li>WEB: keep the sign-in and mock data across tabs and restarts</li><li>WEB: favicon, PNG fallback and Apple touch icon</li><li>WEB: describe the two-step settle-up flow</li><li>WEB: settle up in two steps with a reserved intent</li><li>WEB: check the intent memo and expiry before signing a payment</li><li>WEB: reserve, cancel and record settlement intents in the API client and mock</li><li>The Vercel deploy from GitHub Actions works</li><li>MCP: look up mock routes by own key only (CodeQL)</li><li>Deploy to Vercel from GitHub Actions on every push and pull request</li><li>WEB: strict Content-Security-Policy on the Vercel deployment</li><li>MCP: cover HTTP edge cases, API failures, schema bounds and stdio</li><li>CONTRACTS: close regression gaps and enforce cargo fmt</li><li>SUPPLY-CHAIN: close the version guard coverage gaps</li><li>API: settlement intents so payments are tied to one reserved debt</li><li>Document the Vercel deployment and the public URL</li><li>Add shell checks, per-package Dependabot entries, CODEOWNERS for mcp and scripts</li><li>README: what works today, live URL, architecture, real setup and security</li><li>MCP: speak the API's language and drop the approvals tool</li><li>SCRIPTS: prepare funded Testnet demo accounts with USDC</li><li>API: address review findings on settlements, auth and error handling</li><li>WEB: document running against the real API</li><li>WEB: skip home-currency estimates for USD</li><li>WEB: keep Stellar Assist on labelled sample data until its API exists</li><li>WEB: serve the API's /invite/:code links</li><li>WEB: add members by address through POST /members</li><li>WEB: send an Idempotency-Key with each new expense</li><li>SECURITY: literature pass on Telegram bots and wallet signing, restate open gaps</li><li>SECURITY: add Kim et al. 2019 Stellar consensus paper to references, add T-58</li><li>WEB: point the default API URL at the API's default port 8080</li><li>WEB: sign in with a SEP-53 signed message, matching the API</li><li>SECURITY: add verification policy, references, incident cases and workflow diagrams</li><li>Move threat model to docs/security and add an index</li><li>THREAT-MODEL: update for PRD v0.4, agent setup docs and shared admin/recorder key</li><li>Add threat model register and link it from PRD 9.1</li><li>WEB: stop rendering the receipt photo preview</li><li>Lint, test and build the web app and test shared rules</li><li>WEB: add demo preparation, demo script and test evidence</li><li>WEB: save the payment receipt as a PNG and share it as a file</li><li>WEB: show available USDC on review and offer a partial payment</li><li>WEB: check WCAG contrast of every theme token pair</li><li>WEB: split screens into lazy chunks, add skip link and focus on navigation</li><li>WEB: load the Stellar SDK only for signing, payments and balances</li><li>SHARED: validate Stellar address checksums without the SDK</li><li>WEB: add scripted Stellar Assist chat</li><li>WEB: add Stellar Assist intro, rules and dashboard</li><li>WEB: start the mock agent inactive and count approvals against today</li><li>WEB: add scripted Assist intents and spending-rule decisions</li><li>WEB: stay disconnected after Disconnect until the next Connect</li><li>WEB: document the settle-up flow</li><li>WEB: add settle-up review, paid and payment problem screens</li><li>WEB: let a real Testnet account play a mock member</li><li>WEB: build, check and submit Testnet USDC payments and trustlines</li><li>API: stateless HMAC sessions and Vercel deployment config</li><li>WEB: add group activity with transaction links</li><li>WEB: add expense form with equal and exact splits and mocked receipt scan</li><li>WEB: add groups, create, invite, join and group screens</li><li>WEB: add balance card, balance list and group building blocks</li><li>WEB: add data loading states and list formatting helpers</li><li>API: groups, expenses, balances and verified Testnet USDC settlements</li><li>Design delegated payments for a person and their agent</li><li>WEB: keep the session and mock data for the current tab</li><li>STORIES: demo story matches the plan, add missing Phase 1a stories</li><li>Agents in Phase 1a without payments, settlement as stretch</li><li>WEB: add welcome, sign-in, profile and wallet screens</li><li>WEB: add wallet context with session and change detection</li><li>WEB: add Horizon balances and a signable mock sign-in challenge</li><li>WEB: add Freighter adapter with intent checks before signing</li><li>WEB: refuse to start unless configured for Stellar Testnet</li><li>Align project guidance with README</li><li>WEB: add API client with in-memory mocks and documented shapes</li><li>WEB: add home-currency estimates behind one rates function</li><li>SHARED: add amount, split and balance rules with tests</li><li>WEB: add UI kit demo route and screen shell</li><li>WEB: add accessible UI kit components</li><li>WEB: add decimal-string amount formatting</li><li>Drop the prior work wording from the inconsistencies review</li><li>Remove the prior work disclosure</li><li>WEB: add SPA decision record and web app README</li><li>WEB: add router with placeholder screens</li><li>WEB: add theme tokens and dark/light preference</li><li>WEB: scaffold Vite React app with pinned dependencies</li><li>Record JavaScript and Supabase stack, deployed contract and story priorities</li><li>Testing audit, doc inconsistencies and agent wallet proposal</li><li>MCP: reject Stellar secret keys in every field, clean startup errors</li><li>AGENTS: team-wide access, pinned images, display names, connectors off</li><li>Align README, BUILD-FOCUS and PRD with the repo</li><li>Correct how the agent dashboards are protected</li><li>MCP: phase 1 MCP server for agents (read, expenses, propose settlement)</li><li>AGENTS: add shared SOUL.md and per-agent identity</li><li>Document agent setup and Telegram access</li><li>SUPPLY-CHAIN: resolve CodeQL incomplete-escaping alerts in version guard</li><li>Move OpenClaw into Phase 1a alongside Hermes Agent</li><li>Install stellar-cli from checksum-pinned release binary</li><li>CONTRACTS: add testnet contract id</li><li>Add backlog stories source</li><li>CONTRACTS: non-custodial group contract with settle and x402 record</li><li>Add README, gitignore and build focus</li><li>Add HackMeridian judging criteria</li><li>Add PRD v0.3</li></ul>
+<p>Full history: <a href="https://github.com/Michella-stack/Stellar-Split/commits/main">commits on GitHub</a>.</p>
+      <div class="page-meta"><span>Last updated 26 October 2026</span><a href="https://github.com/Michella-stack/Stellar-Split/tree/main/sites/docs/changelog.html">Edit this page on GitHub</a></div>
+      <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/security.html"><small>Previous</small>Security</a></nav>
+    </article>
+  </main>
+  <aside class="docs-toc" aria-label="On this page"><h2>On this page</h2><ul data-depth="3"></ul></aside>
+</div>
+<div class="search-modal" role="dialog" aria-modal="true" aria-label="Search the docs">
+  <div class="search-panel">
+    <label class="sr-only" for="search-input">Search the docs</label>
+    <input id="search-input" type="search" placeholder="Search endpoints, errors, tools..." autocomplete="off" />
+    <ul class="search-results" aria-live="polite"></ul>
+  </div>
+</div>
+<footer class="site-footer">
+  <div class="wrap" style="max-width:1440px">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="/"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs</a>
+        <p class="muted" style="margin-top:16px;max-width:300px">Split shared bills and settle them in USDC on Stellar, with EURC ready. A hackathon project, running on Stellar Testnet.</p>
+      </div>
+      <div>
+        <h3>Product</h3>
+        <ul>
+          <li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#how">How it works</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#assist">Stellar Assist</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Developers</h3>
+        <ul>
+          <li><a href="/">Documentation</a></li>
+          <li><a href="/api.html">API reference</a></li>
+          <li><a href="/agents.html">Agents and MCP</a></li>
+          <li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Trust</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/security.html">Security</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/status.html">Status</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/team.html">Team</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/press.html">Press kit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/privacy.html">Privacy</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/terms.html">Terms</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/cookies.html">Cookies</a></li>
+          <li><button class="linklike" type="button" data-cookie-settings>Cookie settings</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 The Stellar Split team. Built at HackMeridian, Lisbon. MIT licensed.</span>
+      <span>Stellar Testnet only. Test tokens have no value. Not financial advice.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>API reference | Stellar Split Docs</title>
+<meta name="description" content="Every Stellar Split /v1 endpoint with method, path, auth, parameters, request and response examples and status codes." />
+<link rel="canonical" href="https://stellar-split-docs.vercel.app/api.html" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Stellar Split Docs" />
+<meta property="og:title" content="API reference | Stellar Split Docs" />
+<meta property="og:description" content="Every Stellar Split /v1 endpoint with method, path, auth, parameters, request and response examples and status codes." />
+<meta property="og:url" content="https://stellar-split-docs.vercel.app/api.html" />
+<meta property="og:image" content="https://stellar-split-docs.vercel.app/assets/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="color-scheme" content="dark light" />
+<meta name="theme-color" content="#0b0b0d" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<script src="/assets/theme-init.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" />
+<link rel="stylesheet" href="/assets/site.css" />
+<link rel="stylesheet" href="/assets/docs.css" />
+<link rel="stylesheet" href="/assets/consent.css" />
+<script src="/assets/site.js" defer></script>
+<script src="/assets/docs.js" defer></script>
+<script src="/assets/consent.js" defer></script>
+</head>
+<body class="page-api">
+<a class="skip" href="#main">Skip to content</a>
+<div class="notice" role="note">Stellar Testnet only. No real money moves. <a href="https://stellar-split-site.vercel.app/terms.html#testnet">What this means</a></div>
+<header class="site-header">
+  <div class="wrap" style="max-width:1440px">
+    <a class="brand" href="/" aria-label="Stellar Split Docs home"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs<span class="tag">TESTNET</span></a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="/quickstart.html">Quickstart</a>
+      <a href="/api.html" aria-current="page">API</a>
+      <a href="/agents.html">Agents</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="https://stellar-split-site.vercel.app">Website</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" type="button" data-search aria-label="Search the docs (Ctrl K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="icon-btn hide-sm" href="https://github.com/Michella-stack/Stellar-Split" aria-label="Source code on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5Z"/></svg>
+      </a>
+      <a class="btn btn-primary btn-sm hide-sm" href="https://stellar-split-sooty.vercel.app">Open the app</a>
+      <button class="icon-btn menu-btn" type="button" aria-controls="nav" aria-expanded="false" aria-label="Menu" data-menu>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<div class="docs-shell">
+  <nav class="docs-sidebar" id="docs-sidebar" aria-label="Documentation"><button class="search-btn" type="button" data-search aria-label="Search the docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search<kbd>Ctrl K</kbd></button><h2>Get started</h2><ul><li><a href="/index.html">Introduction</a></li><li><a href="/quickstart.html">Quickstart</a></li><li><a href="/authentication.html">Authentication</a></li><li><a href="/concepts.html">Concepts</a></li></ul><h2>Reference</h2><ul><li><a href="/api.html" aria-current="page">API reference</a></li><li><a href="/errors.html">Errors and limits</a></li></ul><h2>Build</h2><ul><li><a href="/integrations.html">Integrations</a></li><li><a href="/agents.html">Agents and MCP</a></li><li><a href="/security.html">Security</a></li></ul><h2>Project</h2><ul><li><a href="/changelog.html">Changelog</a></li></ul><h2>Elsewhere</h2><ul><li><a href="https://stellar-split-site.vercel.app">Website</a></li><li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li><li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li></ul></nav>
+  <div class="drawer-scrim" aria-hidden="true"></div>
+  <main class="docs-main" id="main" tabindex="-1">
+    <button class="sidebar-btn" type="button" data-sidebar aria-controls="docs-sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>All docs pages</button>
+    <nav class="crumbs" aria-label="Breadcrumb" style="margin-top:16px"><ol><li><a href="/">Docs</a></li><li>Reference</li><li aria-current="page">API reference</li></ol></nav>
+    <article>
+<h1>API reference</h1>
+<p class="lead">Base URL <code>https://stellar-split-sooty.vercel.app/v1</code>. JSON in, JSON out. Amounts are decimal strings. Errors are <code>{ "error": { "code", "message", "details"? } }</code>. Examples use <code>$TOKEN</code> for your session token.</p>
+<div class="callout note" role="note"><strong>Not built yet</strong><p>There are no <code>/v1/approvals</code> or <code>/v1/agents/:id</code> policy routes. Approvals and per-agent policies are planned. See <a href="/agents.html#approvals">Agents</a>.</p></div>
+<h2 id="meta">Meta</h2>
+<section class="endpoint" aria-labelledby="get-health">
+<h3 id="get-health" data-toc="GET /v1/health"><span class="badge m-get">GET</span> <span class="path">/v1/health</span></h3>
+<p>Liveness check.</p>
+<p><strong>Auth:</strong> None</p>
+<div class="ep-grid"><div>
+
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>API is up</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t7-curl" aria-controls="t7-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t7-js" aria-controls="t7-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t7-py" aria-controls="t7-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t7-curl-p" aria-labelledby="t7-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X GET "https://stellar-split-sooty.vercel.app/v1/health"</code></pre></div><div class="tab-panel" role="tabpanel" id="t7-js-p" aria-labelledby="t7-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/health', {
+  method: 'GET',
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t7-py-p" aria-labelledby="t7-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.get(
+    "https://stellar-split-sooty.vercel.app/v1/health",
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "status": "ok",
+  "network": "testnet"
+}</code></pre>
+</div></div></section>
+<h2 id="auth">Auth</h2>
+<section class="endpoint" aria-labelledby="post-auth-challenge">
+<h3 id="post-auth-challenge" data-toc="POST /v1/auth/challenge"><span class="badge m-post">POST</span> <span class="path">/v1/auth/challenge</span></h3>
+<p>Issues a SEP-53 sign-in message for an address. Valid 5 minutes, single use.</p>
+<p><strong>Auth:</strong> None</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>address</code></td><td>body</td><td>string</td><td>Yes</td><td>Stellar G address</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Challenge issued</td></tr><tr><td><code>400</code></td><td><code>INVALID_ADDRESS</code></td><td>Not a valid G address</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t8-curl" aria-controls="t8-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t8-js" aria-controls="t8-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t8-py" aria-controls="t8-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t8-curl-p" aria-labelledby="t8-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/auth/challenge" \
+  -H "Content-Type: application/json" \
+  -d '{"address":"GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t8-js-p" aria-labelledby="t8-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/auth/challenge', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t8-py-p" aria-labelledby="t8-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/auth/challenge",
+    json={
+        "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "challenge": "Stellar-Split sign-in\nAddress: G...\nNonce: ...\nExpires: 2026-10-26T08:05:00.000Z",
+  "expiresAt": "2026-10-26T08:05:00.000Z"
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-auth-verify">
+<h3 id="post-auth-verify" data-toc="POST /v1/auth/verify"><span class="badge m-post">POST</span> <span class="path">/v1/auth/verify</span></h3>
+<p>Exchanges a signed challenge for a 12-hour session.</p>
+<p><strong>Auth:</strong> None</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>address</code></td><td>body</td><td>string</td><td>Yes</td><td>Same address as the challenge</td></tr><tr><td><code>challenge</code></td><td>body</td><td>string</td><td>Yes</td><td>The exact challenge text</td></tr><tr><td><code>signature</code></td><td>body</td><td>string</td><td>Yes</td><td>SEP-53 signature, base64 or hex</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Session issued</td></tr><tr><td><code>401</code></td><td><code>UNAUTHORIZED</code></td><td>Bad signature, address or challenge, expired, or already used</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t9-curl" aria-controls="t9-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t9-js" aria-controls="t9-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t9-py" aria-controls="t9-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t9-curl-p" aria-labelledby="t9-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/auth/verify" \
+  -H "Content-Type: application/json" \
+  -d '{"address":"GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI","challenge":"&lt;challenge&gt;","signature":"&lt;base64&gt;"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t9-js-p" aria-labelledby="t9-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/auth/verify', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+    "challenge": "&lt;challenge&gt;",
+    "signature": "&lt;base64&gt;"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t9-py-p" aria-labelledby="t9-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/auth/verify",
+    json={
+        "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+        "challenge": "&lt;challenge&gt;",
+        "signature": "&lt;base64&gt;"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "session": {
+    "token": "&lt;token&gt;",
+    "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+    "expiresAt": "2026-10-26T20:00:00.000Z"
+  }
+}</code></pre>
+</div></div></section>
+<h2 id="profile">Profile</h2>
+<section class="endpoint" aria-labelledby="get-me">
+<h3 id="get-me" data-toc="GET /v1/me"><span class="badge m-get">GET</span> <span class="path">/v1/me</span></h3>
+<p>Your profile. Defaults when you have not saved one.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Profile</td></tr><tr><td><code>401</code></td><td><code>UNAUTHORIZED</code></td><td>No or expired token</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t10-curl" aria-controls="t10-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t10-js" aria-controls="t10-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t10-py" aria-controls="t10-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t10-curl-p" aria-labelledby="t10-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X GET "https://stellar-split-sooty.vercel.app/v1/me" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t10-js-p" aria-labelledby="t10-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/me', {
+  method: 'GET',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t10-py-p" aria-labelledby="t10-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.get(
+    "https://stellar-split-sooty.vercel.app/v1/me",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+  "displayName": null,
+  "homeCurrency": "USD",
+  "email": null
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="patch-me">
+<h3 id="patch-me" data-toc="PATCH /v1/me"><span class="badge m-patch">PATCH</span> <span class="path">/v1/me</span></h3>
+<p>Updates your profile. Send only the fields you change.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>displayName</code></td><td>body</td><td>string</td><td>No</td><td>Up to 60 characters</td></tr><tr><td><code>homeCurrency</code></td><td>body</td><td>string</td><td>No</td><td>3-letter code, for example EUR</td></tr><tr><td><code>email</code></td><td>body</td><td>string | null</td><td>No</td><td>Email or null</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Updated profile</td></tr><tr><td><code>400</code></td><td><code>VALIDATION</code></td><td>A field is invalid</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t11-curl" aria-controls="t11-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t11-js" aria-controls="t11-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t11-py" aria-controls="t11-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t11-curl-p" aria-labelledby="t11-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X PATCH "https://stellar-split-sooty.vercel.app/v1/me" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"Ana","homeCurrency":"EUR"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t11-js-p" aria-labelledby="t11-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/me', {
+  method: 'PATCH',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "displayName": "Ana",
+    "homeCurrency": "EUR"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t11-py-p" aria-labelledby="t11-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.patch(
+    "https://stellar-split-sooty.vercel.app/v1/me",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "displayName": "Ana",
+        "homeCurrency": "EUR"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+  "displayName": "Ana",
+  "homeCurrency": "EUR",
+  "email": null
+}</code></pre>
+</div></div></section>
+<h2 id="groups-and-members">Groups and members</h2>
+<section class="endpoint" aria-labelledby="get-groups">
+<h3 id="get-groups" data-toc="GET /v1/groups"><span class="badge m-get">GET</span> <span class="path">/v1/groups</span></h3>
+<p>Your groups with your net in each. <code>totals</code> covers USDC groups; <code>otherTotals</code> lists other assets separately, because dollars and euros never add up.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>List</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t12-curl" aria-controls="t12-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t12-js" aria-controls="t12-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t12-py" aria-controls="t12-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t12-curl-p" aria-labelledby="t12-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X GET "https://stellar-split-sooty.vercel.app/v1/groups" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t12-js-p" aria-labelledby="t12-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups', {
+  method: 'GET',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t12-py-p" aria-labelledby="t12-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.get(
+    "https://stellar-split-sooty.vercel.app/v1/groups",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "groups": [
+    {
+      "id": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+      "name": "Lisbon trip",
+      "type": "trip",
+      "asset": "USDC",
+      "memberCount": 3,
+      "myNet": "-21.00",
+      "updatedAt": "2026-10-26T07:55:00.000Z"
+    }
+  ],
+  "totals": {
+    "youOwe": "21.00",
+    "youAreOwed": "0.00"
+  },
+  "otherTotals": []
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-groups">
+<h3 id="post-groups" data-toc="POST /v1/groups"><span class="badge m-post">POST</span> <span class="path">/v1/groups</span></h3>
+<p>Creates a group. You join as the first member.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>name</code></td><td>body</td><td>string</td><td>Yes</td><td>Up to 80 characters</td></tr><tr><td><code>type</code></td><td>body</td><td>string</td><td>No</td><td><code>flat</code>, <code>trip</code> or <code>other</code> (default)</td></tr><tr><td><code>asset</code></td><td>body</td><td>string</td><td>No</td><td><code>USDC</code> (default) or <code>EURC</code> when enabled</td></tr><tr><td><code>displayName</code></td><td>body</td><td>string</td><td>No</td><td>Your name in this group</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>201</code></td><td></td><td>Group detail</td></tr><tr><td><code>400</code></td><td><code>VALIDATION</code></td><td>Bad name or field</td></tr><tr><td><code>400</code></td><td><code>ASSET_NOT_SUPPORTED</code></td><td>Asset not configured on this server</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t13-curl" aria-controls="t13-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t13-js" aria-controls="t13-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t13-py" aria-controls="t13-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t13-curl-p" aria-labelledby="t13-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Lisbon trip","type":"trip"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t13-js-p" aria-labelledby="t13-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "name": "Lisbon trip",
+    "type": "trip"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t13-py-p" aria-labelledby="t13-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "name": "Lisbon trip",
+        "type": "trip"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "group": {
+    "id": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+    "name": "Lisbon trip",
+    "type": "trip",
+    "asset": {
+      "code": "USDC",
+      "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+    },
+    "network": "testnet",
+    "createdAt": "2026-10-26T07:40:00.000Z"
+  },
+  "members": [
+    {
+      "id": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+      "kind": "human",
+      "displayName": "GAAQ…OBQ2",
+      "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+      "homeCurrency": "EUR"
+    }
+  ],
+  "me": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+  "balances": [
+    {
+      "memberId": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+      "net": "0.00"
+    }
+  ],
+  "myPosition": {
+    "net": "0.00",
+    "owes": [],
+    "owed": []
+  },
+  "expenseCount": 0
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="get-group">
+<h3 id="get-group" data-toc="GET /v1/groups/:id"><span class="badge m-get">GET</span> <span class="path">/v1/groups/:id</span></h3>
+<p>Group, members, balances and your suggested transfers.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Group detail</td></tr><tr><td><code>404</code></td><td><code>NOT_FOUND</code></td><td>Missing group or you are not a member</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t14-curl" aria-controls="t14-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t14-js" aria-controls="t14-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t14-py" aria-controls="t14-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t14-curl-p" aria-labelledby="t14-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X GET "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t14-js-p" aria-labelledby="t14-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88', {
+  method: 'GET',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t14-py-p" aria-labelledby="t14-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.get(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "group": {
+    "id": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+    "name": "Lisbon trip",
+    "type": "trip",
+    "asset": {
+      "code": "USDC",
+      "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+    },
+    "network": "testnet",
+    "createdAt": "2026-10-26T07:40:00.000Z"
+  },
+  "members": [
+    {
+      "id": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+      "kind": "human",
+      "displayName": "GAAQ…OBQ2",
+      "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+      "homeCurrency": "EUR"
+    }
+  ],
+  "me": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+  "balances": [
+    {
+      "memberId": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+      "net": "0.00"
+    }
+  ],
+  "myPosition": {
+    "net": "0.00",
+    "owes": [],
+    "owed": []
+  },
+  "expenseCount": 0
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-members">
+<h3 id="post-members" data-toc="POST /v1/groups/:id/members"><span class="badge m-post">POST</span> <span class="path">/v1/groups/:id/members</span></h3>
+<p>Adds a member by Stellar address.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr><tr><td><code>address</code></td><td>body</td><td>string</td><td>Yes</td><td>G address</td></tr><tr><td><code>displayName</code></td><td>body</td><td>string</td><td>No</td><td>Defaults to the short address</td></tr><tr><td><code>kind</code></td><td>body</td><td>string</td><td>No</td><td><code>human</code> (default) or <code>agent</code></td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>201</code></td><td></td><td>Member added</td></tr><tr><td><code>400</code></td><td><code>INVALID_ADDRESS</code></td><td>Bad address</td></tr><tr><td><code>400</code></td><td><code>VALIDATION</code></td><td>Group already has 50 members</td></tr><tr><td><code>409</code></td><td><code>ALREADY_MEMBER</code></td><td>Address is already in the group</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t15-curl" aria-controls="t15-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t15-js" aria-controls="t15-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t15-py" aria-controls="t15-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t15-curl-p" aria-labelledby="t15-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/members" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"address":"GAVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUPVC","displayName":"Rui"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t15-js-p" aria-labelledby="t15-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/members', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "address": "GAVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUPVC",
+    "displayName": "Rui"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t15-py-p" aria-labelledby="t15-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/members",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "address": "GAVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUPVC",
+        "displayName": "Rui"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "member": {
+    "id": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+    "groupId": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+    "kind": "human",
+    "displayName": "Rui",
+    "address": "GAVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUPVC",
+    "homeCurrency": "USD",
+    "createdAt": "2026-10-26T07:45:00.000Z"
+  }
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-invites">
+<h3 id="post-invites" data-toc="POST /v1/groups/:id/invites"><span class="badge m-post">POST</span> <span class="path">/v1/groups/:id/invites</span></h3>
+<p>Creates an invite link. With <code>address</code>, only that wallet can accept it.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr><tr><td><code>address</code></td><td>body</td><td>string</td><td>No</td><td>Bind the invite to one G address</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>201</code></td><td></td><td>Invite created</td></tr><tr><td><code>400</code></td><td><code>INVALID_ADDRESS</code></td><td>Bad address</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t16-curl" aria-controls="t16-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t16-js" aria-controls="t16-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t16-py" aria-controls="t16-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t16-curl-p" aria-labelledby="t16-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/invites" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t16-js-p" aria-labelledby="t16-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/invites', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({}),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t16-py-p" aria-labelledby="t16-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/invites",
+    headers={"Authorization": f"Bearer {token}"},
+    json={},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "inviteUrl": "https://stellar-split-sooty.vercel.app/invite/Zk3pQ9xR2mTa",
+  "code": "Zk3pQ9xR2mTa"
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-invite-accept">
+<h3 id="post-invite-accept" data-toc="POST /v1/invites/:code/accept"><span class="badge m-post">POST</span> <span class="path">/v1/invites/:code/accept</span></h3>
+<p>Joins the group of an invite. Safe to call twice.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>code</code></td><td>path</td><td>string</td><td>Yes</td><td>Invite code</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Joined, or already a member</td></tr><tr><td><code>404</code></td><td><code>NOT_FOUND</code></td><td>Unknown invite, or bound to another address</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t17-curl" aria-controls="t17-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t17-js" aria-controls="t17-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t17-py" aria-controls="t17-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t17-curl-p" aria-labelledby="t17-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/invites/Zk3pQ9xR2mTa/accept" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t17-js-p" aria-labelledby="t17-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/invites/Zk3pQ9xR2mTa/accept', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t17-py-p" aria-labelledby="t17-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/invites/Zk3pQ9xR2mTa/accept",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "groupId": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+  "alreadyMember": false
+}</code></pre>
+</div></div></section>
+<h2 id="expenses-and-balances">Expenses and balances</h2>
+<section class="endpoint" aria-labelledby="get-expenses">
+<h3 id="get-expenses" data-toc="GET /v1/groups/:id/expenses"><span class="badge m-get">GET</span> <span class="path">/v1/groups/:id/expenses</span></h3>
+<p>Expenses, newest first.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>List</td></tr><tr><td><code>404</code></td><td><code>NOT_FOUND</code></td><td>Not a member</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t18-curl" aria-controls="t18-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t18-js" aria-controls="t18-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t18-py" aria-controls="t18-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t18-curl-p" aria-labelledby="t18-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X GET "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/expenses" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t18-js-p" aria-labelledby="t18-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/expenses', {
+  method: 'GET',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t18-py-p" aria-labelledby="t18-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.get(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/expenses",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "expenses": [
+    {
+      "id": "e7c1...",
+      "groupId": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+      "description": "Dinner",
+      "amount": "42.00",
+      "paidBy": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+      "split": {
+        "type": "equal",
+        "participants": [
+          "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+          "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f"
+        ]
+      },
+      "shares": [
+        {
+          "memberId": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+          "amount": "21.00"
+        },
+        {
+          "memberId": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+          "amount": "21.00"
+        }
+      ],
+      "source": "manual",
+      "createdBy": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+      "createdAt": "2026-10-26T07:50:00.000Z"
+    }
+  ]
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-expenses">
+<h3 id="post-expenses" data-toc="POST /v1/groups/:id/expenses"><span class="badge m-post">POST</span> <span class="path">/v1/groups/:id/expenses</span></h3>
+<p>Records an expense with an equal or exact split. Repeating a request with the same <code>Idempotency-Key</code> in the group returns the first expense instead of a duplicate.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr><tr><td><code>Idempotency-Key</code></td><td>header</td><td>string</td><td>No</td><td>8 to 64 of A-Z a-z 0-9 - _</td></tr><tr><td><code>description</code></td><td>body</td><td>string</td><td>Yes</td><td>Up to 200 characters</td></tr><tr><td><code>amount</code></td><td>body</td><td>string</td><td>Yes</td><td>Positive, at most 7 decimals</td></tr><tr><td><code>paidBy</code></td><td>body</td><td>string</td><td>Yes</td><td>Member id</td></tr><tr><td><code>split</code></td><td>body</td><td>object</td><td>Yes</td><td><code>{ type: "equal", participants }</code> or <code>{ type: "exact", shares: [{ memberId, amount }] }</code></td></tr><tr><td><code>source</code></td><td>body</td><td>string</td><td>No</td><td><code>manual</code> or <code>scan</code>; agents always get <code>agent</code></td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>201</code></td><td></td><td>Expense created</td></tr><tr><td><code>400</code></td><td><code>VALIDATION</code></td><td>Bad field or Idempotency-Key</td></tr><tr><td><code>422</code></td><td><code>SPLIT_MISMATCH</code></td><td>Exact shares do not add up; see <code>details.difference</code></td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t19-curl" aria-controls="t19-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t19-js" aria-controls="t19-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t19-py" aria-controls="t19-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t19-curl-p" aria-labelledby="t19-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/expenses" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: dinner-2026-10-26" \
+  -H "Content-Type: application/json" \
+  -d '{"description":"Dinner","amount":"42.00","paidBy":"c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f","split":{"type":"equal","participants":["a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c","c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f"]}}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t19-js-p" aria-labelledby="t19-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/expenses', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Idempotency-Key': 'dinner-2026-10-26', 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "description": "Dinner",
+    "amount": "42.00",
+    "paidBy": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+    "split": {
+      "type": "equal",
+      "participants": [
+        "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+        "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f"
+      ]
+    }
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t19-py-p" aria-labelledby="t19-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/expenses",
+    headers={"Authorization": f"Bearer {token}", "Idempotency-Key": "dinner-2026-10-26"},
+    json={
+        "description": "Dinner",
+        "amount": "42.00",
+        "paidBy": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+        "split": {
+            "type": "equal",
+            "participants": [
+                "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+                "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f"
+            ]
+        }
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "expense": {
+    "id": "e7c1...",
+    "groupId": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+    "description": "Dinner",
+    "amount": "42.00",
+    "paidBy": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+    "split": {
+      "type": "equal",
+      "participants": [
+        "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+        "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f"
+      ]
+    },
+    "shares": [
+      {
+        "memberId": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+        "amount": "21.00"
+      },
+      {
+        "memberId": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+        "amount": "21.00"
+      }
+    ],
+    "source": "manual",
+    "createdBy": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+    "createdAt": "2026-10-26T07:50:00.000Z"
+  }
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="get-balances">
+<h3 id="get-balances" data-toc="GET /v1/groups/:id/balances"><span class="badge m-get">GET</span> <span class="path">/v1/groups/:id/balances</span></h3>
+<p>Net per member with address and kind.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Balances</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t20-curl" aria-controls="t20-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t20-js" aria-controls="t20-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t20-py" aria-controls="t20-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t20-curl-p" aria-labelledby="t20-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X GET "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/balances" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t20-js-p" aria-labelledby="t20-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/balances', {
+  method: 'GET',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t20-py-p" aria-labelledby="t20-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.get(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/balances",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "balances": [
+    {
+      "memberId": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+      "displayName": "Ana",
+      "address": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+      "kind": "human",
+      "net": "-21.00"
+    },
+    {
+      "memberId": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+      "displayName": "Rui",
+      "address": "GAVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUPVC",
+      "kind": "human",
+      "net": "21.00"
+    }
+  ]
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="get-activity">
+<h3 id="get-activity" data-toc="GET /v1/groups/:id/activity"><span class="badge m-get">GET</span> <span class="path">/v1/groups/:id/activity</span></h3>
+<p>Expenses and settlements together, newest first. Settlements include an <code>explorerUrl</code>.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Items</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t21-curl" aria-controls="t21-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t21-js" aria-controls="t21-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t21-py" aria-controls="t21-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t21-curl-p" aria-labelledby="t21-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X GET "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/activity" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t21-js-p" aria-labelledby="t21-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/activity', {
+  method: 'GET',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t21-py-p" aria-labelledby="t21-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.get(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/activity",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "items": [
+    {
+      "id": "f2a1...",
+      "groupId": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+      "from": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+      "to": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+      "amount": "21.00",
+      "txHash": "3c9e...a1",
+      "intentId": "0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e",
+      "createdAt": "2026-10-26T08:01:12.000Z",
+      "type": "settlement",
+      "explorerUrl": "https://stellar.expert/explorer/testnet/tx/3c9e...a1"
+    }
+  ]
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-receipt-scan">
+<h3 id="post-receipt-scan" data-toc="POST /v1/groups/:id/receipts/scan"><span class="badge m-post">POST</span> <span class="path">/v1/groups/:id/receipts/scan</span></h3>
+<p>Demo. Reads a receipt photo into a draft expense. Creates nothing. The photo and the reading are not stored. Use sample receipts only.</p>
+<p><strong>Auth:</strong> Bearer session or agent token, checked before the body is read</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr><tr><td><code>imageBase64</code></td><td>body</td><td>string</td><td>Yes</td><td>JPEG, PNG or WebP, at most 1.4 million base64 characters</td></tr><tr><td><code>mimeType</code></td><td>body</td><td>string</td><td>Yes</td><td><code>image/jpeg</code>, <code>image/png</code> or <code>image/webp</code></td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Draft</td></tr><tr><td><code>401</code></td><td><code>UNAUTHORIZED</code></td><td>No token</td></tr><tr><td><code>413</code></td><td><code>VALIDATION</code></td><td>Photo too large</td></tr><tr><td><code>422</code></td><td><code>NOT_A_RECEIPT</code></td><td>Not a receipt</td></tr><tr><td><code>422</code></td><td><code>SCAN_UNREADABLE</code></td><td>Total could not be read</td></tr><tr><td><code>429</code></td><td><code>RATE_LIMITED</code></td><td>More than 10 scans in 10 minutes</td></tr><tr><td><code>503</code></td><td><code>SCAN_UNAVAILABLE</code></td><td>Reader not set up, down or out of quota</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t22-curl" aria-controls="t22-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t22-js" aria-controls="t22-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t22-py" aria-controls="t22-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t22-curl-p" aria-labelledby="t22-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/receipts/scan" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"imageBase64":"&lt;base64&gt;","mimeType":"image/jpeg"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t22-js-p" aria-labelledby="t22-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/receipts/scan', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "imageBase64": "&lt;base64&gt;",
+    "mimeType": "image/jpeg"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t22-py-p" aria-labelledby="t22-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/receipts/scan",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "imageBase64": "&lt;base64&gt;",
+        "mimeType": "image/jpeg"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "draft": {
+    "merchant": "Cervejaria",
+    "date": "2026-10-25",
+    "currency": "USD",
+    "total": "42.00",
+    "usdc": "42.00",
+    "items": [
+      {
+        "name": "Dinner",
+        "amount": "42.00"
+      }
+    ],
+    "warnings": []
+  }
+}</code></pre>
+</div></div></section>
+<h2 id="settlements">Settlements</h2>
+<section class="endpoint" aria-labelledby="post-settlements-dry-run">
+<h3 id="post-settlements-dry-run" data-toc="POST /v1/groups/:id/settlements?dry_run=true"><span class="badge m-post">POST</span> <span class="path">/v1/groups/:id/settlements?dry_run=true</span></h3>
+<p>Payment terms for paying <code>to</code>, without reserving or recording anything. Agent caps apply.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr><tr><td><code>dry_run</code></td><td>query</td><td>string</td><td>Yes</td><td><code>true</code></td></tr><tr><td><code>to</code></td><td>body</td><td>string</td><td>Yes</td><td>Creditor member id</td></tr><tr><td><code>amount</code></td><td>body</td><td>string</td><td>Yes</td><td>Amount to pay</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Terms</td></tr><tr><td><code>403</code></td><td><code>AGENT_CAP_PER_PAYMENT</code></td><td>Or <code>_PER_DAY</code>, <code>_PER_MONTH</code></td></tr><tr><td><code>422</code></td><td><code>OVERPAY</code></td><td>More than you owe</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t23-curl" aria-controls="t23-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t23-js" aria-controls="t23-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t23-py" aria-controls="t23-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t23-curl-p" aria-labelledby="t23-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements?dry_run=true" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"to":"c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f","amount":"21.00"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t23-js-p" aria-labelledby="t23-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements?dry_run=true', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "to": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+    "amount": "21.00"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t23-py-p" aria-labelledby="t23-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements?dry_run=true",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "to": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+        "amount": "21.00"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "intent": {
+    "groupId": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+    "from": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+    "to": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+    "amount": "21.00",
+    "asset": {
+      "code": "USDC",
+      "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+    },
+    "network": "stellar:testnet",
+    "payFrom": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+    "payTo": "GAVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUPVC"
+  }
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-intents">
+<h3 id="post-intents" data-toc="POST /v1/groups/:id/settlements/intents"><span class="badge m-post">POST</span> <span class="path">/v1/groups/:id/settlements/intents</span></h3>
+<p>Step 1: reserves a settlement intent for 10 minutes. An agent token may send <code>onBehalfOf</code> (its linked owner's member id) to pay the owner's debt from the agent account.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr><tr><td><code>to</code></td><td>body</td><td>string</td><td>Yes</td><td>Creditor member id</td></tr><tr><td><code>amount</code></td><td>body</td><td>string</td><td>Yes</td><td>Amount</td></tr><tr><td><code>onBehalfOf</code></td><td>body</td><td>string</td><td>No</td><td>Agent only: owner member id</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>201</code></td><td></td><td>Intent reserved</td></tr><tr><td><code>403</code></td><td><code>NOT_LINKED</code></td><td>Agent not linked to that member</td></tr><tr><td><code>403</code></td><td><code>AGENT_CAP_PER_PAYMENT</code></td><td>Or <code>_PER_DAY</code>, <code>_PER_MONTH</code></td></tr><tr><td><code>409</code></td><td><code>INTENT_IN_PROGRESS</code></td><td>Payer or creditor has another reserved intent</td></tr><tr><td><code>422</code></td><td><code>OVERPAY</code></td><td>More than you owe</td></tr><tr><td><code>503</code></td><td><code>ASSET_UNAVAILABLE</code></td><td>Group asset not configured</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t24-curl" aria-controls="t24-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t24-js" aria-controls="t24-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t24-py" aria-controls="t24-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t24-curl-p" aria-labelledby="t24-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"to":"c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f","amount":"21.00"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t24-js-p" aria-labelledby="t24-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "to": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+    "amount": "21.00"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t24-py-p" aria-labelledby="t24-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "to": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+        "amount": "21.00"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "intent": {
+    "id": "0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e",
+    "groupId": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+    "from": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+    "to": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+    "amount": "21.00",
+    "asset": {
+      "code": "USDC",
+      "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+    },
+    "network": "stellar:testnet",
+    "payFrom": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+    "payer": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+    "debtorMemberId": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+    "payTo": "GAVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUPVC",
+    "memo": {
+      "type": "hash",
+      "value": "9b1f...e4"
+    },
+    "status": "reserved",
+    "reservedAt": "2026-10-26T08:00:00.000Z",
+    "expiresAt": "2026-10-26T08:10:00.000Z"
+  }
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-settlements">
+<h3 id="post-settlements" data-toc="POST /v1/groups/:id/settlements"><span class="badge m-post">POST</span> <span class="path">/v1/groups/:id/settlements</span></h3>
+<p>Step 2: records the payment once Horizon confirms it. <code>to</code> and <code>amount</code> may be sent and must match the intent.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr><tr><td><code>intentId</code></td><td>body</td><td>string</td><td>Yes</td><td>Reserved intent id</td></tr><tr><td><code>txHash</code></td><td>body</td><td>string</td><td>Yes</td><td>Testnet transaction hash</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>201</code></td><td></td><td>Settlement recorded</td></tr><tr><td><code>404</code></td><td><code>INTENT_NOT_FOUND</code></td><td>No such intent for you</td></tr><tr><td><code>409</code></td><td><code>DUPLICATE_TX</code></td><td>Hash already recorded</td></tr><tr><td><code>409</code></td><td><code>INTENT_NOT_OPEN</code></td><td>Intent settled or in review</td></tr><tr><td><code>409</code></td><td><code>NEEDS_REVIEW</code></td><td>Paid, but no longer matches an open debt</td></tr><tr><td><code>422</code></td><td><code>PAYMENT_MISMATCH</code></td><td>And the other verification codes in Errors</td></tr><tr><td><code>502</code></td><td><code>UPSTREAM_UNAVAILABLE</code></td><td>Horizon or the database did not answer; retry</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t25-curl" aria-controls="t25-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t25-js" aria-controls="t25-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t25-py" aria-controls="t25-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t25-curl-p" aria-labelledby="t25-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"intentId":"0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e","txHash":"3c9e...a1"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t25-js-p" aria-labelledby="t25-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "intentId": "0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e",
+    "txHash": "3c9e...a1"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t25-py-p" aria-labelledby="t25-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "intentId": "0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e",
+        "txHash": "3c9e...a1"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "settlement": {
+    "id": "f2a1...",
+    "groupId": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+    "from": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+    "to": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+    "amount": "21.00",
+    "txHash": "3c9e...a1",
+    "intentId": "0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e",
+    "createdAt": "2026-10-26T08:01:12.000Z"
+  }
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-intent-cancel">
+<h3 id="post-intent-cancel" data-toc="POST /v1/groups/:id/settlements/intents/:intentId/cancel"><span class="badge m-post">POST</span> <span class="path">/v1/groups/:id/settlements/intents/:intentId/cancel</span></h3>
+<p>Cancels a reserved intent. Only its payer can cancel.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr><tr><td><code>intentId</code></td><td>path</td><td>string</td><td>Yes</td><td>Intent id</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Cancelled intent</td></tr><tr><td><code>404</code></td><td><code>INTENT_NOT_FOUND</code></td><td>Not yours or missing</td></tr><tr><td><code>409</code></td><td><code>INTENT_NOT_OPEN</code></td><td>Not reserved any more</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t26-curl" aria-controls="t26-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t26-js" aria-controls="t26-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t26-py" aria-controls="t26-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t26-curl-p" aria-labelledby="t26-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents/0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e/cancel" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t26-js-p" aria-labelledby="t26-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents/0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e/cancel', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t26-py-p" aria-labelledby="t26-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents/0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e/cancel",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "intent": {
+    "id": "0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e",
+    "groupId": "6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88",
+    "from": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+    "to": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+    "amount": "21.00",
+    "asset": {
+      "code": "USDC",
+      "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+    },
+    "network": "stellar:testnet",
+    "payFrom": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+    "payer": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+    "debtorMemberId": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+    "payTo": "GAVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUPVC",
+    "memo": {
+      "type": "hash",
+      "value": "9b1f...e4"
+    },
+    "status": "cancelled",
+    "reservedAt": "2026-10-26T08:00:00.000Z",
+    "expiresAt": "2026-10-26T08:10:00.000Z"
+  }
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-x402">
+<h3 id="post-x402" data-toc="POST /v1/groups/:id/settlements/intents/:intentId/x402"><span class="badge m-post">POST</span> <span class="path">/v1/groups/:id/settlements/intents/:intentId/x402</span></h3>
+<p>x402-style handshake for the intent payer, self-verified (no facilitator). Without <code>PAYMENT-SIGNATURE</code>: <code>402</code> with the terms in the body and, base64, in the <code>PAYMENT-REQUIRED</code> header. With it (base64 JSON <code>{ x402Version: 1, scheme: "exact", network: "stellar:testnet", payload: { txHash } }</code>): the same Horizon check as step 2, then <code>200</code> with a <code>PAYMENT-RESPONSE</code> header. A payment that fails the check answers 402 again with <code>error</code> set.</p>
+<p><strong>Auth:</strong> Bearer session or agent token</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>string</td><td>Yes</td><td>Group id</td></tr><tr><td><code>intentId</code></td><td>path</td><td>string</td><td>Yes</td><td>Intent id</td></tr><tr><td><code>PAYMENT-SIGNATURE</code></td><td>header</td><td>string</td><td>No</td><td>Base64 JSON with the transaction hash</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>402</code></td><td></td><td>Terms, or a failed check</td></tr><tr><td><code>200</code></td><td></td><td>Settlement recorded</td></tr><tr><td><code>404</code></td><td><code>INTENT_NOT_FOUND</code></td><td>Not the payer</td></tr><tr><td><code>409</code></td><td><code>INTENT_NOT_OPEN</code></td><td>Expired or closed</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t27-curl" aria-controls="t27-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t27-js" aria-controls="t27-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t27-py" aria-controls="t27-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t27-curl-p" aria-labelledby="t27-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents/0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e/x402" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t27-js-p" aria-labelledby="t27-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents/0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e/x402', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t27-py-p" aria-labelledby="t27-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents/0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e/x402",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "x402Version": 1,
+  "error": null,
+  "accepts": [
+    {
+      "scheme": "exact",
+      "network": "stellar:testnet",
+      "asset": "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "payTo": "GAVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUKRKFIVCUPVC",
+      "amount": "21.00",
+      "maxTimeoutSeconds": 540,
+      "resource": "https://stellar-split-sooty.vercel.app/v1/groups/6f1c2a90-3b1e-4d7a-9a51-2f0c7e1d4b88/settlements/intents/0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e/x402",
+      "extra": {
+        "intentId": "0b6f7c1e-2d3a-4b5c-9d8e-7f6a5b4c3d2e",
+        "memoType": "hash",
+        "memo": "9b1f...e4",
+        "expiresAt": "2026-10-26T08:10:00.000Z"
+      }
+    }
+  ]
+}</code></pre>
+</div></div></section>
+<h2 id="agent-links">Agent links</h2>
+<section class="endpoint" aria-labelledby="post-link-challenge">
+<h3 id="post-link-challenge" data-toc="POST /v1/agents/link/challenge"><span class="badge m-post">POST</span> <span class="path">/v1/agents/link/challenge</span></h3>
+<p>Issues a link message for one of the operator's registered agent addresses. You sign it with SEP-53. Valid 5 minutes, single use.</p>
+<p><strong>Auth:</strong> Bearer session of a person (agent tokens get 403)</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>agentAddress</code></td><td>body</td><td>string</td><td>Yes</td><td>Agent G address, listed in <code>AGENT_TOKENS</code></td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>Link message</td></tr><tr><td><code>400</code></td><td><code>INVALID_ADDRESS</code></td><td>Bad address</td></tr><tr><td><code>400</code></td><td><code>VALIDATION</code></td><td>Your own address</td></tr><tr><td><code>400</code></td><td><code>AGENT_NOT_REGISTERED</code></td><td>Not a registered agent</td></tr><tr><td><code>403</code></td><td><code>FORBIDDEN</code></td><td>Called with an agent token</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t28-curl" aria-controls="t28-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t28-js" aria-controls="t28-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t28-py" aria-controls="t28-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t28-curl-p" aria-labelledby="t28-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/agents/link/challenge" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"agentAddress":"GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t28-js-p" aria-labelledby="t28-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/agents/link/challenge', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "agentAddress": "GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t28-py-p" aria-labelledby="t28-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/agents/link/challenge",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "agentAddress": "GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "message": "Stellar Split agent link\nOwner: GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI\nAgent: GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2\nNonce: ...\nExpires: 2026-10-26T08:05:00.000Z",
+  "nonce": "...",
+  "expiresAt": "2026-10-26T08:05:00.000Z"
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="post-link">
+<h3 id="post-link" data-toc="POST /v1/agents/link"><span class="badge m-post">POST</span> <span class="path">/v1/agents/link</span></h3>
+<p>Links the agent to you with the signed message.</p>
+<p><strong>Auth:</strong> Bearer session of a person (agent tokens get 403)</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>agentAddress</code></td><td>body</td><td>string</td><td>Yes</td><td>Agent address</td></tr><tr><td><code>message</code></td><td>body</td><td>string</td><td>Yes</td><td>The exact link message</td></tr><tr><td><code>signature</code></td><td>body</td><td>string</td><td>Yes</td><td>SEP-53 signature</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>201</code></td><td></td><td>Linked</td></tr><tr><td><code>400</code></td><td><code>LINK_INVALID</code></td><td>Bad, expired or reused signature</td></tr><tr><td><code>409</code></td><td><code>AGENT_ALREADY_LINKED</code></td><td>Another owner has an active link</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t29-curl" aria-controls="t29-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t29-js" aria-controls="t29-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t29-py" aria-controls="t29-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t29-curl-p" aria-labelledby="t29-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X POST "https://stellar-split-sooty.vercel.app/v1/agents/link" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"agentAddress":"GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2","message":"&lt;message&gt;","signature":"&lt;base64&gt;"}'</code></pre></div><div class="tab-panel" role="tabpanel" id="t29-js-p" aria-labelledby="t29-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/agents/link', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    "agentAddress": "GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2",
+    "message": "&lt;message&gt;",
+    "signature": "&lt;base64&gt;"
+  }),
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t29-py-p" aria-labelledby="t29-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.post(
+    "https://stellar-split-sooty.vercel.app/v1/agents/link",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "agentAddress": "GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2",
+        "message": "&lt;message&gt;",
+        "signature": "&lt;base64&gt;"
+    },
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "agent": {
+    "address": "GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2",
+    "ownerAddress": "GADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOZPI",
+    "linkedAt": "2026-10-26T08:02:00.000Z"
+  }
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="get-my-agents">
+<h3 id="get-my-agents" data-toc="GET /v1/me/agents"><span class="badge m-get">GET</span> <span class="path">/v1/me/agents</span></h3>
+<p>Your linked agents, including revoked ones.</p>
+<p><strong>Auth:</strong> Bearer session of a person (agent tokens get 403)</p>
+<div class="ep-grid"><div>
+
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>200</code></td><td></td><td>List</td></tr><tr><td><code>403</code></td><td><code>FORBIDDEN</code></td><td>Agent token</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t30-curl" aria-controls="t30-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t30-js" aria-controls="t30-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t30-py" aria-controls="t30-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t30-curl-p" aria-labelledby="t30-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X GET "https://stellar-split-sooty.vercel.app/v1/me/agents" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t30-js-p" aria-labelledby="t30-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/me/agents', {
+  method: 'GET',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = await res.json();</code></pre></div><div class="tab-panel" role="tabpanel" id="t30-py-p" aria-labelledby="t30-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.get(
+    "https://stellar-split-sooty.vercel.app/v1/me/agents",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code, res.json())</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">{
+  "agents": [
+    {
+      "address": "GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2",
+      "linkedAt": "2026-10-26T08:02:00.000Z",
+      "revokedAt": null
+    }
+  ]
+}</code></pre>
+</div></div></section>
+<section class="endpoint" aria-labelledby="delete-my-agent">
+<h3 id="delete-my-agent" data-toc="DELETE /v1/me/agents/:address"><span class="badge m-delete">DELETE</span> <span class="path">/v1/me/agents/:address</span></h3>
+<p>Revokes a link.</p>
+<p><strong>Auth:</strong> Bearer session of a person (agent tokens get 403)</p>
+<div class="ep-grid"><div>
+<div class="ep-label">Parameters</div><table><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>address</code></td><td>path</td><td>string</td><td>Yes</td><td>Agent G address</td></tr></tbody></table>
+<div class="ep-label">Status codes</div><table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr></thead><tbody><tr><td><code>204</code></td><td></td><td>Revoked, no body</td></tr><tr><td><code>404</code></td><td><code>NOT_FOUND</code></td><td>No active link</td></tr></tbody></table>
+</div><div>
+<div class="ep-label">Request</div><div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t31-curl" aria-controls="t31-curl-p" data-lang="curl" aria-selected="true">curl</button><button type="button" role="tab" id="t31-js" aria-controls="t31-js-p" data-lang="js" aria-selected="false">JavaScript</button><button type="button" role="tab" id="t31-py" aria-controls="t31-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t31-curl-p" aria-labelledby="t31-curl" data-lang="curl"><pre><code class="lang-bash">curl -sS -X DELETE "https://stellar-split-sooty.vercel.app/v1/me/agents/GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div><div class="tab-panel" role="tabpanel" id="t31-js-p" aria-labelledby="t31-js" data-lang="js" hidden><pre><code class="lang-js">const res = await fetch('https://stellar-split-sooty.vercel.app/v1/me/agents/GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2', {
+  method: 'DELETE',
+  headers: { Authorization: 'Bearer ' + token },
+});
+const data = res.status // 204, no body;</code></pre></div><div class="tab-panel" role="tabpanel" id="t31-py-p" aria-labelledby="t31-py" data-lang="py" hidden><pre><code class="lang-py">import requests
+
+res = requests.delete(
+    "https://stellar-split-sooty.vercel.app/v1/me/agents/GBRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWGY3DMNRWHOI2",
+    headers={"Authorization": f"Bearer {token}"},
+    timeout=15,
+)
+print(res.status_code)  # 204</code></pre></div></div>
+<div class="ep-label">Response</div><pre><code class="lang-json">// 204 No Content</code></pre>
+</div></div></section>
+      <div class="page-meta"><span>Last updated 26 October 2026</span><a href="https://github.com/Michella-stack/Stellar-Split/tree/main/sites/docs/api.html">Edit this page on GitHub</a></div>
+      <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/concepts.html"><small>Previous</small>Concepts</a><a class="next" href="/errors.html"><small>Next</small>Errors and limits</a></nav>
+    </article>
+  </main>
+  <aside class="docs-toc" aria-label="On this page"><h2>On this page</h2><ul data-depth="2"></ul></aside>
+</div>
+<div class="search-modal" role="dialog" aria-modal="true" aria-label="Search the docs">
+  <div class="search-panel">
+    <label class="sr-only" for="search-input">Search the docs</label>
+    <input id="search-input" type="search" placeholder="Search endpoints, errors, tools..." autocomplete="off" />
+    <ul class="search-results" aria-live="polite"></ul>
+  </div>
+</div>
+<footer class="site-footer">
+  <div class="wrap" style="max-width:1440px">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="/"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs</a>
+        <p class="muted" style="margin-top:16px;max-width:300px">Split shared bills and settle them in USDC on Stellar, with EURC ready. A hackathon project, running on Stellar Testnet.</p>
+      </div>
+      <div>
+        <h3>Product</h3>
+        <ul>
+          <li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#how">How it works</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#assist">Stellar Assist</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Developers</h3>
+        <ul>
+          <li><a href="/">Documentation</a></li>
+          <li><a href="/api.html">API reference</a></li>
+          <li><a href="/agents.html">Agents and MCP</a></li>
+          <li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Trust</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/security.html">Security</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/status.html">Status</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/team.html">Team</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/press.html">Press kit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/privacy.html">Privacy</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/terms.html">Terms</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/cookies.html">Cookies</a></li>
+          <li><button class="linklike" type="button" data-cookie-settings>Cookie settings</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 The Stellar Split team. Built at HackMeridian, Lisbon. MIT licensed.</span>
+      <span>Stellar Testnet only. Test tokens have no value. Not financial advice.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

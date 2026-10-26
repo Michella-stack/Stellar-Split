@@ -30,3 +30,12 @@ ADR 0010 made a group settle in one asset and rejected converting, because balan
 - **Keep balances per currency** and settle each one separately. Honest, but a person who owes in three currencies has three debts and three payments, and a group of friends does not want that.
 - **Look the rate up on the server** and ignore the client's. More trustworthy and a new dependency on every save in a serverless function; the person also could not enter the rate their bank gave them. Possible later without changing the data model, because the rate is already stored.
 - **Round the converted amount to cents.** Looks tidier, but then exact splits need a second rounding rule. Amounts keep 7 decimals like every equal split already does, and are shown to 2.
+
+## Update, 2026-10-26: the API checks the rate
+
+The first version did not verify the rate (see Consequences). It now does, in the way the last alternative above described and without changing the data model: `apps/api/src/rates` keeps the daily rates of a public source (open.er-api.com, no key, the same one the web shows estimates from) for 6 hours, and an expense whose rate is more than **10%** away from the market one is refused with `422 RATE_OFF_MARKET` and the market rate in `details.expected`. The margin is wide on purpose, for a bank's or card's own margin; it is there to catch a decimal point in the wrong place, not to police a few percent.
+
+- **The check never blocks on someone else's website.** If the source cannot be reached, answers something odd, or its rates are older than 48 hours, the expense is saved and `rate_not_checked` is logged. The rate then only has the range check of the original decision.
+- It still does not stop a member typing a false amount, as before.
+- `RATES_CHECK=off` turns it off (offline development). The rates of the web app's own estimates are unchanged and still display only.
+

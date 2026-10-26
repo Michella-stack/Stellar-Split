@@ -116,8 +116,13 @@ function ExpenseForm({ detail }) {
       toast(t('expense.added', { description: description.trim() }), { tone: 'success' });
       navigate(`/groups/${group.id}`, { replace: true });
     } catch (e) {
+      // The API refuses a rate far from the market one and says what it is: show it so the person can fix a misplaced decimal point.
       setServerError(
-        e?.code === 'SPLIT_MISMATCH' ? t('expense.errMismatch') : t('expense.errSave'),
+        e?.code === 'SPLIT_MISMATCH'
+          ? t('expense.errMismatch')
+          : e?.code === 'RATE_OFF_MARKET'
+            ? t('expense.errRate', { group: groupCurrency, expected: e.details?.expected ?? '', currency })
+            : t('expense.errSave'),
       );
       setSaving(false);
     }

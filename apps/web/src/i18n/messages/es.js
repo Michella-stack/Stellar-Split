@@ -296,6 +296,7 @@ export default {
   "expense.rateLabel": "1 {group} = ¿cuántos {currency}?",
   "expense.rateHint": "Por ejemplo el cambio que te dio tu tarjeta o tu banco. Déjalo vacío para usar el de arriba.",
   "expense.rateInvalid": "Escribe un número mayor que 0.",
+  "expense.errRate": "Ese cambio está lejos del cambio de hoy (aproximadamente 1 {group} = {expected} {currency}). Revísalo o usa el que se muestra.",
   "expense.row.converted": "{original} ≈ {amount}",
   "scan.hintConverted": "El ticket está en {currency}. Se convertirá a {asset} con el cambio que ves; puedes cambiarlo.",
   "expense.what": "¿Para qué fue?",

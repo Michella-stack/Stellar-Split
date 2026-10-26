@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mockReceiptDraft } from './mockReceipt.js';
-import { draftToPrefill, warningMessages } from './receiptDraft.js';
+import { amountInAsset, draftToPrefill, warningMessages } from './receiptDraft.js';
 
 const draft = (over = {}) => ({ merchant: 'Pingo Doce, Alfama', date: '2026-10-24', currency: 'EUR', total: '58.14', usdc: null, items: [], warnings: [], ...over });
 
@@ -21,6 +21,34 @@ describe('draftToPrefill', () => {
     expect(draftToPrefill(draft({ merchant: ', Lisbon' })).description).toBe('Receipt');
     expect(draftToPrefill(draft({ currency: null })).hint).toBe('The receipt total is 58.14. Enter the amount in USDC.');
     expect(draftToPrefill(draft({ merchant: 'x'.repeat(200) })).description).toHaveLength(80);
+  });
+});
+
+describe('a EURC group', () => {
+  it('fills the amount for a ticket in euros, with no conversion', () => {
+    expect(draftToPrefill(draft(), 'EURC')).toEqual({ amount: '58.14', description: 'Pingo Doce', hint: null, source: 'scan' });
+  });
+
+  it('leaves the amount empty for any other currency and asks for it in EURC', () => {
+    for (const currency of ['USD', 'GBP', null]) {
+      const prefill = draftToPrefill(draft({ currency, usdc: currency === 'USD' ? '58.14' : null }), 'EURC');
+      expect(prefill.amount, String(currency)).toBe('');
+      expect(prefill.hint).toBe(`The receipt total is ${[currency, '58.14'].filter(Boolean).join(' ')}. Enter the amount in EURC.`);
+    }
+  });
+
+  it('does not fill a USDC group from a ticket in euros', () => {
+    expect(draftToPrefill(draft(), 'USDC').amount).toBe('');
+    expect(draftToPrefill(draft()).amount).toBe('');
+  });
+});
+
+describe('amountInAsset', () => {
+  it('matches the ticket currency to the asset and never converts', () => {
+    expect(amountInAsset(draft({ currency: 'USD', usdc: '58.14' }), 'USDC')).toBe('58.14');
+    expect(amountInAsset(draft({ currency: 'USD', usdc: '58.14' }), 'EURC')).toBeNull();
+    expect(amountInAsset(draft(), 'EURC')).toBe('58.14');
+    expect(amountInAsset(draft(), 'USDC')).toBeNull();
   });
 });
 

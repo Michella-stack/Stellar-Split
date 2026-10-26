@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ApiError, scanReceipt, USING_MOCKS } from '../client/api.js';
+import { ApiError, getGroup, scanReceipt, USING_MOCKS } from '../client/api.js';
 import { Amount } from '../components/Amount.jsx';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { IconCamera, IconReceipt } from '../components/icons.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { mockReceiptDraft } from '../features/expenses/mockReceipt.js';
-import { draftToPrefill, warningMessages } from '../features/expenses/receiptDraft.js';
+import { amountInAsset, draftToPrefill, warningMessages } from '../features/expenses/receiptDraft.js';
 import { PhotoError, prepareReceiptPhoto } from '../features/expenses/receiptPhoto.js';
+import { useApi } from '../hooks/useApi.js';
 import { useT } from '../hooks/useT.js';
 import { tNow } from '../i18n/index.js';
+import { assetCodeOf } from '../lib/asset.js';
 import { formatDate } from '../lib/format.js';
 
 // Errors that mean the reader itself could not be used. The demo then shows a labelled sample instead of failing.
@@ -30,6 +32,9 @@ export default function ExpenseScan() {
   const { t } = useT();
   const { id } = useParams();
   const navigate = useNavigate();
+  // The group's asset decides which currency counts as already in the right unit. USDC until the group has loaded.
+  const group = useApi(() => getGroup(id), `group:${id}`);
+  const assetCode = assetCodeOf(group.data?.group);
   const cameraRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const uploadRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const [step, setStep] = useState(/** @type {'choose' | 'scanning' | 'result' | 'error'} */ ('choose'));
@@ -72,7 +77,7 @@ export default function ExpenseScan() {
   }
 
   function applyDetails() {
-    navigate(`/groups/${id}/expenses/new`, { replace: true, state: { prefill: draftToPrefill(result) } });
+    navigate(`/groups/${id}/expenses/new`, { replace: true, state: { prefill: draftToPrefill(result, assetCode) } });
   }
 
   return (
@@ -146,8 +151,8 @@ export default function ExpenseScan() {
                   <dd className="font-mono text-lg">{[result.currency, result.total].filter(Boolean).join(' ')}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-muted">{t('scan.inUsdc')}</dt>
-                  <dd>{result.usdc ? <Amount value={result.usdc} size="md" /> : <span className="text-sm text-muted">{t('scan.enterNext')}</span>}</dd>
+                  <dt className="text-sm text-muted">{t('scan.inAsset', { asset: assetCode })}</dt>
+                  <dd>{amountInAsset(result, assetCode) ? <Amount value={amountInAsset(result, assetCode)} asset={assetCode} size="md" /> : <span className="text-sm text-muted">{t('scan.enterNext')}</span>}</dd>
                 </div>
               </dl>
               {warningMessages(result).map((message) => (

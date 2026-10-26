@@ -36,6 +36,7 @@ export const routes = [
           { path: 'groups/:id/expenses/new', lazy: screen(() => import('./ExpenseNew.jsx')) },
           { path: 'groups/:id/expenses/scan', lazy: screen(() => import('./ExpenseScan.jsx')) },
           { path: 'groups/:id/activity', lazy: screen(() => import('./Activity.jsx')) },
+          { path: 'groups/:id/settlements/:settlementId', lazy: screen(() => import('./SettlementReceipt.jsx')) },
           { path: 'groups/:id/settle/:memberId', lazy: screen(() => import('./Settle.jsx')) },
           { path: 'join/:code', lazy: screen(() => import('./Join.jsx')) },
           // The API's invite links use /invite/CODE.

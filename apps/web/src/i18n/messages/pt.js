@@ -319,6 +319,7 @@ export default {
   "expense.rateLabel": "1 {group} = quantos {currency}?",
   "expense.rateHint": "Por exemplo o câmbio que o teu cartão ou banco te deu. Deixa vazio para usar o de cima.",
   "expense.rateInvalid": "Escreve um número maior que 0.",
+  "expense.errRate": "Esse câmbio está longe do câmbio de hoje (cerca de 1 {group} = {expected} {currency}). Verifica-o ou usa o que aparece.",
   "expense.row.converted": "{original} ≈ {amount}",
   "scan.hintConverted": "O talão está em {currency}. Vai ser convertido para {asset} com o câmbio que vês; podes mudá-lo.",
   "expense.what": "Para que foi?",

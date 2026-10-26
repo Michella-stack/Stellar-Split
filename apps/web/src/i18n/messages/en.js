@@ -319,6 +319,7 @@ export default {
   "expense.rateLabel": "1 {group} = how many {currency}?",
   "expense.rateHint": "For example the rate your card or bank gave you. Leave it empty to use the one above.",
   "expense.rateInvalid": "Enter a number above 0.",
+  "expense.errRate": "That rate is far from today's market rate (about 1 {group} = {expected} {currency}). Check it, or use the one shown.",
   "expense.row.converted": "{original} ≈ {amount}",
   "scan.hintConverted": "The receipt is in {currency}. It will be converted to {asset} at the rate shown; you can change it.",
   "expense.what": "What was it for?",

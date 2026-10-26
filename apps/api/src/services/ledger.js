@@ -15,6 +15,7 @@ import {
 } from '../../../../packages/shared/src/index.js';
 import { checkSpend, DEFAULT_CAPS } from '../../../../packages/policy-engine/src/index.js';
 import { decodeAddress } from '../auth/index.js';
+import { TOLERANCE_PERCENT } from '../rates/index.js';
 
 export class ApiError extends Error {
   constructor(status, code, message, details) {
@@ -72,9 +73,11 @@ function amountOf(value, field = 'amount') {
 }
 
 /**
- * @param {{ repo: object, stellar: object, appUrl?: string, now?: () => Date, agentCaps?: object, log?: (line: object) => void }} deps
+ * @param {{ repo: object, stellar: object, appUrl?: string, now?: () => Date, agentCaps?: object, log?: (line: object) => void,
+ *   rates?: { check: (input: { currency: string, groupCurrency: string, rate: string }) => Promise<{ checked: boolean, ok?: boolean, expected?: string }> } | null }} deps
+ *   rates: checks the rate of an expense in another currency against the market. Left out, any sane rate is accepted.
  */
-export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(), agentCaps = DEFAULT_CAPS, log = () => {} }) {
+export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(), agentCaps = DEFAULT_CAPS, log = () => {}, rates = null }) {
   const ts = () => now().toISOString();
 
   async function load(groupId) {
@@ -111,6 +114,22 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     const asset = stellar.assetFor?.(group.asset);
     if (!asset) throw new ApiError(503, 'ASSET_UNAVAILABLE', `This group settles in ${group.asset}, which is not configured on this server`);
     return asset;
+  }
+
+  /** A rate far from the market one is refused with the market rate in the answer; when it cannot be checked the expense goes through. */
+  async function checkRate(original, groupCurrency) {
+    if (!rates) return;
+    const verdict = await rates.check({ currency: original.originalCurrency, groupCurrency, rate: original.rate });
+    if (!verdict.checked) return log({ t: ts(), level: 'warn', msg: 'rate_not_checked', currency: original.originalCurrency });
+    if (verdict.ok) return;
+    log({ t: ts(), level: 'warn', msg: 'rate_off_market', currency: original.originalCurrency, rate: original.rate, expected: verdict.expected });
+    throw new ApiError(422, 'RATE_OFF_MARKET', 'The rate is too far from the market rate', {
+      currency: original.originalCurrency,
+      groupCurrency,
+      rate: original.rate,
+      expected: verdict.expected,
+      tolerancePercent: Number(TOLERANCE_PERCENT),
+    });
   }
 
   function detail({ group, members, expenses, net, me }) {
@@ -365,7 +384,9 @@ export function createLedger({ repo, stellar, appUrl = '', now = () => new Date(
     async createExpense(principal, groupId, input = {}, idempotencyKey) {
       const { members, me, group } = await forMember(principal, groupId);
       const ids = new Set(members.map((m) => m.id));
-      const { total, original } = expenseAmount(input, currencyOfAsset(group.asset ?? stellar.asset.code));
+      const groupCurrency = currencyOfAsset(group.asset ?? stellar.asset.code);
+      const { total, original } = expenseAmount(input, groupCurrency);
+      if (original) await checkRate(original, groupCurrency);
       if (!ids.has(input.paidBy)) throw invalid('paidBy must be a member of the group');
       const split = input.split ?? {};
       let clean;

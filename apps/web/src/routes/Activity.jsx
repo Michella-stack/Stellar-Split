@@ -27,7 +27,7 @@ export default function Activity() {
       <TopBar backTo={`/groups/${id}`} title={group.data?.group.name ?? t('activity.title')} />
       <div className="flex flex-col gap-4 pb-8">
         <h1 className="font-display-wide text-4xl">{t('activity.title')}</h1>
-        {loading && !error && <Loading label={t('activity.loading')} />}
+        {loading && !error && <Loading shape="rows" label={t('activity.loading')} />}
         {error && <LoadError title={t('activity.loadError')} error={error} onRetry={reload} />}
         {group.data && activity.data && (
           <AssetProvider group={group.data.group}>

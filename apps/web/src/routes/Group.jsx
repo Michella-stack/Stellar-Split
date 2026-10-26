@@ -43,7 +43,7 @@ export default function Group() {
           </IconButton>
         }
       />
-      {group.loading && <Loading label={t('group.loading')} />}
+      {group.loading && <Loading shape="group" label={t('group.loading')} />}
       {group.error && <LoadError title={t('group.loadError')} error={group.error} onRetry={group.reload} />}
       {detail && (
         <AssetProvider group={detail.group}>
@@ -68,7 +68,7 @@ export default function Group() {
                 {t('group.allActivity')}
               </Link>
             </div>
-            {activity.loading && <Loading label={t('group.loadingExpenses')} />}
+            {activity.loading && <Loading shape="rows" label={t('group.loadingExpenses')} />}
             {activity.error && <LoadError title={t('group.expensesError')} error={activity.error} onRetry={activity.reload} />}
             {activity.data &&
               (activity.data.items.length === 0 ? (

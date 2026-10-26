@@ -25,7 +25,7 @@ export default function Groups() {
       <TopBar />
       <div className="flex flex-col gap-6 pb-8">
         <h1 className="font-display-wide text-4xl">{t('groups.title')}</h1>
-        {loading && <Loading label={t('groups.loading')} />}
+        {loading && <Loading shape="groups" label={t('groups.loading')} />}
         {error && <LoadError title={t('groups.loadError')} error={error} onRetry={reload} />}
         {data && (
           <>

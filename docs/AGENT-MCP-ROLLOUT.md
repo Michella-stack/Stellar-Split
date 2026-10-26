@@ -1,8 +1,70 @@
-# Connecting Hermes and OpenClaw to the MCP server (plan)
+# Connecting Hermes and OpenClaw to the MCP server
 
-Status: plan, 2026-10-25. **Nothing here is done.** It covers the Phase 1a agent tests that move no money: HA-1, HA-3, HA-6 (Hermes, issue #15) and OC-1, OC-3, OC-6 (OpenClaw, issue #18). Settlement by an agent (HA-4, OC-4, issue #14 and the signer in [AGENT-WALLETS.md](AGENT-WALLETS.md)) stays a stretch goal and is out of scope here.
+Status: **done and partly tested on 2026-10-26**, see [Status of the rollout](#status-of-the-rollout-26-october-2026). The plan below is what was followed, with the corrections the reviews and the real run made. It covers the Phase 1a agent tests that move no money: HA-1, HA-3, HA-6 (Hermes, issue #15) and OC-1, OC-3, OC-6 (OpenClaw, issue #18). Settlement by an agent (HA-4, OC-4, issue #14 and the signer in [AGENT-WALLETS.md](AGENT-WALLETS.md)) stays a stretch goal and is out of scope here.
 
 Test steps come from PRD section 7.3. Who may talk to the agents and where they run is in [AGENTS.md](AGENTS.md). Server-side caps for agents are in `apps/api/README.md`.
+
+## Status of the rollout (26 October 2026)
+
+### What runs
+
+| Piece | State |
+|---|---|
+| MCP container per agent | Both run on the agent host in their own Compose project, one internal Docker network each, env files mode 600, hardening as in the example (read-only filesystem, `cap_drop: ALL`, `no-new-privileges`). Image built from a clean checkout of `main` (commit `441b12a`), separate from the older working copy on the host, which has local commits |
+| Signer | Each MCP mounts its agent's wallet key read-only at `/run/secrets/signer` (`LEDGERLY_SIGNER_FILE`). The key is not in the MCP's environment, and the agent containers hold no `LEDGERLY_TOKEN` and no secret key (checked: count of matches is 0). `ledgerly_settle` exists in both MCP servers |
+| Tokens | `AGENT_TOKENS` in Vercel Production holds the two entries (`sha256(token)=agent address`, 243 characters). The API answers 200 to the Hermes token and, after the corrected value, to the OpenClaw token |
+| Hermes | Registered under `mcp_servers.ledgerly` over HTTP with `trust: untrusted` |
+| OpenClaw | Registered as **two** MCP servers with the same URL and credentials, because the approval mode is per server: `ledgerly` (read tools `ledgerly_list_groups`, `ledgerly_get_balances`, `ledgerly_propose_settlement`, mode `approve`, no prompt) and `ledgerly-write` (`ledgerly_create_expense`, mode `prompt`). `ledgerly_settle` is hidden from OpenClaw by the tool filter |
+| Telegram approver | `channels.telegram.execApprovals` is enabled with the owner as the only approver and `target: "both"` |
+| Agent funds | Each agent wallet received 10 Testnet USDC from the DEX script (ADR 0002 caps a shared agent's float at 50) |
+
+### Test results
+
+| Test | Result |
+|---|---|
+| HA-1 (Hermes, tools listed, `trust: untrusted`) | Done. `tools/list` shows the tools and the API accepts the token. The write-tool prompt was **not** tried from Telegram |
+| HA-3 (Hermes reads a balance from Telegram) | Not run |
+| HA-6 (Hermes, injection) | Not run. The planned real denial needs a debt above the per-payment cap in a demo group; a group where the agent owes 40 exists |
+| OC-1 (OpenClaw, tools listed) | Done. `openclaw mcp probe` lists the tools and their approval mode |
+| OC-2 (settle hidden from OpenClaw) | Done through the tool filter |
+| OC-3 (expense created from Telegram) | **Done with approval.** A Telegram message asking for a 2 USDC expense in a demo group made OpenClaw ask for approval with buttons (Allow once, Deny) and the `/approve` fallback, expiring in 120 seconds. The expense was recorded only after approval, with `source: agent` |
+| OC-6 (OpenClaw, injection) | Not run |
+| HA-4, OC-4 (an agent settles) | Not run. Nothing is linked yet and no agent has paid |
+
+What the OC-3 run settled: the approval mode of an MCP server is applied on the Telegram path (the agent runs through the Codex runtime), and an approver has to be configured or the prompt has nobody to answer it. It showed that a prompt appears for **every** call of a server in `prompt` mode, read tools included, which is why OpenClaw has two servers.
+
+### What the run taught
+
+- A Vercel environment variable change only applies to a **new** deployment. Check the list of deployments: the latest production one must be newer than the change. The deploy workflow can be re-run on the latest `main` run.
+- An `AGENT_TOKENS` entry that does not match gives `401 UNAUTHORIZED` for that agent only; Hermes kept working. A value that cannot be parsed would take the whole API down. After saving, test both tokens through each MCP container (the probe below).
+- If a second Telegram message arrives while OpenClaw is still answering the first, Codex reports "steering queue cancelled" and the second message is lost. Wait for the answer, then send it again.
+- The Telegram prompt shows the tool's own description and the parameters, so a clear tool description matters.
+- The older working copy of the repository on the host has local commits and cannot be fast-forwarded. Build images from a separate checkout of `origin/main`.
+- The demo accounts script refuses to keep keys inside a git repository, and a home folder that is itself a repository counts. Point `DEMO_ACCOUNTS_FILE` at a folder outside any repository.
+- The Testnet DEX has almost no EURC, so demo accounts get EURC from Circle's faucet, not from the script.
+- Reaching the host over Tailscale SSH can ask for a browser check.
+
+### Operations
+
+Run these on the agent host. They print no secret.
+
+| Task | How |
+|---|---|
+| Status | `docker ps --filter name=ledgerly-mcp` |
+| Probe an MCP container | `docker exec ledgerly-mcp-<agent> node --input-type=module -e "..."` that posts a `tools/list` JSON-RPC request to `http://127.0.0.1:8787/mcp` with `Authorization: Bearer $MCP_AUTH_TOKEN` and `Accept: application/json, text/event-stream`, and prints only the status and the tool names. Without the token it must answer 401 |
+| Does the API accept the agent token | Call `ledgerly_list_groups` the same way: a 401 inside the reply means the token is not in `AGENT_TOKENS` |
+| OpenClaw MCP state | `openclaw mcp probe` and `openclaw mcp list` inside the container; `openclaw approvals get` shows grants (there should be none) |
+| Change an OpenClaw tool's approval | `openclaw mcp configure <server> --approval approve\|prompt\|auto`, then `openclaw mcp reload` |
+| Hide or show a tool | `openclaw mcp tools <server> --include a,b` or `--exclude a` |
+| Roll back | Stop the MCP container, restore the agent's compose file and config from the timestamped backups kept beside them, recreate the agent container. The API needs no change |
+| Rotate a token | Add the new hash to `AGENT_TOKENS` next to the old one, redeploy, switch the MCP container's env file, recreate it, then remove the old hash and redeploy |
+
+### Still open
+
+- Link each agent to its owner in the web app (Wallet screen, "Your agent") before any `on_behalf_of` payment.
+- Run HA-3, HA-6 and OC-6 from Telegram, and the first payment (HA-4, OC-4). Hermes' MCP already exposes `ledgerly_settle`; OpenClaw's does not until its approval flow is trusted with a payment tool.
+- Name the owner of the shared agents (ADR 0002) before the first payment.
+- Agent spend caps still count euros and dollars as the same number (ADR 0010).
 
 ## Goal
 

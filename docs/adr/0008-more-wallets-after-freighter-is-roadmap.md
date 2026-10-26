@@ -30,3 +30,14 @@ The required demo is the human flow with Freighter. People who use other Stellar
 ## Not verified
 
 Which wallets sign SEP-53 messages, the kit under our CSP, its real bundle size, and Blux beyond its documentation page. See `docs/WALLETS.md` section 6.
+
+## Update, 2026-10-26: the spike
+
+The half-day spike of point 4 was done (`docs/WALLETS.md` section 7). The decision to keep Freighter only for the hackathon stands, and the item stays **paused**. What the spike changes in this record:
+
+- **Point 2 is not supported by the numbers.** Stellar Wallets Kit adds 387 packages and 29 `npm audit` findings (11 high) to an app that has none, and its picker is blocked by our CSP unless `style-src` allows inline styles and `img-src` allows `stellar.creit.tech`. The wallets' own SDKs behind our adapter (point 5) add 7 packages and no findings. If this is scheduled, start from those and treat the kit as the rejected option.
+- **Only wallets that offer `signMessage` avoid an API change:** xBull, Lobstr and Hana. Albedo, Rabet and the hardware wallets do not offer it.
+- **Our "refuse unless Testnet" check works through Freighter only.** The other wallets cannot be asked for their network.
+- **Licences need a decision:** Lobstr's SDK 2.0.0 is GPL-3.0 and xBull's SDK 0.4.0 declares none, in an MIT repository.
+- Not verified, because no real wallet was run: that those signatures are accepted by the API, the wallets' popups under the CSP, Testnet behaviour.
+

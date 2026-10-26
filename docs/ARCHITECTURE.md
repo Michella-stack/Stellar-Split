@@ -206,10 +206,11 @@ Browser-safe transaction construction must be separated from server-only RPC or 
 
 The group contract is implemented in Rust with `soroban-sdk` and deployed on Stellar Testnet:
 
-- contract ID: `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`;
-- deployment transaction: `56a42289418586c90efec1a09ce36e70a152988067e2c7268fc9b2ec095fbe6a`;
-- WASM hash: `ca6ba904c5759a963a3b08611a8d4519aa6a8e75670dacab873ace8fe27463e4`; and
-- admin/recorder: `GCOURV2JXCIXK3CHXMJ4HBOPS5TMWGLL4AVKTO6A44DYYDJE2FA5I4N4`.
+- contract ID: `CDEJ3M45EYOPSTZISTUC7NIHKJ22IXWY4CZJLIED3LM5WJ4TSBIQMU43`;
+- deployment transaction: `8fa10c7b3ae25097f271765455b94e6462959e40ba23c122c32aab9e14cfbc16`;
+- WASM hash: `ca6ba904c5759a963a3b08611a8d4519aa6a8e75670dacab873ace8fe27463e4`;
+- admin: `GAKRFWETUDUHETI2OKTE35YCZPGXBXDUIHQK42CNIOHKQKKRXDZKKIHD`; and
+- recorder (a different account): `GDU3ZDIIX7TS4KTMJAUHZFLHW634PQNQYENJU6257GZXG4YWMVUX7MPL`.
 
 Group 1 is only a native-XLM smoke test. The Testnet USDC asset and demo settlement transaction are still pending. The required human demo therefore uses a plain USDC transfer first; contract `settle` integration follows.
 
@@ -370,7 +371,7 @@ The root `.env.example` documents variable names and safe Testnet defaults. The 
 | `HORIZON_URL` | Server or public when required | Approved Stellar Testnet Horizon endpoint. |
 | `SOROBAN_RPC_URL` | Server or public when required | Approved Stellar Testnet RPC endpoint. |
 | `USDC_ASSET_CODE` / `USDC_ISSUER` or `USDC_TOKEN_CONTRACT_ID` | Shared/public | Circle Testnet USDC: code `USDC`, issuer `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`, Stellar Asset Contract `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` (7 decimals). Confirmed on Testnet: the contract id matches the asset and the contract answers `name` = `USDC:GBBD47…`. |
-| `GROUP_CONTRACT_ID` | Shared/public | Deployed Testnet contract: `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`. |
+| `GROUP_CONTRACT_ID` | Shared/public | Deployed Testnet contract: `CDEJ3M45EYOPSTZISTUC7NIHKJ22IXWY4CZJLIED3LM5WJ4TSBIQMU43`. |
 | `SUPABASE_URL` | Server; public only if RLS permits | Selected Supabase project endpoint. |
 | `SUPABASE_ANON_KEY` | Browser only if RLS permits | Public client credential; not a replacement for authorization rules. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server secret | Privileged database credential; never exposed to browser code. |
@@ -468,7 +469,7 @@ Confirmed by the current README and repository:
 3. Supabase PostgreSQL is the off-chain ledger;
 4. Freighter signs human transactions on Stellar Testnet;
 5. the first required settlement is a plain USDC transfer, with contract `settle` integration afterward; and
-6. the deployed Testnet group contract ID is `CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`;
+6. the deployed Testnet group contract ID is `CDEJ3M45EYOPSTZISTUC7NIHKJ22IXWY4CZJLIED3LM5WJ4TSBIQMU43`;
 7. approved web versions are React and React DOM `19.3.1`, React Router `8.4.0`, Vite `8.3.4`, Tailwind CSS and `@tailwindcss/vite` `4.3.3`, and Vitest `5.0.5`; and
 8. Hermes and OpenClaw run in separate pinned containers with restricted Telegram access, but are not connected to the MCP server.
 

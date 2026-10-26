@@ -104,10 +104,11 @@ flowchart LR
 
 | Item | Value |
 |---|---|
-| Group contract | [`CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y`](https://stellar.expert/explorer/testnet/contract/CAZDOCJJR3NU5O2N44KQSWUG7C4OBLC6PIQLBFVPXODAYHHITFU7FR3Y) |
-| Deploy transaction | [`56a42289…095fbe6a`](https://stellar.expert/explorer/testnet/tx/56a42289418586c90efec1a09ce36e70a152988067e2c7268fc9b2ec095fbe6a) (25 October 2026) |
+| Group contract | [`CDEJ3M45EYOPSTZISTUC7NIHKJ22IXWY4CZJLIED3LM5WJ4TSBIQMU43`](https://stellar.expert/explorer/testnet/contract/CDEJ3M45EYOPSTZISTUC7NIHKJ22IXWY4CZJLIED3LM5WJ4TSBIQMU43) |
+| Deploy transaction | [`8fa10c7b…4cfbc16`](https://stellar.expert/explorer/testnet/tx/8fa10c7b3ae25097f271765455b94e6462959e40ba23c122c32aab9e14cfbc16) (26 October 2026) |
 | WASM hash | `ca6ba904c5759a963a3b08611a8d4519aa6a8e75670dacab873ace8fe27463e4` |
-| Admin and recorder | `GCOURV2JXCIXK3CHXMJ4HBOPS5TMWGLL4AVKTO6A44DYYDJE2FA5I4N4` |
+| Admin | `GAKRFWETUDUHETI2OKTE35YCZPGXBXDUIHQK42CNIOHKQKKRXDZKKIHD` |
+| Recorder | `GDU3ZDIIX7TS4KTMJAUHZFLHW634PQNQYENJU6257GZXG4YWMVUX7MPL` |
 | Testnet USDC (Circle) | `USDC` issued by [`GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`](https://stellar.expert/explorer/testnet/asset/USDC-GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5) (home domain `centre.io`), 7 decimals |
 | Testnet USDC token contract | [`CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA`](https://stellar.expert/explorer/testnet/contract/CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA), the Stellar Asset Contract of that asset. Derived from the asset for the Testnet passphrase; the contract answers `name` = `USDC:GBBD47…` and `decimals` = 7 |
 

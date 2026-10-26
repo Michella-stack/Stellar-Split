@@ -33,6 +33,8 @@ Shapes follow [`apps/web/src/client/README.md`](../web/src/client/README.md). Er
 |---|---|
 | `GET /v1/health` | Liveness, no auth |
 | `POST /v1/auth/challenge`, `POST /v1/auth/verify` | Sign-in |
+| `POST /v1/agents/link/challenge`, `POST /v1/agents/link` | Delegated agent payments, session only. `{ agentAddress }` returns `{ message, nonce, expiresAt }` (valid 5 minutes, single use). The owner signs `message` with SEP-53 and sends `{ agentAddress, message, signature }`: `201 { agent: { address, ownerAddress, linkedAt } }`. `400 AGENT_NOT_REGISTERED` when the address is not in `AGENT_TOKENS`, `400 LINK_INVALID` for a bad, expired or reused signature, `409 AGENT_ALREADY_LINKED` when the agent has another active owner. Run `database/migrations/004_agent_links.sql` first |
+| `GET /v1/me/agents`, `DELETE /v1/me/agents/:address` | My linked agents with `linkedAt` and `revokedAt`; revoke one (`204`) |
 | `GET /v1/me`, `PATCH /v1/me` | Profile: `displayName`, `homeCurrency`, `email` |
 | `GET /v1/groups`, `POST /v1/groups` | My groups with my net and totals; create a group (the creator joins) |
 | `GET /v1/groups/:id` | Group, members, balances, my suggested transfers |
@@ -41,7 +43,8 @@ Shapes follow [`apps/web/src/client/README.md`](../web/src/client/README.md). Er
 | `GET`, `POST /v1/groups/:id/expenses` | List; create with an equal or exact split. `Idempotency-Key` header makes retries safe |
 | `GET /v1/groups/:id/balances` | Net per member, with address and kind (used by the MCP server) |
 | `POST /v1/groups/:id/settlements?dry_run=true` | `{ to, amount }`: the payment terms, without reserving or recording anything (used by the MCP server) |
-| `POST /v1/groups/:id/settlements/intents` | `{ to, amount }`: step 1, reserves a settlement intent. `201 { intent }` with `id`, `payTo`, `memo: { type: 'hash', value }` and `expiresAt`. `409 INTENT_IN_PROGRESS` while the payer or the creditor has another reserved intent in the group |
+| `POST /v1/groups/:id/settlements/intents` | `{ to, amount, onBehalfOf? }`: step 1, reserves a settlement intent. `201 { intent }` with `id`, `payTo`, `memo: { type: 'hash', value }` and `expiresAt`. `payer` and `debtorMemberId`. `409 INTENT_IN_PROGRESS` while the payer or the creditor has another reserved intent in the group. An agent token may send `onBehalfOf` (the member id of its linked owner) to pay the owner's debt: the owner is the debtor, the agent is the payer and its spend caps count. `403 NOT_LINKED` without an active link |
+| `POST /v1/groups/:id/settlements/intents/:intentId/x402` | x402-style handshake for the intent's payer. Without a `PAYMENT-SIGNATURE` header: `402` with the terms in the `PAYMENT-REQUIRED` header (base64 JSON) and in the body. With `PAYMENT-SIGNATURE` (base64 JSON `{ x402Version: 1, scheme: 'exact', network: 'stellar:testnet', payload: { txHash } }`): the same Horizon check as `POST /settlements`, then `200 { settlement }` with a `PAYMENT-RESPONSE` header. A payment that fails the check answers `402` again with `error` set |
 | `POST /v1/groups/:id/settlements/intents/:intentId/cancel` | Cancels a reserved intent, for example when the signature is rejected in Freighter. Only the payer |
 | `POST /v1/groups/:id/settlements` | `{ intentId, txHash }`: step 2, records the payment after Horizon confirms it. `to` and `amount` may be sent too and must match the intent |
 | `POST /v1/groups/:id/receipts/scan` | `{ imageBase64, mimeType }`: reads a photo of a receipt (demo, issue #87) and returns `{ draft }`. It creates nothing. `503 SCAN_UNAVAILABLE` when there is no `GEMINI_API_KEY` or the reader is down or out of quota. Needs a session and answers `401` before reading the body. `429 RATE_LIMITED` after 10 scans in 10 minutes by the same person (counted per serverless instance) |
@@ -74,3 +77,7 @@ Not built: approvals (there is no `/v1/approvals` route), agent policies and the
 ## Settlement asset per group (#98)
 
 A group settles in one asset: `USDC` (the default) or `EURC`. `POST /v1/groups` takes an optional `asset`. The group, its settlement intents and its payment check all use that asset, and a payment in another asset is refused with `PAYMENT_MISMATCH`. EURC is offered only when `EURC_ISSUER` is set to Circle's Testnet EURC issuer (`GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO`, from Circle's EURC address list), and `database/migrations/003_group_asset.sql` has been run. Without the issuer, asking for `EURC` answers `400 ASSET_NOT_SUPPORTED`. Agent spend caps are still plain numbers, so for a EURC group they mean EURC.
+
+## Delegated agent payments (x402-style, self-verified)
+
+An owner links an agent once with a signed message. The agent can then reserve an intent for the owner's debt and pay it from its own account. This is x402-style and self-verified: the API answers HTTP 402 with the payment terms, the agent sends a classic Stellar payment with the intent memo, and the API checks it on Horizon with the same verifier as `POST /settlements`. There is no external facilitator, no Soroban authorization entry, no `@x402/*` package, and the contract's `record_x402_settlement` is not called. Those are roadmap.

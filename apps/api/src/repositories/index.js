@@ -6,10 +6,11 @@
 const coded = (code, message) => Object.assign(new Error(message), { code });
 const duplicateTx = () => coded('DUPLICATE_TX', 'Settlement already recorded');
 const inProgress = () => coded('INTENT_IN_PROGRESS', 'Another settlement is in progress for this debtor or creditor');
+const agentLinked = () => coded('AGENT_ALREADY_LINKED', 'This agent is already linked');
 const notOpen = () => coded('INTENT_NOT_OPEN', 'The settlement intent is not open');
 
 export function createMemoryRepository() {
-  const t = { users: [], groups: [], members: [], invites: [], expenses: [], settlements: [], intents: [] };
+  const t = { users: [], groups: [], members: [], invites: [], expenses: [], settlements: [], intents: [], agentLinks: [] };
   const nonces = new Set();
   const byGroup = (table, groupId) => t[table].filter((r) => r.groupId === groupId);
   const copy = (r) => (r ? structuredClone(r) : null);
@@ -46,9 +47,22 @@ export function createMemoryRepository() {
       return copy(t.intents.at(-1));
     },
     getIntent: async (id) => copy(t.intents.find((i) => i.id === id)),
+    insertAgentLink: async (l) => {
+      if (t.agentLinks.some((x) => x.agentAddress === l.agentAddress && !x.revokedAt)) throw agentLinked();
+      t.agentLinks.push(structuredClone({ ...l, revokedAt: null }));
+      return copy(t.agentLinks.at(-1));
+    },
+    getActiveAgentLink: async (agentAddress) => copy(t.agentLinks.find((x) => x.agentAddress === agentAddress && !x.revokedAt)),
+    listAgentLinks: async (ownerAddress) => t.agentLinks.filter((x) => x.ownerAddress === ownerAddress).map(copy),
+    /** Sets revokedAt on the active link and returns it, or null when there is none. */
+    revokeAgentLink: async (ownerAddress, agentAddress, at) => {
+      const l = t.agentLinks.find((x) => x.ownerAddress === ownerAddress && x.agentAddress === agentAddress && !x.revokedAt);
+      if (l) l.revokedAt = at;
+      return copy(l);
+    },
     listIntentsByPayer: async (address, since) => {
       const ids = new Set(t.members.filter((m) => m.address === address).map((m) => m.id));
-      return t.intents.filter((i) => ids.has(i.from) && i.reservedAt >= since).map(copy);
+      return t.intents.filter((i) => (i.payerAddress ? i.payerAddress === address : ids.has(i.from)) && i.reservedAt >= since).map(copy);
     },
     expireIntents: async (groupId, now) => {
       for (const i of byGroup('intents', groupId)) {
@@ -154,11 +168,23 @@ export function createSupabaseRepository({ url, serviceKey, fetchImpl = globalTh
       }
     },
     getIntent: (id) => one('settlement_intents', `id=${eq(id)}`),
+    insertAgentLink: async (l) => {
+      try {
+        return await insert('agent_links', l);
+      } catch (err) {
+        if (err.pgCode === '23505') throw agentLinked();
+        throw err;
+      }
+    },
+    getActiveAgentLink: (agentAddress) => one('agent_links', `agent_address=${eq(agentAddress)}&revoked_at=is.null`),
+    listAgentLinks: (ownerAddress) => select('agent_links', `owner_address=${eq(ownerAddress)}&order=linked_at`),
+    revokeAgentLink: async (ownerAddress, agentAddress, at) =>
+      mapKeys((await req('PATCH', `/agent_links?owner_address=${eq(ownerAddress)}&agent_address=${eq(agentAddress)}&revoked_at=is.null`, { revoked_at: at }, 'return=representation'))?.[0], camel) ?? null,
     // Every intent paid from this address, in any group, reserved since `since`.
     listIntentsByPayer: async (address, since) => {
       const ids = (await select('members', `address=${eq(address)}`)).map((m) => m.id);
       if (!ids.length) return [];
-      return select('settlement_intents', `from=in.(${ids.map(encodeURIComponent).join(',')})&reserved_at=gte.${encodeURIComponent(since)}`);
+      return select('settlement_intents', `reserved_at=gte.${encodeURIComponent(since)}&or=(payer_address.eq.${encodeURIComponent(address)},and(payer_address.is.null,from.in.(${ids.map(encodeURIComponent).join(',')})))`);
     },
     expireIntents: (groupId, now) =>
       req('PATCH', `/settlement_intents?group_id=${eq(groupId)}&status=eq.reserved&expires_at=lt.${encodeURIComponent(now)}`, { status: 'expired' }, 'return=minimal'),

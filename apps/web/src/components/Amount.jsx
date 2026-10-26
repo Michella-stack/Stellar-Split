@@ -1,3 +1,4 @@
+import { useT } from '../hooks/useT.js';
 import { cx } from '../lib/cx.js';
 import { useAssetCode } from '../lib/asset.js';
 import { formatMoney } from '../lib/format.js';
@@ -17,6 +18,7 @@ const SIZES = {
  *   value: decimal string in the asset. asset: overrides the group's asset (for lists that mix groups). estimate: already formatted, e.g. "€335".
  */
 export function Amount({ value, size = 'md', tone = 'default', estimate, className, asset }) {
+  const { t } = useT();
   const groupCode = useAssetCode();
   return (
     <span className={cx('inline-flex flex-col', className)}>
@@ -33,7 +35,7 @@ export function Amount({ value, size = 'md', tone = 'default', estimate, classNa
       </span>
       {estimate && (
         <span className={cx('text-sm', tone === 'inherit' ? 'opacity-80' : 'text-muted')}>
-          ≈ {estimate} <span className="sr-only">(</span>estimate<span className="sr-only">)</span>
+          ≈ {estimate} <span className="sr-only">(</span>{t('common.estimate')}<span className="sr-only">)</span>
         </span>
       )}
     </span>

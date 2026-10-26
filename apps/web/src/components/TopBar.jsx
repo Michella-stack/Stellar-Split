@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { useT } from '../hooks/useT.js';
+import { Logo } from './Logo.jsx';
 import { TestnetBadge } from './TestnetBadge.jsx';
 import { IconArrowLeft } from './icons.jsx';
 
@@ -22,8 +23,8 @@ export function TopBar({ title, backTo, backLabel, action }) {
           <IconArrowLeft size={20} />
         </Link>
       ) : (
-        <Link to="/" className="flex min-h-11 shrink-0 items-center font-display-wide text-lg">
-          {t('common.appName')}
+        <Link to="/" aria-label={t('common.appName')} className="flex min-h-11 shrink-0 items-center">
+          <Logo />
         </Link>
       )}
       <p className="min-w-0 flex-1 truncate text-center font-semibold">{title}</p>

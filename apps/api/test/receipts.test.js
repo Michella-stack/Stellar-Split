@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import http from 'node:http';
 import { after, before, test } from 'node:test';
 import { createGeminiExtractor, DEFAULT_MODEL } from '../src/receipts/gemini.js';
 import { toDraft } from '../src/receipts/draft.js';
@@ -312,14 +313,29 @@ test('it needs a session, and only a member can scan: a stranger gets the same 4
 });
 
 test('a stranger is turned away before the big body is read', async () => {
-  // More than the limit and no session: the answer is 401, not 413, so the body was never read. The reader is never asked.
+  // The request announces a body bigger than the limit but sends only a few bytes and then waits. A server that reads the body
+  // first would wait too; one that asks who is calling first answers 401 at once. Nothing big is sent, so the server closing the
+  // connection cannot reset a half-finished upload and make this test flaky.
   const calls = extractorCalls.length;
-  const res = await fetch(`${base}/v1/groups/${groupId}/receipts/scan`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ imageBase64: 'A'.repeat(MAX_IMAGE_BASE64 + 100_000), mimeType: 'image/jpeg' }),
+  const status = await new Promise((resolve, reject) => {
+    const req = http.request(
+      `${base}/v1/groups/${groupId}/receipts/scan`,
+      { method: 'POST', headers: { 'content-type': 'application/json', 'content-length': String(MAX_IMAGE_BASE64 + 100_000) } },
+      (res) => {
+        res.resume();
+        clearTimeout(timer);
+        resolve(res.statusCode);
+        req.destroy();
+      },
+    );
+    const timer = setTimeout(() => {
+      req.destroy();
+      reject(new Error('no answer within 2 seconds: the body is being read before the caller is checked'));
+    }, 2000);
+    req.on('error', () => {}); // after the answer the socket is closed on purpose
+    req.write('{"imageBase64":"AAAA');
   });
-  assert.equal(res.status, 401);
+  assert.equal(status, 401);
   assert.equal(extractorCalls.length, calls);
 });
 

@@ -47,6 +47,7 @@
       <a href="/#security">Security</a>
       <a href="/#developers">Developers</a>
       <a href="https://stellar-split-docs.vercel.app">Docs</a>
+      <a href="/#pricing">Pricing</a>
       <a href="/#faq">FAQ</a>
     </nav>
     <div class="header-actions">
@@ -257,6 +258,23 @@ curl https://stellar-split-sooty.vercel.app/v1/health
     </div>
   </section>
 
+  <section id="pricing" aria-labelledby="pricing-h">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Pricing <span class="badge">Planned for mainnet</span></p>
+        <h2 id="pricing-h" class="display">Splitting is free. Pay for the agent.</h2>
+        <p>No cut on payments between people, no ads, no yield on your money. Everything is free while we run on Stellar Testnet.</p>
+      </div>
+      <div class="pricing">
+        <article class="plan"><h3>Free</h3><p class="price display">&euro;0</p><ul><li>Unlimited groups and expenses</li><li>Settle in USDC or EURC, wallet to wallet</li><li>No fee from us, no ads</li><li>20 Stellar Assist actions a month</li></ul></article>
+        <article class="plan plan-hl"><h3>Assist Pro</h3><p class="price display">&euro;3.99<span>/month</span></p><p class="muted small">or &euro;29 a year</p><ul><li>Unlimited Stellar Assist</li><li>Recurring bills paid within your limits</li><li>Receipt scan and exports</li><li>Higher auto-pay limits you set</li></ul></article>
+        <article class="plan"><h3>Developers</h3><p class="price display">$0.002<span>/read</span></p><p class="muted small">$0.01 per write, 1,000 calls a month free</p><ul><li>REST API and MCP server</li><li>Paid per call over x402 in USDC</li><li>No subscription</li></ul></article>
+        <article class="plan"><h3>Operators</h3><p class="price display">&euro;2<span>/group/month</span></p><p class="muted small">&euro;49 minimum</p><ul><li>Coliving, group travel, teams across countries</li><li>Bulk groups and an admin dashboard</li><li>Exports for your books</li></ul></article>
+      </div>
+      <p class="muted small pricing-note">Cash in and cash out go through licensed Stellar anchors at their own rates. We never add a fee to your payment. <a href="https://github.com/Michella-stack/Stellar-Split/blob/main/docs/BUSINESS-MODEL.md">How we set these prices</a></p>
+    </div>
+  </section>
+
   <section class="band" id="faq" aria-labelledby="faq-h">
     <div class="wrap faq-wrap">
       <div class="section-head">
@@ -269,7 +287,7 @@ curl https://stellar-split-sooty.vercel.app/v1/health
         <details><summary>Which wallet do I need?</summary><p>Freighter, set to Stellar Testnet. You can also try the whole app in demo mode with sample data, no wallet needed.</p></details>
         <details><summary>How do I get test USDC?</summary><p>Add a USDC trustline to your Testnet account, then request USDC from Circle's faucet. The Wallet screen in the app links to it.</p></details>
         <details><summary>What can Stellar Assist do without me?</summary><p>Only pay amounts under the limits you set, from its own small wallet. Anything above your ask-me-first amount waits for your approval, and it cannot approve its own request.</p></details>
-        <details><summary>What does it cost?</summary><p>Nothing. It is a free, open source hackathon project. Stellar network fees on Testnet are paid with free test XLM.</p></details>
+        <details><summary>What does it cost?</summary><p>Nothing today: it runs on Stellar Testnet and network fees are paid with free test XLM. After mainnet, splitting and settling stay free, and Stellar Assist Pro is planned at &euro;3.99 a month. See <a href="#pricing">pricing</a>.</p></details>
         <details><summary>Can I build on it?</summary><p>Yes. The REST API and the MCP server are documented in the <a href="https://stellar-split-docs.vercel.app">developer docs</a>, and the code is on <a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a> under the MIT license.</p></details>
       </div>
     </div>

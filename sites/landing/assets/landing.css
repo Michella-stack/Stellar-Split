@@ -126,3 +126,15 @@ pre .c { color: var(--muted); }
 .final .btn-ghost { color: #f5f5f2; border-color: #3a3a42; }
 .final .btn-ghost:hover { background: #17171b; }
 .split > *, .hero-grid > *, .faq-wrap > * { min-width: 0; }
+/* Pricing */
+.pricing { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.plan { padding: 28px; border-radius: var(--radius-card); border: 1px solid var(--line); background: var(--surface); }
+.plan-hl { border: 2px solid var(--accent); }
+[data-theme='light'] .plan-hl { border-color: var(--text); }
+.plan .price { font-size: 40px; margin: 8px 0 4px; }
+.plan .price span { font: 500 14px/1 var(--font-sans); color: var(--muted); margin-left: 4px; }
+.plan ul { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 8px; font-size: 14px; color: var(--muted); }
+.plan li::before { content: '\2713'; color: var(--owed); margin-right: 8px; }
+.pricing-note { margin-top: 20px; }
+@media (max-width: 960px) { .pricing { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .pricing { grid-template-columns: 1fr; } }

@@ -17,6 +17,7 @@ Built at HackMeridian (Lisbon, 25 to 26 October 2026). Track: Genesis, with Stel
 | Developer docs: API, integrations, agents and MCP | https://stellar-split-docs.vercel.app |
 | API health | https://stellar-split-sooty.vercel.app/v1/health |
 | Agent payments (to and from the agent) and EURC, with transactions | [Agent payments and EURC on Testnet](#agent-payments-and-eurc-on-testnet) |
+| Business model and planned pricing | [Business model](#business-model) |
 | How we map to the judging criteria | [docs/JUDGING.md](docs/JUDGING.md) |
 
 > **Note for the judges: what is built and what is planned.** Everything under [What works today](#what-works-today) runs and was checked on Stellar Testnet, and the transactions are listed below. The [Roadmap](#roadmap) at the end of this README is **not built**: it records what we chose to leave out during the event and why, for example sign-in with email or social accounts, more wallets than Freighter, fiat ramps and on-chain limits for agents. Where the app shows something planned, such as the "More wallets" list on the connect screen, it is labelled "Coming soon" and does nothing. What we could not verify is listed in [docs/TESTING.md](docs/TESTING.md) and, for agents, in [docs/AGENT-MCP-ROLLOUT.md](docs/AGENT-MCP-ROLLOUT.md#status-of-the-rollout-26-october-2026).
@@ -24,6 +25,35 @@ Built at HackMeridian (Lisbon, 25 to 26 October 2026). Track: Genesis, with Stel
 No wallet? Open the app and choose the demo: the whole app runs on sample data, without Freighter and without touching Stellar. With Freighter on Testnet you can settle real Testnet USDC and see the transaction on Stellar Expert.
 
 The app, the website and the docs are three separate Vercel deployments. The website and the docs live in [`sites/landing`](sites/landing) and [`sites/docs`](sites/docs) as static files and do not change the app.
+
+## Business model
+
+**Splitting and settling stay free, with no cut on payments between people. We earn from the agent that works for you, from groups run by businesses, and from other agents that use our API.** Prices are planned for mainnet. During Testnet everything is free.
+
+| Plan | Planned price | Who pays and for what |
+|---|---|---|
+| **Free** | €0 | Everyone: unlimited groups and expenses, settlement in USDC or EURC, no fee from us, no ads, 20 Stellar Assist actions a month |
+| **Assist Pro** | €3.99 a month or €29 a year | People who want Stellar Assist to pay recurring bills, scan receipts and settle within their limits |
+| **Developers** | 1,000 calls a month free, then $0.002 per read and $0.01 per write, paid per call over x402 | Third-party apps and agents using our API and MCP server |
+| **Operators** | €2 per active group a month, €49 minimum | Coliving operators, group travel agencies, teams across countries |
+
+Why it works:
+
+- **Free beats the market leader.** Splitwise's free plan stops at roughly 3 to 5 expenses a day and Splitwise Pro costs about $4.99 a month. Assist Pro costs less and does more: an agent that pays.
+- **Assist Pro needs no partner,** so it is the first revenue we control. Operators is recurring revenue tied to real rent flows, such as a flat in Spain paid from Mexico.
+- **Ramps are upside, not a fee on you.** Cash in and cash out go through licensed Stellar anchors (Bitso and MoneyGram for Mexico, Mykobo for EURC in Europe). Any revenue there comes from a partner agreement with the anchor, never added to your payment.
+- **We will not** take a percentage of payments, show ads, or earn yield on balances. We never hold user funds.
+
+How we got there: we started with the idea of charging on the fiat ramps. Three research passes, each citing a source for every number, showed that no Stellar anchor publishes a wallet revenue share, SEP-24 has no field for a wallet fee, and MoneyGram's ramps charge users $0. Adding our own fee to money movement would also make us look like a payment intermediary. So ramps became upside, and the paid product became what nobody else offers: an agent that pays for you, priced under Splitwise Pro.
+
+Research, sources, regulatory notes and what we have not verified yet: [docs/BUSINESS-MODEL.md](docs/BUSINESS-MODEL.md).
+
+## Challenges we ran into
+
+- **Making settlement trustworthy without custody.** A plain payment on Stellar says nothing about which debt it settles, so an older payment could be mistaken for a new one. We solved it with a two-step flow: reserve an intent, send the payment with the intent as a `MEMO_HASH` and a matching expiry, then have the API verify all of it on Horizon before recording it.
+- **Keeping agents safe.** The model never sees a key: the agent's signing key stays on the host, outside the model's context, and the MCP server only pays an intent the API reserved, after checking the payment terms, with a hard ceiling of 25 per call. On top of that the API enforces spend caps per agent (25 per payment, 50 per 24 hours, 200 per 30 days), whatever the model asks for. Without a signer key the MCP server can only read and propose.
+- **EURC late in the build.** We added EURC per group and merged it alongside a new translation layer, which meant reworking the screens so amounts and labels follow each group's asset.
+- **Finding a business model that does not tax the payment.** The obvious answer, a fee on ramps or on settlements, broke our own promise of a fee under a cent and pushed us toward being a payment intermediary. The research above moved us to a free core, a paid agent, operators and per-call API pricing.
 
 ## Summary
 

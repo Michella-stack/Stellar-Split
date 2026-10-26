@@ -8,12 +8,12 @@
 :root,
 [data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0b0b0d;
-  --surface: #17171b;
-  --surface-2: #222228;
-  --line: #3a3a42;
-  --text: #f5f5f2;
-  --muted: #a3a3ad;
+  --bg: #22232b;
+  --surface: #2c2d37;
+  --surface-2: #373844;
+  --line: #52535f;
+  --text: #f7f7f4;
+  --muted: #bdbdc9;
   --owe: #ff7aa2;
   --owed: #4be3a0;
   --primary-bg: var(--accent);

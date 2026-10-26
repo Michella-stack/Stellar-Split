@@ -181,6 +181,12 @@ export function WalletProvider({ children }) {
     return freighter.signTransaction(xdr, intent);
   }, []);
 
+  // Demo mode has no wallet to sign with; the mock API accepts any signature.
+  const signMessage = useCallback(
+    (message, intent) => (DEMO ? Promise.resolve({ signature: 'ZGVtbw==', signer: intent.signer }) : freighter.signMessage(message, intent)),
+    [],
+  );
+
   const signIn = useCallback(async () => {
     const current = addressRef.current;
     if (!current) return false;
@@ -223,8 +229,8 @@ export function WalletProvider({ children }) {
   const clearError = useCallback(() => setError(null), []);
 
   const value = useMemo(
-    () => ({ status, address, network, session, profile, error, epoch, connect, signIn, saveProfile, disconnect, clearError, recheckNetwork, sign }),
-    [status, address, network, session, profile, error, epoch, connect, signIn, saveProfile, disconnect, clearError, recheckNetwork, sign],
+    () => ({ status, address, network, session, profile, error, epoch, connect, signIn, saveProfile, disconnect, clearError, recheckNetwork, sign, signMessage }),
+    [status, address, network, session, profile, error, epoch, connect, signIn, saveProfile, disconnect, clearError, recheckNetwork, sign, signMessage],
   );
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }

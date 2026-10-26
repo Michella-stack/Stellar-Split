@@ -306,3 +306,38 @@ describe('EURC groups', () => {
     await expect(api.createGroup({ name: 'Yen', type: 'flat', asset: 'JPY' })).rejects.toMatchObject({ code: 'ASSET_NOT_SUPPORTED' });
   });
 });
+
+describe('agent links', () => {
+  const AGENT = 'GBJUR7XO7CGUIJ3QHWH6JZ2DA2CDL4PJKB27IRSRGOOH2EQIJ47JA2QW';
+  const codeOf = (promise) => promise.then(() => 'NO_ERROR', (e) => e.code);
+  const link = async () => {
+    const { message } = await api.createAgentLinkChallenge({ agentAddress: AGENT });
+    return api.linkAgent({ agentAddress: AGENT, message, signature: 'c2ln' });
+  };
+
+  it('issues the exact message, links, lists and revokes', async () => {
+    const { message } = await api.createAgentLinkChallenge({ agentAddress: AGENT });
+    const me = (await api.getMe()).address;
+    expect(message).toMatch(new RegExp(`^Stellar Split agent link\\nOwner: ${me}\\nAgent: ${AGENT}\\nNonce: .+\\nExpires: \\d{4}-.+Z$`));
+    const { agent } = await api.linkAgent({ agentAddress: AGENT, message, signature: 'c2ln' });
+    expect(agent).toMatchObject({ address: AGENT, ownerAddress: me });
+    expect((await api.listMyAgents()).agents).toEqual([{ address: AGENT, linkedAt: agent.linkedAt, revokedAt: null }]);
+    await api.revokeAgent(AGENT);
+    expect((await api.listMyAgents()).agents[0].revokedAt).toBeTruthy();
+  });
+
+  it('refuses a second active link, a reused message and a bad address', async () => {
+    const { message } = await api.createAgentLinkChallenge({ agentAddress: AGENT });
+    await api.linkAgent({ agentAddress: AGENT, message, signature: 'c2ln' });
+    expect(await codeOf(api.linkAgent({ agentAddress: AGENT, message, signature: 'c2ln' }))).toBe('UNAUTHORIZED');
+    expect(await codeOf(link())).toBe('AGENT_ALREADY_LINKED');
+    expect(await codeOf(api.createAgentLinkChallenge({ agentAddress: 'nope' }))).toBe('INVALID_ADDRESS');
+    expect(await codeOf(api.revokeAgent('GCMFZJX4Z3EHGSO7BM5UCINYK54FVMZ2JV67ZFSHELQA5C2CSFCEJQXL'))).toBe('NOT_FOUND');
+  });
+
+  it('allows linking again after a revoke', async () => {
+    await link();
+    await api.revokeAgent(AGENT);
+    expect(await codeOf(link())).toBe('NO_ERROR');
+  });
+});

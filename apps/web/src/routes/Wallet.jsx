@@ -10,6 +10,7 @@ import { IconCopy, IconExternal } from '../components/icons.jsx';
 import { Pill } from '../components/Pill.jsx';
 import { Segmented } from '../components/Segmented.jsx';
 import { TopBar } from '../components/TopBar.jsx';
+import { YourAgent } from '../features/wallet/YourAgent.jsx';
 import { fundWithFriendbot, loadBalances } from '../client/stellar.js';
 import { CONFIG, USDC_FAUCET_URL } from '../config/env.js';
 import { useCopy } from '../hooks/useCopy.js';
@@ -90,6 +91,8 @@ export default function Wallet() {
           </h2>
           <Balances balances={balances} error={loadError} onRetry={refresh} onFund={fund} funding={funding} />
         </section>
+
+        <YourAgent />
 
         {!DEMO && (
           <section aria-labelledby="usdc-title" className="flex flex-col gap-2">

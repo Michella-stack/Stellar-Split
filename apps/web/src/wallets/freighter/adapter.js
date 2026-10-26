@@ -106,13 +106,19 @@ export async function signTransaction(xdr, intent) {
   return { signedXdr: result.signedTxXdr, signer: intent.signer };
 }
 
+/** @typedef {{ kind: 'sign-in', signer: string } | { kind: 'agent-link', signer: string, agent: string }} MessageIntent */
+
 // The API's sign-in message (SEP-53). Anything else is refused, so a page cannot get an arbitrary text signed.
 const SIGN_IN_MESSAGE = /^Stellar-Split sign-in\nAddress: (G[A-Z2-7]{55})\nNonce: [\w.-]{20,120}\nExpires: \d{4}-\d{2}-\d{2}T[\d:.]+Z$/;
+
+// The API's agent-link message (docs/adr/0005): the owner approves one agent address.
+const AGENT_LINK_MESSAGE = /^Stellar Split agent link\nOwner: (G[A-Z2-7]{55})\nAgent: (G[A-Z2-7]{55})\nNonce: [\w.-]{16,200}\nExpires: \d{4}-\d{2}-\d{2}T[\d:.]+Z$/;
 
 /**
  * Signs the API's sign-in message (SEP-53 signed message) after re-reading the account and network.
  * @param {string} message challenge text from the API
- * @param {{ kind: 'sign-in', signer: string }} intent
+ * @param {MessageIntent} intent
+ *   agent-link: the message must name this signer as owner and this agent, or nothing is signed
  * @returns {Promise<{ signature: string, signer: string }>} base64 ed25519 signature
  */
 export async function signMessage(message, intent) {
@@ -120,10 +126,14 @@ export async function signMessage(message, intent) {
   const current = await getConnectedAddress();
   if (!current) throw new WalletError('LOCKED', 'Freighter is locked or this site lost access');
   if (current !== intent.signer) throw new WalletError('ACCOUNT_CHANGED', 'The Freighter account changed');
-  const match = SIGN_IN_MESSAGE.exec(message);
-  if (intent.kind !== 'sign-in' || !match || match[1] !== intent.signer) {
-    throw new WalletError('INTENT_MISMATCH', 'This is not a Stellar-Split sign-in message for your account');
+  let matches = false;
+  if (intent.kind === 'sign-in') {
+    matches = SIGN_IN_MESSAGE.exec(message)?.[1] === intent.signer;
+  } else if (intent.kind === 'agent-link') {
+    const [, owner, agent] = AGENT_LINK_MESSAGE.exec(message) ?? [];
+    matches = owner === intent.signer && agent === intent.agent && agent !== owner;
   }
+  if (!matches) throw new WalletError('INTENT_MISMATCH', 'This is not a Stellar-Split message for your account');
 
   const result = await freighterSignMessage(message, { networkPassphrase: NETWORK_PASSPHRASE, address: intent.signer });
   if (result.error) throw fromFreighterError(result.error);

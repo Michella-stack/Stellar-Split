@@ -53,6 +53,10 @@ export const {
   getAgent,
   updateAgent,
   listAgentActivity,
+  createAgentLinkChallenge,
+  linkAgent,
+  listMyAgents,
+  revokeAgent,
   approve,
   reject,
 } = impl;

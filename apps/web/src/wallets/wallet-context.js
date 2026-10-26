@@ -16,6 +16,7 @@ import { createContext } from 'react';
  *   clearError: () => void,
  *   recheckNetwork: () => Promise<void>,
  *   sign: (xdr: string, intent: import('./freighter/intent.js').SigningIntent) => Promise<{ signedXdr: string, signer: string }>,
+ *   signMessage: (message: string, intent: import('./freighter/adapter.js').MessageIntent) => Promise<{ signature: string, signer: string }>,
  * }} WalletState
  * `epoch` increases on every account or network change; a payment reviewed under an older epoch must be reviewed again.
  */

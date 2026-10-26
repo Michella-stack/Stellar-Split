@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Errors and limits | Stellar Split Docs</title>
+<meta name="description" content="Stellar Split API error object, every error code with cause and fix, settlement verification codes, rate limits, body limits, idempotency and versioning." />
+<link rel="canonical" href="https://stellar-split-docs.vercel.app/errors.html" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Stellar Split Docs" />
+<meta property="og:title" content="Errors and limits | Stellar Split Docs" />
+<meta property="og:description" content="Stellar Split API error object, every error code with cause and fix, settlement verification codes, rate limits, body limits, idempotency and versioning." />
+<meta property="og:url" content="https://stellar-split-docs.vercel.app/errors.html" />
+<meta property="og:image" content="https://stellar-split-docs.vercel.app/assets/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="color-scheme" content="dark light" />
+<meta name="theme-color" content="#0b0b0d" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<script src="/assets/theme-init.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" />
+<link rel="stylesheet" href="/assets/site.css" />
+<link rel="stylesheet" href="/assets/docs.css" />
+<link rel="stylesheet" href="/assets/consent.css" />
+<script src="/assets/site.js" defer></script>
+<script src="/assets/docs.js" defer></script>
+<script src="/assets/consent.js" defer></script>
+</head>
+<body class="page-errors">
+<a class="skip" href="#main">Skip to content</a>
+<div class="notice" role="note">Stellar Testnet only. No real money moves. <a href="https://stellar-split-site.vercel.app/terms.html#testnet">What this means</a></div>
+<header class="site-header">
+  <div class="wrap" style="max-width:1440px">
+    <a class="brand" href="/" aria-label="Stellar Split Docs home"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs<span class="tag">TESTNET</span></a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="/quickstart.html">Quickstart</a>
+      <a href="/api.html">API</a>
+      <a href="/agents.html">Agents</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="https://stellar-split-site.vercel.app">Website</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" type="button" data-search aria-label="Search the docs (Ctrl K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="icon-btn hide-sm" href="https://github.com/Michella-stack/Stellar-Split" aria-label="Source code on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5Z"/></svg>
+      </a>
+      <a class="btn btn-primary btn-sm hide-sm" href="https://stellar-split-sooty.vercel.app">Open the app</a>
+      <button class="icon-btn menu-btn" type="button" aria-controls="nav" aria-expanded="false" aria-label="Menu" data-menu>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<div class="docs-shell">
+  <nav class="docs-sidebar" id="docs-sidebar" aria-label="Documentation"><button class="search-btn" type="button" data-search aria-label="Search the docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search<kbd>Ctrl K</kbd></button><h2>Get started</h2><ul><li><a href="/index.html">Introduction</a></li><li><a href="/quickstart.html">Quickstart</a></li><li><a href="/authentication.html">Authentication</a></li><li><a href="/concepts.html">Concepts</a></li></ul><h2>Reference</h2><ul><li><a href="/api.html">API reference</a></li><li><a href="/errors.html" aria-current="page">Errors and limits</a></li></ul><h2>Build</h2><ul><li><a href="/integrations.html">Integrations</a></li><li><a href="/agents.html">Agents and MCP</a></li><li><a href="/security.html">Security</a></li></ul><h2>Project</h2><ul><li><a href="/changelog.html">Changelog</a></li></ul><h2>Elsewhere</h2><ul><li><a href="https://stellar-split-site.vercel.app">Website</a></li><li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li><li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li></ul></nav>
+  <div class="drawer-scrim" aria-hidden="true"></div>
+  <main class="docs-main" id="main" tabindex="-1">
+    <button class="sidebar-btn" type="button" data-sidebar aria-controls="docs-sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>All docs pages</button>
+    <nav class="crumbs" aria-label="Breadcrumb" style="margin-top:16px"><ol><li><a href="/">Docs</a></li><li>Reference</li><li aria-current="page">Errors and limits</li></ol></nav>
+    <article>
+<h1>Errors and limits</h1>
+<p class="lead">Every error has the same shape and an HTTP status. Branch on <code>error.code</code>, not on <code>message</code>.</p>
+<h2 id="error-shape">Error object</h2>
+<pre><code class="lang-json">{
+  "error": {
+    "code": "SPLIT_MISMATCH",
+    "message": "Exact shares must add up to the amount",
+    "details": {
+      "difference": "0.50"
+    }
+  }
+}</code></pre>
+<p><code>details</code> appears only on some errors: <code>SPLIT_MISMATCH</code> (<code>difference</code>), <code>OVERPAY</code> (<code>youOwe</code>, <code>theyAreOwed</code>), agent caps (<code>limit</code>, <code>spent</code>, <code>window</code>) and <code>NEEDS_REVIEW</code> (<code>txHash</code>).</p>
+<h2 id="codes">Error codes</h2>
+<table><thead><tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">Cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td><code>400</code></td><td><code>VALIDATION</code></td><td>A field has the wrong type or value, the body is not a JSON object, or the Idempotency-Key is malformed</td><td>Read <code>message</code>; fix the field</td></tr><tr><td><code>400</code></td><td><code>INVALID_ADDRESS</code></td><td>Not a valid Stellar G address (checksum included)</td><td>Send a public G address</td></tr><tr><td><code>400</code></td><td><code>SECRET_KEY_REJECTED</code></td><td>The body contains something shaped like a secret key</td><td>Never send secret keys. Sign locally</td></tr><tr><td><code>400</code></td><td><code>ASSET_NOT_SUPPORTED</code></td><td>Asset not configured on this server</td><td>Use USDC, or EURC when enabled</td></tr><tr><td><code>400</code></td><td><code>AGENT_NOT_REGISTERED</code></td><td>Agent address not in AGENT_TOKENS</td><td>Ask the operator to register it</td></tr><tr><td><code>400</code></td><td><code>LINK_INVALID</code></td><td>Link message or signature bad, expired or used</td><td>Request a new link challenge</td></tr><tr><td><code>401</code></td><td><code>UNAUTHORIZED</code></td><td>Missing, expired or invalid token, or a failed sign-in</td><td>Sign in again</td></tr><tr><td><code>403</code></td><td><code>FORBIDDEN</code></td><td>An agent token on a route only people may call</td><td>Use a person's session</td></tr><tr><td><code>403</code></td><td><code>NOT_LINKED</code></td><td>Agent used onBehalfOf without an active link</td><td>Link the agent first</td></tr><tr><td><code>403</code></td><td><code>AGENT_CAP_PER_PAYMENT</code></td><td>Payment above 25</td><td>Pay less, or let the owner pay</td></tr><tr><td><code>403</code></td><td><code>AGENT_CAP_PER_DAY</code></td><td>Over 50 in 24 hours</td><td>Wait; <code>details.spent</code> shows the window</td></tr><tr><td><code>403</code></td><td><code>AGENT_CAP_PER_MONTH</code></td><td>Over 200 in 30 days</td><td>Wait or let the owner pay</td></tr><tr><td><code>404</code></td><td><code>NOT_FOUND</code></td><td>Unknown route, group, invite or link, or you are not a member</td><td>Check the id and membership</td></tr><tr><td><code>404</code></td><td><code>INTENT_NOT_FOUND</code></td><td>No such intent for you as payer</td><td>Reserve an intent first</td></tr><tr><td><code>405</code></td><td><code>METHOD_NOT_ALLOWED</code></td><td>Path exists, method does not</td><td>Check the method</td></tr><tr><td><code>409</code></td><td><code>ALREADY_MEMBER</code></td><td>Address already in the group</td><td>Nothing to do</td></tr><tr><td><code>409</code></td><td><code>AGENT_ALREADY_LINKED</code></td><td>Agent has another active owner</td><td>The other owner must revoke it</td></tr><tr><td><code>409</code></td><td><code>INTENT_IN_PROGRESS</code></td><td>Payer or creditor has another reserved intent in the group</td><td>Pay or cancel it, or wait up to 10 minutes</td></tr><tr><td><code>409</code></td><td><code>INTENT_NOT_OPEN</code></td><td>Intent is settled, cancelled, expired or in review</td><td>Reserve a new one</td></tr><tr><td><code>409</code></td><td><code>DUPLICATE_TX</code></td><td>Transaction hash already recorded</td><td>Nothing to do</td></tr><tr><td><code>409</code></td><td><code>NEEDS_REVIEW</code></td><td>Payment arrived but no longer matches an open debt</td><td>Kept for review with <code>details.txHash</code>; contact the operator</td></tr><tr><td><code>413</code></td><td><code>VALIDATION</code></td><td>Body over 64 KB (receipt scan: over its photo limit). Connection closes</td><td>Send less</td></tr><tr><td><code>422</code></td><td><code>SPLIT_MISMATCH</code></td><td>Exact shares do not add up</td><td>Use <code>details.difference</code></td></tr><tr><td><code>422</code></td><td><code>OVERPAY</code></td><td>Amount above the debt</td><td>Use <code>details.youOwe</code></td></tr><tr><td><code>422</code></td><td><code>NOT_A_RECEIPT</code></td><td>Photo is not a receipt</td><td>Use another photo</td></tr><tr><td><code>422</code></td><td><code>SCAN_UNREADABLE</code></td><td>Receipt total unreadable</td><td>Enter the expense by hand</td></tr><tr><td><code>429</code></td><td><code>RATE_LIMITED</code></td><td>Over 10 receipt scans in 10 minutes</td><td>Wait a few minutes</td></tr><tr><td><code>500</code></td><td><code>INTERNAL</code></td><td>Unexpected error</td><td>Report it on GitHub</td></tr><tr><td><code>502</code></td><td><code>UPSTREAM_UNAVAILABLE</code></td><td>Horizon or Supabase did not answer</td><td>Safe to retry with backoff</td></tr><tr><td><code>503</code></td><td><code>SCAN_UNAVAILABLE</code></td><td>Receipt reader off, down or out of quota</td><td>Enter the expense by hand</td></tr><tr><td><code>503</code></td><td><code>ASSET_UNAVAILABLE</code></td><td>Group asset no longer configured on the server</td><td>Contact the operator</td></tr></tbody></table>
+<h2 id="settlement-errors">Settlement verification codes</h2>
+<p>When you record a settlement, the API checks the transaction on Horizon. A failed check answers <code>422</code> with one of these codes (on the x402 route, a fresh <code>402</code> with the code in <code>error</code>).</p>
+<table><thead><tr><th scope="col">Code</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>PAYMENT_NOT_FOUND</code></td><td>Transaction not found on Stellar Testnet. Wait for it to land, then retry</td></tr><tr><td><code>PAYMENT_FAILED</code></td><td>The transaction failed on chain</td></tr><tr><td><code>INTENT_MISMATCH</code></td><td>The memo does not match the intent</td></tr><tr><td><code>TIMEBOUNDS_TOO_LONG</code></td><td>The transaction may land after the intent expires. Set its max time to <code>expiresAt</code> or earlier</td></tr><tr><td><code>PAYMENT_MISMATCH</code></td><td>No payment in the group asset with this payer, payee and amount</td></tr><tr><td><code>WRONG_NETWORK</code></td><td>The server's Horizon is not Testnet</td></tr></tbody></table>
+<h2 id="rate-limits">Rate limits</h2>
+<p>The only rate limit in the code is on the receipt scan: <strong>10 scans per person per 10 minutes</strong>, counted per serverless instance. Over it, <code>429 RATE_LIMITED</code>. The API sends no rate-limit headers and no <code>Retry-After</code>.</p>
+<div class="tabs" data-tabs><div class="tablist" role="tablist" aria-label="Code language"><button type="button" role="tab" id="t32-js" aria-controls="t32-js-p" data-lang="js" aria-selected="true">JavaScript</button><button type="button" role="tab" id="t32-py" aria-controls="t32-py-p" data-lang="py" aria-selected="false">Python</button></div><div class="tab-panel" role="tabpanel" id="t32-js-p" aria-labelledby="t32-js" data-lang="js"><pre><code class="lang-js">async function withRetry(fn, tries = 4) {
+  for (let i = 0; i &lt; tries; i++) {
+    const res = await fn();
+    if (res.status !== 429 &amp;&amp; res.status !== 502) return res;
+    await new Promise((r) =&gt; setTimeout(r, 2 ** i * 1000)); // 1s, 2s, 4s, 8s
+  }
+  throw new Error('gave up after retries');
+}</code></pre></div><div class="tab-panel" role="tabpanel" id="t32-py-p" aria-labelledby="t32-py" data-lang="py" hidden><pre><code class="lang-py">import time
+
+def with_retry(call, tries=4):
+    for i in range(tries):
+        res = call()
+        if res.status_code not in (429, 502):
+            return res
+        time.sleep(2 ** i)
+    raise RuntimeError("gave up after retries")</code></pre></div></div>
+<div class="callout note" role="note"><strong>Fair use</strong><p>Other routes have no limit in the code. Vercel's platform limits still apply. Keep polling gentle.</p></div>
+<h2 id="body-limits">Body limits</h2>
+<ul>
+<li>64 KB for every body, except the receipt scan (1.4 million base64 characters of photo).</li>
+<li>Over the limit: <code>413</code> with a JSON error, and the connection closes.</li>
+<li>Bodies must be JSON objects. Arrays, <code>null</code> or invalid JSON: <code>400 VALIDATION</code>.</li>
+</ul>
+<h2 id="idempotency">Idempotency</h2>
+<p><code>POST /v1/groups/:id/expenses</code> accepts an <code>Idempotency-Key</code> header (8 to 64 of <code>A-Z a-z 0-9 - _</code>). A repeat with the same key in the same group returns the first expense and creates nothing. Use one key per form submission. Settlements are idempotent by transaction hash: a hash is recorded once, a repeat gets <code>409 DUPLICATE_TX</code>.</p>
+<h2 id="retries">What is safe to retry</h2>
+<ul>
+<li><code>502 UPSTREAM_UNAVAILABLE</code>: yes, with backoff.</li>
+<li><code>422 PAYMENT_NOT_FOUND</code> right after submitting: yes, after a few seconds.</li>
+<li><code>POST .../expenses</code>: yes, with the same <code>Idempotency-Key</code>.</li>
+<li>A signed payment: never sign a second payment for the same intent. Record the first hash.</li>
+</ul>
+<h2 id="versioning">Versioning</h2>
+<p>All routes are under <code>/v1</code>. There is no other version today. Fields may be added to responses, so ignore fields you do not know.</p>
+      <div class="page-meta"><span>Last updated 26 October 2026</span><a href="https://github.com/Michella-stack/Stellar-Split/tree/main/sites/docs/errors.html">Edit this page on GitHub</a></div>
+      <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/api.html"><small>Previous</small>API reference</a><a class="next" href="/integrations.html"><small>Next</small>Integrations</a></nav>
+    </article>
+  </main>
+  <aside class="docs-toc" aria-label="On this page"><h2>On this page</h2><ul data-depth="3"></ul></aside>
+</div>
+<div class="search-modal" role="dialog" aria-modal="true" aria-label="Search the docs">
+  <div class="search-panel">
+    <label class="sr-only" for="search-input">Search the docs</label>
+    <input id="search-input" type="search" placeholder="Search endpoints, errors, tools..." autocomplete="off" />
+    <ul class="search-results" aria-live="polite"></ul>
+  </div>
+</div>
+<footer class="site-footer">
+  <div class="wrap" style="max-width:1440px">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="/"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs</a>
+        <p class="muted" style="margin-top:16px;max-width:300px">Split shared bills and settle them in USDC or EURC on Stellar. A hackathon project, running on Stellar Testnet.</p>
+      </div>
+      <div>
+        <h3>Product</h3>
+        <ul>
+          <li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#how">How it works</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#assist">Stellar Assist</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Developers</h3>
+        <ul>
+          <li><a href="/">Documentation</a></li>
+          <li><a href="/api.html">API reference</a></li>
+          <li><a href="/agents.html">Agents and MCP</a></li>
+          <li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Trust</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/security.html">Security</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/status.html">Status</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/team.html">Team</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/press.html">Press kit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/privacy.html">Privacy</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/terms.html">Terms</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/cookies.html">Cookies</a></li>
+          <li><button class="linklike" type="button" data-cookie-settings>Cookie settings</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 The Stellar Split team. Built at HackMeridian, Lisbon. MIT licensed.</span>
+      <span>Stellar Testnet only. Test tokens have no value. Not financial advice.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

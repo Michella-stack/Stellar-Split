@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stellar-split-docs.vercel.app/sitemap.xml

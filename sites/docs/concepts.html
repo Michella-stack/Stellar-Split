@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Concepts | Stellar Split Docs</title>
+<meta name="description" content="Groups, members, expenses, equal and exact splits, balances, settlement intents, memos, Horizon verification, spend caps and Testnet assets in Stellar Split." />
+<link rel="canonical" href="https://stellar-split-docs.vercel.app/concepts.html" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Stellar Split Docs" />
+<meta property="og:title" content="Concepts | Stellar Split Docs" />
+<meta property="og:description" content="Groups, members, expenses, equal and exact splits, balances, settlement intents, memos, Horizon verification, spend caps and Testnet assets in Stellar Split." />
+<meta property="og:url" content="https://stellar-split-docs.vercel.app/concepts.html" />
+<meta property="og:image" content="https://stellar-split-docs.vercel.app/assets/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="color-scheme" content="dark light" />
+<meta name="theme-color" content="#0b0b0d" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<script src="/assets/theme-init.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" />
+<link rel="stylesheet" href="/assets/site.css" />
+<link rel="stylesheet" href="/assets/docs.css" />
+<link rel="stylesheet" href="/assets/consent.css" />
+<script src="/assets/site.js" defer></script>
+<script src="/assets/docs.js" defer></script>
+<script src="/assets/consent.js" defer></script>
+</head>
+<body class="page-concepts">
+<a class="skip" href="#main">Skip to content</a>
+<div class="notice" role="note">Stellar Testnet only. No real money moves. <a href="https://stellar-split-site.vercel.app/terms.html#testnet">What this means</a></div>
+<header class="site-header">
+  <div class="wrap" style="max-width:1440px">
+    <a class="brand" href="/" aria-label="Stellar Split Docs home"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs<span class="tag">TESTNET</span></a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="/quickstart.html">Quickstart</a>
+      <a href="/api.html">API</a>
+      <a href="/agents.html">Agents</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="https://stellar-split-site.vercel.app">Website</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" type="button" data-search aria-label="Search the docs (Ctrl K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="icon-btn hide-sm" href="https://github.com/Michella-stack/Stellar-Split" aria-label="Source code on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5Z"/></svg>
+      </a>
+      <a class="btn btn-primary btn-sm hide-sm" href="https://stellar-split-sooty.vercel.app">Open the app</a>
+      <button class="icon-btn menu-btn" type="button" aria-controls="nav" aria-expanded="false" aria-label="Menu" data-menu>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<div class="docs-shell">
+  <nav class="docs-sidebar" id="docs-sidebar" aria-label="Documentation"><button class="search-btn" type="button" data-search aria-label="Search the docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search<kbd>Ctrl K</kbd></button><h2>Get started</h2><ul><li><a href="/index.html">Introduction</a></li><li><a href="/quickstart.html">Quickstart</a></li><li><a href="/authentication.html">Authentication</a></li><li><a href="/concepts.html" aria-current="page">Concepts</a></li></ul><h2>Reference</h2><ul><li><a href="/api.html">API reference</a></li><li><a href="/errors.html">Errors and limits</a></li></ul><h2>Build</h2><ul><li><a href="/integrations.html">Integrations</a></li><li><a href="/agents.html">Agents and MCP</a></li><li><a href="/security.html">Security</a></li></ul><h2>Project</h2><ul><li><a href="/changelog.html">Changelog</a></li></ul><h2>Elsewhere</h2><ul><li><a href="https://stellar-split-site.vercel.app">Website</a></li><li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li><li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li></ul></nav>
+  <div class="drawer-scrim" aria-hidden="true"></div>
+  <main class="docs-main" id="main" tabindex="-1">
+    <button class="sidebar-btn" type="button" data-sidebar aria-controls="docs-sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>All docs pages</button>
+    <nav class="crumbs" aria-label="Breadcrumb" style="margin-top:16px"><ol><li><a href="/">Docs</a></li><li>Get started</li><li aria-current="page">Concepts</li></ol></nav>
+    <article>
+<h1>Concepts</h1>
+<p class="lead">The objects the API works with and the rules it enforces. Amounts are always decimal strings, never JSON numbers.</p>
+<h2 id="groups">Groups</h2>
+<p>A group has a <code>name</code> (up to 80 characters), a <code>type</code> (<code>flat</code>, <code>trip</code> or <code>other</code>) and one settlement asset, <code>USDC</code> by default. The creator joins as the first member. Only members can see or change a group: a non-member gets <code>404</code>, so group ids cannot be probed.</p>
+<h2 id="members">Members</h2>
+<p>A member is a Stellar address in a group, with <code>kind</code> <code>human</code> or <code>agent</code>, a display name (defaults to the short address) and a home currency. A group holds at most 50 members. You add members directly by address or with an invite link.</p>
+<h2 id="expenses">Expenses</h2>
+<p>An expense has a <code>description</code> (up to 200 characters), an <code>amount</code>, the member who paid (<code>paidBy</code>) and a <code>split</code>. Its <code>source</code> is <code>manual</code>, <code>scan</code> or <code>agent</code>; an expense created with an agent token is always <code>agent</code>.</p>
+<h2 id="splits">Splits: equal and exact</h2>
+<pre><code class="lang-json">{
+  "type": "equal",
+  "participants": [
+    "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+    "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f"
+  ]
+}</code></pre>
+<pre><code class="lang-json">{
+  "type": "exact",
+  "shares": [
+    {
+      "memberId": "a3e1b7c2-0d4f-4e5a-8b9c-1d2e3f4a5b6c",
+      "amount": "30.00"
+    },
+    {
+      "memberId": "c9d8e7f6-5a4b-4c3d-9e2f-1a0b9c8d7e6f",
+      "amount": "12.00"
+    }
+  ]
+}</code></pre>
+<ul>
+<li>Equal: participants must be distinct members. The remainder of the division (at most n minus 1 stroops) goes to the payer.</li>
+<li>Exact: shares must name distinct members and add up to the amount, otherwise <code>422 SPLIT_MISMATCH</code> with <code>details.difference</code>.</li>
+<li>Amounts are positive, at most 7 decimals (one stroop is 0.0000001).</li>
+</ul>
+<h2 id="balances">Balances</h2>
+<p>Each member has a <code>net</code>. Positive means the member is owed money, negative means the member owes. A group's nets sum to zero. <code>GET /v1/groups/:id</code> also returns <code>myPosition</code> with suggested transfers (<code>owes</code> and <code>owed</code>), computed by the shared <code>suggestTransfers</code> rule.</p>
+<h2 id="settlement-intents">Settlement intents</h2>
+<p>Paying is two steps, so a payment is always tied to one reserved debt:</p>
+<ol>
+<li><strong>Reserve.</strong> <code>POST /v1/groups/:id/settlements/intents</code> with <code>{ to, amount }</code> returns an intent with <code>payTo</code>, a <code>memo</code> and <code>expiresAt</code> (10 minutes).</li>
+<li><strong>Pay.</strong> Build a USDC payment to <code>payTo</code> for exactly <code>amount</code>, with the memo as <code>MEMO_HASH</code> and time bounds that end no later than <code>expiresAt</code>. Sign it in the wallet and submit it to Testnet.</li>
+<li><strong>Record.</strong> <code>POST /v1/groups/:id/settlements</code> with <code>{ intentId, txHash }</code>.</li>
+</ol>
+<p>While an intent is reserved, nobody else can settle with its payer or its creditor in that group (<code>409 INTENT_IN_PROGRESS</code>), so two concurrent payments cannot overpay. An amount above what you owe is <code>422 OVERPAY</code>. Cancel an intent you will not pay (for example after a rejected signature) with <code>POST .../intents/:intentId/cancel</code>.</p>
+<table><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>reserved</code></td><td>Open, waiting for the payment</td></tr><tr><td><code>settled</code></td><td>Payment verified and recorded</td></tr><tr><td><code>cancelled</code></td><td>Cancelled by the payer</td></tr><tr><td><code>expired</code></td><td>Past <code>expiresAt</code>. A payment that already reached the chain can still be recorded</td></tr><tr><td><code>needs_review</code></td><td>The payment arrived but no longer matches an open debt. Kept with its hash; an operator resolves it</td></tr></tbody></table>
+<h2 id="memos">Memos</h2>
+<p>The intent memo is a hash memo: <code>sha256("stellar-split:intent:" + intentId)</code> in hex. It ties the on-chain payment to one intent, so an older payment cannot settle a new debt.</p>
+<h2 id="horizon-verification">Horizon verification</h2>
+<p>A settlement is recorded only when Horizon on Stellar Testnet shows a successful transaction that:</p>
+<ul>
+<li>pays the group's asset from the payer's address to the creditor's address, for exactly the intent amount,</li>
+<li>carries the intent memo as <code>MEMO_HASH</code>,</li>
+<li>has time bounds that end no later than the intent expiry.</li>
+</ul>
+<p>Each transaction hash is recorded once (<code>409 DUPLICATE_TX</code>). The failure codes are in <a href="/errors.html#settlement-errors">Errors</a>.</p>
+<h2 id="spend-policy">Spend policy</h2>
+<p>The server caps agents, not people. An agent cannot reserve an intent (or get dry-run terms) that would take it over <strong>25 per payment</strong>, <strong>50 in 24 hours</strong> or <strong>200 in 30 days</strong>, counted over all its groups. The answer is <code>403 AGENT_CAP_PER_PAYMENT</code>, <code>AGENT_CAP_PER_DAY</code> or <code>AGENT_CAP_PER_MONTH</code> with <code>details: { limit, spent, window }</code>. Caps are plain numbers in the group's asset: a EURC amount counts like the same number of USDC. Details on <a href="/agents.html#spend-policy">Agents</a>.</p>
+<h2 id="assets">Assets on Testnet</h2>
+<table><thead><tr><th scope="col">Asset</th><th scope="col">Issuer (Testnet)</th><th scope="col">Notes</th></tr></thead><tbody><tr><td>USDC</td><td><code>GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5</code></td><td>Circle Testnet USDC. Default for every group</td></tr><tr><td>EURC</td><td><code>GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO</code></td><td>Circle Testnet EURC. Offered only when the server sets <code>EURC_ISSUER</code>; otherwise <code>400 ASSET_NOT_SUPPORTED</code></td></tr></tbody></table>
+<ul>
+<li><strong>Trustline.</strong> Both payer and creditor accounts need a trustline to the asset before a payment can arrive.</li>
+<li><strong>XLM for fees.</strong> Fund a new Testnet account with Friendbot: <code>https://friendbot.stellar.org/?addr=G...</code>.</li>
+<li><strong>Test USDC and EURC.</strong> Get them from Circle's Testnet faucet at <a href="https://faucet.circle.com">faucet.circle.com</a>. It has a captcha and cannot be scripted.</li>
+</ul>
+<div class="callout testnet" role="note"><strong>Mainnet issuers are different</strong><p>These are Testnet addresses. The API runs on Testnet only.</p></div>
+      <div class="page-meta"><span>Last updated 26 October 2026</span><a href="https://github.com/Michella-stack/Stellar-Split/tree/main/sites/docs/concepts.html">Edit this page on GitHub</a></div>
+      <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/authentication.html"><small>Previous</small>Authentication</a><a class="next" href="/api.html"><small>Next</small>API reference</a></nav>
+    </article>
+  </main>
+  <aside class="docs-toc" aria-label="On this page"><h2>On this page</h2><ul data-depth="3"></ul></aside>
+</div>
+<div class="search-modal" role="dialog" aria-modal="true" aria-label="Search the docs">
+  <div class="search-panel">
+    <label class="sr-only" for="search-input">Search the docs</label>
+    <input id="search-input" type="search" placeholder="Search endpoints, errors, tools..." autocomplete="off" />
+    <ul class="search-results" aria-live="polite"></ul>
+  </div>
+</div>
+<footer class="site-footer">
+  <div class="wrap" style="max-width:1440px">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="/"><img src="/favicon.svg" alt="" width="28" height="28" />Stellar Split Docs</a>
+        <p class="muted" style="margin-top:16px;max-width:300px">Split shared bills and settle them in USDC or EURC on Stellar. A hackathon project, running on Stellar Testnet.</p>
+      </div>
+      <div>
+        <h3>Product</h3>
+        <ul>
+          <li><a href="https://stellar-split-sooty.vercel.app">Open the app</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#how">How it works</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#assist">Stellar Assist</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Developers</h3>
+        <ul>
+          <li><a href="/">Documentation</a></li>
+          <li><a href="/api.html">API reference</a></li>
+          <li><a href="/agents.html">Agents and MCP</a></li>
+          <li><a href="https://github.com/Michella-stack/Stellar-Split">GitHub</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Trust</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/security.html">Security</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/status.html">Status</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/team.html">Team</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/press.html">Press kit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="https://stellar-split-site.vercel.app/privacy.html">Privacy</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/terms.html">Terms</a></li>
+          <li><a href="https://stellar-split-site.vercel.app/cookies.html">Cookies</a></li>
+          <li><button class="linklike" type="button" data-cookie-settings>Cookie settings</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 The Stellar Split team. Built at HackMeridian, Lisbon. MIT licensed.</span>
+      <span>Stellar Testnet only. Test tokens have no value. Not financial advice.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

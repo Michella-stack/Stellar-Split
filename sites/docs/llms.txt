@@ -1,0 +1,20 @@
+# Stellar Split Docs
+
+> Developer documentation for Stellar Split: split shared expenses in groups and settle them in USDC (EURC when enabled) on Stellar Testnet, wallet to wallet. REST API at https://stellar-split-sooty.vercel.app/v1, an MCP server for agents, Testnet only.
+
+## Docs
+
+- [Introduction](https://stellar-split-docs.vercel.app/): what you can build, base URL, architecture
+- [Quickstart](https://stellar-split-docs.vercel.app/quickstart.html): health check, SEP-53 sign-in and first group in five minutes
+- [Authentication](https://stellar-split-docs.vercel.app/authentication.html): wallet challenge, 12-hour bearer sessions, operator-issued agent tokens
+- [Concepts](https://stellar-split-docs.vercel.app/concepts.html): groups, splits, balances, settlement intents, memos, Horizon verification, assets
+- [API reference](https://stellar-split-docs.vercel.app/api.html): every /v1 endpoint with requests, responses and status codes
+- [Errors and limits](https://stellar-split-docs.vercel.app/errors.html): error codes, settlement verification codes, rate limits, idempotency, versioning
+- [Integrations](https://stellar-split-docs.vercel.app/integrations.html): backend calls, invite links, verifying payments on Horizon, CORS
+- [Agents and MCP](https://stellar-split-docs.vercel.app/agents.html): Stellar Assist, MCP server tools and config, spend caps, agent links and wallets
+- [Security](https://stellar-split-docs.vercel.app/security.html): non-custodial model, trust assumptions, vulnerability reporting
+- [Changelog](https://stellar-split-docs.vercel.app/changelog.html): changes by day from the git history
+
+## Source
+
+- [GitHub](https://github.com/Michella-stack/Stellar-Split)

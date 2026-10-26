@@ -8,6 +8,20 @@ Built at HackMeridian (Lisbon, 25 to 26 October 2026). Track: Genesis, with Stel
 
 **Live:** https://stellar-split-sooty.vercel.app (API health: [`/v1/health`](https://stellar-split-sooty.vercel.app/v1/health))
 
+## For the judges
+
+| What | Link |
+|---|---|
+| The app (live, Testnet, built for your phone) | https://stellar-split-sooty.vercel.app |
+| Product website | https://stellar-split-site.vercel.app |
+| Developer docs: API, integrations, agents and MCP | https://stellar-split-docs.vercel.app |
+| API health | https://stellar-split-sooty.vercel.app/v1/health |
+| How we map to the judging criteria | [docs/JUDGING.md](docs/JUDGING.md) |
+
+No wallet? Open the app and choose the demo: the whole app runs on sample data, without Freighter and without touching Stellar. With Freighter on Testnet you can settle real Testnet USDC and see the transaction on Stellar Expert.
+
+The app, the website and the docs are three separate Vercel deployments. The website and the docs live in [`sites/landing`](sites/landing) and [`sites/docs`](sites/docs) as static files and do not change the app.
+
 ## Summary
 
 Shared-expense apps record who owes whom, but the money still moves outside the app. Stellar-Split keeps the ledger and the settlement together: a group records expenses, sees who owes whom, and settles in USDC on Stellar. Money goes directly from the person who owes to the person owed. The app never holds user funds.

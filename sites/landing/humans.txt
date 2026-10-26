@@ -1,0 +1,10 @@
+/* TEAM */
+Victor Estival: Product and GTM
+Michella Warren: Data scientist, product manager. Research and security
+Damaris Castro: Product, UX and front end
+Viviana Andrango: Developer. Settlement intents, spend policy, receipt scan
+Sofiia Varich: IT architect. Architecture, repo structure
+
+/* SITE */
+Built at HackMeridian 2026, Lisbon
+Source: https://github.com/Michella-stack/Stellar-Split (MIT)

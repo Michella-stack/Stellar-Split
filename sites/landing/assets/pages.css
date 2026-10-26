@@ -1,0 +1,20 @@
+/* Extra styles for trust pages (team, press, status, 404). Tokens from site.css. */
+.small { font-size: 13px; }
+.prose .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.prose ul.people, .prose ul.swatches, .prose ul.downloads { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 12px; }
+.person { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.avatar { flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 800 18px/1 var(--font-display); color: #0b0b0d; }
+.av-orange { background: #ff9f5a; } .av-violet { background: #c9a8ff; } .av-green { background: #4be3a0; } .av-pink { background: #ff7aa2; } .av-cyan { background: #7cf5ff; }
+.sw-bg { background: #0b0b0d; } .sw-lime { background: #d4ff3f; } .sw-text { background: #f5f5f2; }
+.prose ul.swatches { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.swatches li { display: grid; gap: 4px; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-input); }
+.swatch { display: block; height: 48px; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 4px; }
+.downloads li { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.downloads img { width: 96px; height: 96px; border-radius: 22px; }
+.status-list { display: grid; gap: 12px; margin: 24px 0 12px; }
+.status-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.status-pill { flex: none; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 13px/1 var(--font-sans); color: var(--muted); }
+.status-pill[data-state='ok'] { color: var(--owed); border-color: var(--owed); }
+.status-pill[data-state='down'] { color: var(--owe); border-color: var(--owe); }
+.status-pill a { color: inherit; }
+.wrap.prose { padding-left: var(--gutter); padding-right: var(--gutter); }

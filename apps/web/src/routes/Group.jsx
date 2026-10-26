@@ -70,9 +70,14 @@ export default function Group() {
               <h2 id="expenses-title" className="text-lg font-semibold">
                 {t('group.latestExpenses')}
               </h2>
-              <Link to={`/groups/${id}/activity`} className="inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">
-                {t('group.allActivity')}
-              </Link>
+              <span className="flex gap-4">
+                <Link to={`/groups/${id}/summary`} className="inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">
+                  {t('group.summary')}
+                </Link>
+                <Link to={`/groups/${id}/activity`} className="inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">
+                  {t('group.allActivity')}
+                </Link>
+              </span>
             </div>
             {expenses.loading && <Loading shape="rows" label={t('group.loadingExpenses')} />}
             {expenses.error && <LoadError title={t('group.expensesError')} error={expenses.error} onRetry={expenses.reload} />}

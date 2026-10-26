@@ -1,11 +1,16 @@
 import { useNavigate, useLocation } from 'react-router';
+import { Avatar } from '../../components/Avatar.jsx';
 import { Button } from '../../components/Button.jsx';
 import { IconExternal } from '../../components/icons.jsx';
+import { Pill } from '../../components/Pill.jsx';
 import { FREIGHTER_INSTALL_URL } from '../../config/env.js';
 import { enterDemo } from '../../lib/demoMode.js';
 import { useT } from '../../hooks/useT.js';
 import { useWallet } from '../../hooks/useWallet.js';
 import { WalletProblem } from './WalletProblem.jsx';
+
+// Wallets planned after Freighter (docs/WALLETS.md, ADR 0008). Shown so people know what is coming; none of them can be used yet.
+const COMING_SOON = ['xBull', 'Lobstr', 'Albedo'];
 
 /** Connect button plus the wallet states (not installed, locked, rejected, wrong network). */
 export function ConnectPanel() {
@@ -35,6 +40,21 @@ export function ConnectPanel() {
         {t('connect.getFreighter')} <IconExternal size={16} />
         <span className="sr-only">{t('common.opensNewTab')}</span>
       </a>
+      <section aria-labelledby="more-wallets" className="flex flex-col gap-1 border-t border-line pt-4">
+        <h2 id="more-wallets" className="text-sm font-medium text-muted">
+          {t('connect.moreWallets')}
+        </h2>
+        <ul>
+          {COMING_SOON.map((name) => (
+            <li key={name} className="flex min-h-14 items-center gap-3 text-muted">
+              <Avatar name={name} size="sm" className="opacity-60" />
+              <span className="flex-1 font-medium">{name}</span>
+              <Pill>{t('connect.comingSoon')}</Pill>
+            </li>
+          ))}
+        </ul>
+        <p className="text-sm text-muted">{t('connect.moreWalletsNote')}</p>
+      </section>
       <div className="flex flex-col gap-2 border-t border-line pt-4">
         <Button block variant="outline" onClick={enterDemo}>
           {t('connect.explore')}

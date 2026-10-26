@@ -16,6 +16,7 @@ Built at HackMeridian (Lisbon, 25 to 26 October 2026). Track: Genesis, with Stel
 | Product website | https://stellar-split-site.vercel.app |
 | Developer docs: API, integrations, agents and MCP | https://stellar-split-docs.vercel.app |
 | API health | https://stellar-split-sooty.vercel.app/v1/health |
+| Agent payments (to and from the agent) and EURC, with transactions | [Agent payments and EURC on Testnet](#agent-payments-and-eurc-on-testnet) |
 | How we map to the judging criteria | [docs/JUDGING.md](docs/JUDGING.md) |
 
 No wallet? Open the app and choose the demo: the whole app runs on sample data, without Freighter and without touching Stellar. With Freighter on Testnet you can settle real Testnet USDC and see the transaction on Stellar Expert.
@@ -58,6 +59,24 @@ All are Testnet USDC payments signed in Freighter (or a test wallet) and sent by
 | A partial payment from the review screen | [fee0d278…](https://stellar.expert/explorer/testnet/tx/fee0d278e996b207c1998a60959bf85d2bf7dd0621b0b0e6376d9dd2d24d4099) (1.00 USDC) |
 | A payment the API verified on Horizon before recording it | [bd22e9a8…](https://stellar.expert/explorer/testnet/tx/bd22e9a86050c2a720b40cc950b4e0480f264b32ac029175d1c43633ab12efd5) (0.30 USDC) |
 | A two-step settlement: the payment carries its reserved intent as a `MEMO_HASH` and expires with it, and the API recorded it after checking both | [6993c304…](https://stellar.expert/explorer/testnet/tx/6993c3042f956330e68e7196b673128aad4e9b9582b9e28fb70b886245ef3f62) (0.20 USDC) |
+
+### Agent payments and EURC on Testnet
+
+Payments to and from Stellar Assist's own wallet, and settlements in EURC. The agent pays with the MCP server's `ledgerly_settle` code (`mcp/src/settle.js`): it reserves a settlement intent, checks the x402 terms, signs with the agent key held outside the model, and the API records the payment only after Horizon shows it with the intent's `MEMO_HASH`. Recorded on 26 October 2026 against the repository's API running locally (memory store) on Stellar Testnet, with the agent registered in `AGENT_TOKENS` and linked to its owner. Reproduce with [`scripts/agent-evidence/run.mjs`](scripts/agent-evidence/run.mjs).
+
+| What it shows | Transaction |
+|---|---|
+| The owner tops up the agent's wallet: payment **to the agent** | [9caf0e34…](https://stellar.expert/explorer/testnet/tx/9caf0e34dd0d1285ee81793d94d48183de3b8ee52027c929b23cb6393103cf4e) (10 USDC + 5 EURC) |
+| The agent settles its share with Ana through `ledgerly_settle`: payment **from the agent** | [db78946f…](https://stellar.expert/explorer/testnet/tx/db78946f94e5f8945d1c6ddc8778c15deca94c6c548a2ea9478c17e35b4fb27e) (1 USDC) |
+| The owner settles a debt with the agent, recorded by the API: payment **to the agent** | [d5743337…](https://stellar.expert/explorer/testnet/tx/d5743337dce3437796d814cd82754942ed31a9447e1ba2bc38e8b57b9a8051d7) (1 USDC) |
+| The agent settles in a euro group through `ledgerly_settle`: **EURC from the agent** | [74f3e0a7…](https://stellar.expert/explorer/testnet/tx/74f3e0a7621f286a88f5b88c915d6f0287f22ec43082773d4f23776433c668f3) (1 EURC) |
+| The owner settles in the euro group, recorded by the API: **EURC to the agent** | [549d2896…](https://stellar.expert/explorer/testnet/tx/549d28963cf92124f5d7a1f1832cbc34d8abbcd7e0f043abe6a5cd6f215ae01e) (1 EURC) |
+
+| Account | Address |
+|---|---|
+| Owner (test account) | [`GDEBONNUTQF2DKF5UX7KPHG6GUJRFBPYNPVXXDKM7APPB3L4X56KBU7V`](https://stellar.expert/explorer/testnet/account/GDEBONNUTQF2DKF5UX7KPHG6GUJRFBPYNPVXXDKM7APPB3L4X56KBU7V) |
+| Stellar Assist agent wallet | [`GAEZ2AG5C5IDBB5NMXG5L5GLKFX6AVUFTI2SU362UHNY7A7FCIK5K2GG`](https://stellar.expert/explorer/testnet/account/GAEZ2AG5C5IDBB5NMXG5L5GLKFX6AVUFTI2SU362UHNY7A7FCIK5K2GG) |
+| Ana (Demo user 1) | [`GAZ2D6UYGDFFORAS3PXOEIZQLVS7ME6VYRANQJNLEELMYIAOUB4PY7NY`](https://stellar.expert/explorer/testnet/account/GAZ2D6UYGDFFORAS3PXOEIZQLVS7ME6VYRANQJNLEELMYIAOUB4PY7NY) |
 
 The plan, what is deferred and the submission checklist are in [`docs/BUILD-FOCUS.md`](docs/BUILD-FOCUS.md). The design is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 

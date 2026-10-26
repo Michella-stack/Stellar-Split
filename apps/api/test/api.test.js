@@ -88,7 +88,7 @@ test('sign-in rejects a wrong signature, a replay, an edited challenge, a forged
   const good = { address: alice.address, challenge: c.challenge, signature: alice.signMessage(c.challenge) };
   assert.equal((await call('POST', '/v1/auth/verify', { body: good })).status, 200);
   assert.equal((await call('POST', '/v1/auth/verify', { body: good })).status, 401, 'a signed challenge cannot be replayed');
-  const bad = await call('POST', '/v1/auth/challenge', { body: { address: `${alice.address.slice(0, -1)}A` } });
+  const bad = await call('POST', '/v1/auth/challenge', { body: { address: `${alice.address.slice(0, -1)}${alice.address.endsWith('A') ? 'B' : 'A'}` } });
   assert.equal(bad.status, 400);
   assert.equal(bad.body.error.code, 'INVALID_ADDRESS');
   const { body: c2 } = await call('POST', '/v1/auth/challenge', { body: { address: alice.address } });

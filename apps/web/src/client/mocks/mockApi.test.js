@@ -373,3 +373,48 @@ describe('managing a group', () => {
     await expect(api.removeMember('casa-alfama', 'm-mateo')).rejects.toMatchObject({ code: 'MEMBER_HAS_HISTORY' });
   });
 });
+
+describe('an expense in another currency (ADR 0011)', () => {
+  const ADDRESS = 'GBJUR7XO7CGUIJ3QHWH6JZ2DA2CDL4PJKB27IRSRGOOH2EQIJ47JA2QW';
+
+  async function groupWithTwo() {
+    const { group } = await api.createGroup({ name: 'Trip', type: 'trip' });
+    const { member } = await api.addMember(group.id, { address: ADDRESS, displayName: 'Ana' });
+    return { id: group.id, me: 'm-you', ana: member.id };
+  }
+
+  it('converts once, keeps what was typed and the rate, and moves the balances by the converted amount', async () => {
+    const g = await groupWithTwo();
+    const { expense } = await api.createExpense(g.id, {
+      description: 'Tacos',
+      original: { amount: '370', currency: 'MXN', rate: '18.5' },
+      paidBy: g.me,
+      split: { type: 'equal', participants: [g.me, g.ana] },
+    });
+    expect(expense.amount).toBe('20.00');
+    expect(expense.original).toEqual({ amount: '370.00', currency: 'MXN', rate: '18.5' });
+    const { balances } = await api.getGroup(g.id);
+    expect(byId(balances)).toEqual({ [g.me]: '10.00', [g.ana]: '-10.00' });
+  });
+
+  it('refuses the group currency, an unknown one and a bad rate', async () => {
+    const g = await groupWithTwo();
+    const base = { description: 'x', paidBy: g.me, split: { type: 'equal', participants: [g.me] } };
+    for (const original of [
+      { amount: '10', currency: 'USD', rate: '1' },
+      { amount: '10', currency: 'XYZ', rate: '2' },
+      { amount: '10', currency: 'MXN', rate: '0' },
+      { amount: '0', currency: 'MXN', rate: '18.5' },
+    ]) {
+      await expect(api.createExpense(g.id, { ...base, original })).rejects.toMatchObject({ code: 'VALIDATION' });
+    }
+  });
+
+  it('keeps exact shares that add up to the converted amount', async () => {
+    const g = await groupWithTwo();
+    const shares = (a, b) => ({ type: 'exact', shares: [{ memberId: g.me, amount: a }, { memberId: g.ana, amount: b }] });
+    const original = { amount: '100', currency: 'MXN', rate: '3' };
+    await expect(api.createExpense(g.id, { description: 'x', original, paidBy: g.me, split: shares('16.6666667', '16.6666666') })).resolves.toBeTruthy();
+    await expect(api.createExpense(g.id, { description: 'x', original, paidBy: g.me, split: shares('10', '10') })).rejects.toMatchObject({ code: 'SPLIT_MISMATCH' });
+  });
+});

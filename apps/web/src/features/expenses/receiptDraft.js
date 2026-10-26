@@ -1,5 +1,6 @@
 // What the scan screen does with a draft from the receipt reader: the text it shows and the form it fills.
 
+import { currencyOfAsset, EXPENSE_CURRENCIES } from '@shared/currency.js';
 import { tNow } from '../../i18n/index.js';
 
 /** @typedef {{ merchant: string | null, date: string | null, currency: string | null, total: string, usdc: string | null, items: { name: string, amount: string }[], warnings: string[] }} ReceiptDraft */
@@ -26,13 +27,19 @@ export function amountInAsset(draft, assetCode) {
 }
 
 /**
- * The expense form fields for a draft. When the ticket is in the group's currency the amount is filled. In any other
- * currency it is left empty on purpose, so the person types the amount in the group's asset.
+ * The expense form fields for a draft. A ticket in the group's currency fills the amount. A ticket in another currency the app
+ * can convert (ADR 0011) fills the amount in that currency and selects it, so the form converts it at the rate shown. Only a
+ * currency the app does not know leaves the amount empty, so the person types it in the group's asset.
  * @param {ReceiptDraft} draft
  * @param {'USDC' | 'EURC'} [assetCode]
  */
 export function draftToPrefill(draft, assetCode = 'USDC') {
   const description = (draft.merchant ?? '').split(',')[0].trim().slice(0, 80) || tNow('scan.receiptFallback');
+  const groupCurrency = currencyOfAsset(assetCode);
+  if (draft.currency && draft.currency !== groupCurrency && EXPENSE_CURRENCIES.includes(draft.currency)) {
+    const hint = tNow('scan.hintConverted', { currency: draft.currency, asset: assetCode });
+    return { amount: draft.total, currency: draft.currency, description, hint, source: 'scan' };
+  }
   const amount = amountInAsset(draft, assetCode);
   const hint = amount ? null : tNow('scan.hintTotal', { total: [draft.currency, draft.total].filter(Boolean).join(' '), asset: assetCode });
   return { amount: amount ?? '', description, hint, source: 'scan' };

@@ -2,6 +2,7 @@
 // State lives per instance and resets on page reload. Balances are derived with @shared, like the server.
 
 import { netBalances, expenseShares, suggestTransfers } from '@shared/balances.js';
+import { convertToStroops, currencyOfAsset, EXPENSE_CURRENCIES } from '@shared/currency.js';
 import { fromStroops, toStroops, validateAmount } from '@shared/money.js';
 import { checkExactSplit } from '@shared/splits.js';
 import { containsSecretKey, isValidStellarAddress, looksLikeStellarAddress } from '@shared/validation.js';
@@ -312,7 +313,20 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
       const description = typeof input.description === 'string' ? input.description.trim() : '';
       if (!description) return fail('VALIDATION', 'Description is required', 400, { field: 'description' });
       if (containsSecretKey(description)) return fail('SECRET_KEY_REJECTED', 'Input looks like a secret key', 400);
-      const amount = validateAmount(input.amount);
+      // An expense entered in another currency is converted once, here, like the API does (ADR 0011).
+      let typed = input.amount;
+      let original = null;
+      if (input.original) {
+        const groupCurrency = currencyOfAsset(assetOf(group).code);
+        const o = input.original;
+        const rate = validateAmount(o.rate);
+        if (!EXPENSE_CURRENCIES.includes(o.currency) || o.currency === groupCurrency) return fail('VALIDATION', 'Unknown currency', 400, { field: 'original.currency' });
+        if (!validateAmount(o.amount).ok) return fail('VALIDATION', 'Invalid amount', 400, { field: 'original.amount' });
+        if (!rate.ok) return fail('VALIDATION', 'Invalid rate', 400, { field: 'original.rate' });
+        typed = dec(convertToStroops(o.amount, o.rate));
+        original = { amount: dec(toStroops(o.amount)), currency: o.currency, rate: fromStroops(rate.stroops, { minDecimals: 0 }) };
+      }
+      const amount = validateAmount(typed);
       if (!amount.ok) return fail('VALIDATION', 'Invalid amount', 400, { field: 'amount', code: amount.code });
       if (!memberIds.has(input.paidBy)) return fail('VALIDATION', 'Unknown payer', 400, { field: 'paidBy' });
 
@@ -337,7 +351,8 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
         id: newId('e'),
         groupId,
         description,
-        amount: input.amount,
+        amount: typed,
+        ...(original ? { original } : {}),
         paidBy: input.paidBy,
         split,
         source: input.source ?? 'manual',

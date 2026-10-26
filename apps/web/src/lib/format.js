@@ -10,7 +10,8 @@ export function groupThousands(digits, separator = ',') {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, separator);
 }
 
-const SYMBOLS = { USDC: '$', EURC: '€' };
+// A group asset (USDC, EURC) or the currency of an expense entered in another one (ADR 0011).
+const SYMBOLS = { USDC: '$', EURC: '€', USD: '$', EUR: '€', GBP: '£', BRL: 'R$' };
 
 /**
  * Formats a settlement-asset decimal string with two decimals, rounding half up on the third decimal: dollars for
@@ -27,7 +28,9 @@ export function formatMoney(value, code = 'USDC') {
   const major = (cents / 100n).toString();
   const rest = (cents % 100n).toString().padStart(2, '0');
   const { group, decimal } = currentSeparators();
-  return `${SYMBOLS[code] ?? '$'}${groupThousands(major, group)}${decimal}${rest}`;
+  // Three letters is a currency without a short symbol of its own (pesos): its code goes in front.
+  const symbol = SYMBOLS[code] ?? (/^[A-Z]{3}$/.test(code) ? `${code}\u00a0` : '$');
+  return `${symbol}${groupThousands(major, group)}${decimal}${rest}`;
 }
 
 /**

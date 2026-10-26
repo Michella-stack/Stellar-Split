@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { getGroup, listExpenses } from '../client/api.js';
+import { getGroup, listActivity } from '../client/api.js';
 import { AssetProvider } from '../components/AssetProvider.jsx';
 import { Button } from '../components/Button.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
@@ -12,7 +12,9 @@ import { BalanceCard } from '../features/balances/BalanceCard.jsx';
 import { BalanceList } from '../features/balances/BalanceList.jsx';
 import { AddExpenseSheet } from '../features/expenses/AddExpenseSheet.jsx';
 import { ExpenseRow } from '../features/expenses/ExpenseRow.jsx';
+import { latestActivity } from '../features/groups/latestActivity.js';
 import { MembersRow } from '../features/groups/MembersRow.jsx';
+import { SettlementRow } from '../features/settlement/SettlementRow.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { useT } from '../hooks/useT.js';
 import { useWallet } from '../hooks/useWallet.js';
@@ -26,7 +28,7 @@ export default function Group() {
   const { profile } = useWallet();
   const [sheetOpen, setSheetOpen] = useState(false);
   const group = useApi(() => getGroup(id), `group:${id}`);
-  const expenses = useApi(() => listExpenses(id), `expenses:${id}`);
+  const activity = useApi(() => listActivity(id), `activity:${id}`);
   const detail = group.data;
 
   return (
@@ -60,24 +62,28 @@ export default function Group() {
           <section aria-labelledby="expenses-title" className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <h2 id="expenses-title" className="text-lg font-semibold">
-                {t('group.latestExpenses')}
+                {t('group.latestActivity')}
               </h2>
               <Link to={`/groups/${id}/activity`} className="inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">
                 {t('group.allActivity')}
               </Link>
             </div>
-            {expenses.loading && <Loading label={t('group.loadingExpenses')} />}
-            {expenses.error && <LoadError title={t('group.expensesError')} error={expenses.error} onRetry={expenses.reload} />}
-            {expenses.data &&
-              (expenses.data.expenses.length === 0 ? (
+            {activity.loading && <Loading label={t('group.loadingExpenses')} />}
+            {activity.error && <LoadError title={t('group.expensesError')} error={activity.error} onRetry={activity.reload} />}
+            {activity.data &&
+              (activity.data.items.length === 0 ? (
                 <EmptyState icon={<IconReceipt />} title={t('group.noExpenses')}>
                   {t('group.noExpensesBody')}
                 </EmptyState>
               ) : (
                 <ul>
-                  {expenses.data.expenses.slice(0, LATEST).map((e) => (
-                    <li key={e.id}>
-                      <ExpenseRow expense={e} members={detail.members} meId={detail.me} />
+                  {latestActivity(activity.data.items, LATEST).map((item) => (
+                    <li key={item.id}>
+                      {item.type === 'expense' ? (
+                        <ExpenseRow expense={item} members={detail.members} meId={detail.me} />
+                      ) : (
+                        <SettlementRow item={item} detail={detail} />
+                      )}
                     </li>
                   ))}
                 </ul>

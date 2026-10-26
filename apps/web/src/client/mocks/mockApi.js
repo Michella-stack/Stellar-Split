@@ -85,7 +85,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
     if (state.agent.ownerAddress === previous) state.agent.ownerAddress = address;
   }
 
-  const findGroup = (groupId) => state.groups.find((g) => g.id === groupId);
+  const findGroup = (groupId) => state.groups.find((g) => g.id === groupId && !g.archived);
   const myMemberId = (group) => group.members.find((m) => m.address === state.me.address)?.id ?? null;
 
   function balancesOf(group) {
@@ -108,7 +108,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
     const net = balancesOf(group);
     const transfers = suggestTransfers(net);
     return {
-      group: { id: group.id, name: group.name, type: group.type, asset: assetOf(group), network: 'testnet', createdAt: group.createdAt },
+      group: { id: group.id, name: group.name, type: group.type, asset: assetOf(group), network: 'testnet', createdAt: group.createdAt, createdBy: (group.createdBy ?? group.members[0].address) },
       members: group.members,
       me,
       balances: [...net].map(([memberId, v]) => ({ memberId, net: dec(v) })),
@@ -163,7 +163,7 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
     },
 
     async listGroups() {
-      const groups = state.groups.filter((g) => myMemberId(g)).map(summary);
+      const groups = state.groups.filter((g) => !g.archived && myMemberId(g)).map(summary);
       let owe = 0n;
       let owed = 0n;
       const other = new Map(); // other assets are totalled apart: dollars and euros never add up
@@ -210,6 +210,52 @@ export function createMockApi({ delayMs = 300, now = () => new Date(), storage =
       const group = findGroup(groupId);
       if (!group || !myMemberId(group)) return fail('NOT_FOUND', 'Group not found', 404);
       return reply(detail(group));
+    },
+
+    async updateGroup(groupId, patch = {}) {
+      const group = findGroup(groupId);
+      if (!group || !myMemberId(group)) return fail('NOT_FOUND', 'Group not found', 404);
+      if (group.members[0].address !== state.me.address) return fail('FORBIDDEN', 'Only the person who created the group can do this', 403);
+      if (patch.name !== undefined) {
+        const name = typeof patch.name === 'string' ? patch.name.trim() : '';
+        if (!name || name.length > 60) return fail('VALIDATION', 'Name must be 1 to 60 characters', 400, { field: 'name' });
+        if (containsSecretKey(name)) return fail('SECRET_KEY_REJECTED', 'Input looks like a secret key', 400);
+        group.name = name;
+      }
+      if (patch.type !== undefined) {
+        if (!['flat', 'trip', 'other'].includes(patch.type)) return fail('VALIDATION', 'Unknown group type', 400, { field: 'type' });
+        group.type = patch.type;
+      }
+      return reply(detail(group));
+    },
+
+    async deleteGroup(groupId) {
+      const group = findGroup(groupId);
+      if (!group || !myMemberId(group)) return fail('NOT_FOUND', 'Group not found', 404);
+      if (group.members[0].address !== state.me.address) return fail('FORBIDDEN', 'Only the person who created the group can do this', 403);
+      if (group.expenses.length > 0 || group.settlements.length > 0) {
+        group.archived = true;
+        return reply({ result: 'archived' });
+      }
+      state.groups = state.groups.filter((g) => g.id !== groupId);
+      return reply({ result: 'deleted' });
+    },
+
+    async removeMember(groupId, memberId) {
+      const group = findGroup(groupId);
+      const me = group && myMemberId(group);
+      if (!group || !me) return fail('NOT_FOUND', 'Group not found', 404);
+      const target = group.members.find((m) => m.id === memberId);
+      if (!target) return fail('NOT_FOUND', 'Member not found', 404);
+      const creator = group.members[0];
+      if (target.id !== me && creator.address !== state.me.address) return fail('FORBIDDEN', 'Only the person who created the group can do this', 403);
+      if (target.id === creator.id) return fail('CREATOR_CANNOT_LEAVE', 'The person who created the group cannot leave it. Delete the group instead', 409);
+      const inHistory =
+        group.expenses.some((e) => e.paidBy === memberId || e.createdBy === memberId || [...expenseShares(e).keys()].includes(memberId)) ||
+        group.settlements.some((x) => x.from === memberId || x.to === memberId);
+      if (inHistory) return fail('MEMBER_HAS_HISTORY', 'This member appears in expenses or payments, so they cannot be removed', 409);
+      group.members = group.members.filter((m) => m.id !== memberId);
+      return reply(null);
     },
 
     async createInvite(groupId, { address } = {}) {

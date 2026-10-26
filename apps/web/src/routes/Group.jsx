@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { getGroup, listExpenses } from '../client/api.js';
 import { AssetProvider } from '../components/AssetProvider.jsx';
-import { Button } from '../components/Button.jsx';
+import { Button, ButtonLink } from '../components/Button.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
 import { IconButton } from '../components/IconButton.jsx';
-import { IconPlus, IconReceipt, IconShare } from '../components/icons.jsx';
+import { IconPencil, IconPlus, IconReceipt, IconShare } from '../components/icons.jsx';
 import { LoadError, Loading } from '../components/LoadState.jsx';
 import { TopBar } from '../components/TopBar.jsx';
 import { BalanceCard } from '../features/balances/BalanceCard.jsx';
@@ -41,13 +41,21 @@ export default function Group() {
           </IconButton>
         }
       />
-      {group.loading && <Loading label={t('group.loading')} />}
+      {group.loading && <Loading shape="group" label={t('group.loading')} />}
       {group.error && <LoadError title={t('group.loadError')} error={group.error} onRetry={group.reload} />}
       {detail && (
         <AssetProvider group={detail.group}>
         <div className="flex flex-col gap-6 pb-28">
           <h1 className="sr-only">{detail.group.name}</h1>
           <MembersRow members={detail.members} meId={detail.me} />
+          <div className="grid grid-cols-2 gap-3">
+            <ButtonLink to={`/groups/${id}/invite`} variant="secondary" icon={<IconPlus size={20} />}>
+              {t('group.addPeople')}
+            </ButtonLink>
+            <ButtonLink to={`/groups/${id}/settings`} variant="secondary" icon={<IconPencil size={20} />}>
+              {t('group.settings')}
+            </ButtonLink>
+          </div>
           <BalanceCard detail={detail} homeCurrency={profile?.homeCurrency ?? null} />
 
           <section aria-labelledby="balances-title" className="flex flex-col gap-1">
@@ -71,7 +79,7 @@ export default function Group() {
                 </Link>
               </span>
             </div>
-            {expenses.loading && <Loading label={t('group.loadingExpenses')} />}
+            {expenses.loading && <Loading shape="rows" label={t('group.loadingExpenses')} />}
             {expenses.error && <LoadError title={t('group.expensesError')} error={expenses.error} onRetry={expenses.reload} />}
             {expenses.data &&
               (expenses.data.expenses.length === 0 ? (

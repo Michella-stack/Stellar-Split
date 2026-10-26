@@ -82,7 +82,7 @@ A misspelled username is not a mention, so the bot stays silent. Tap the bot in 
 
 - Bot tokens, the OpenClaw gateway token, the Hermes dashboard credentials and the model provider login live only in `.env` files and data volumes on the server.
 - None of them are in this repository.
-- The agent containers hold no Stellar keys. Each agent has a funded testnet wallet whose key stays on the server outside the containers (see [AGENT-WALLETS.md](AGENT-WALLETS.md)). Payments will go through the Ledgerly MCP server (issue #14), which keeps the signing key in its own container, away from the agent and its model (PRD FR-38).
+- The agent containers hold no Stellar keys. Each agent has a funded testnet wallet whose key stays on the server outside the containers (see [AGENT-WALLETS.md](AGENT-WALLETS.md)). Payments go through the agent's own Ledgerly MCP server (issue #14), which mounts the signing key read-only in its own container, away from the agent and its model (PRD FR-38). The key is never in an environment variable, and the agent containers were checked to hold none.
 
 ## Web dashboards
 
@@ -103,5 +103,5 @@ Run these on the server:
 ## Status
 
 - Both bots answer the Active team members in "Stellar Agents" when @mentioned.
-- The Ledgerly MCP server (#14) is not connected yet, so neither agent can read balances or settle. The plan to connect them is in [AGENT-MCP-ROLLOUT.md](AGENT-MCP-ROLLOUT.md).
+- Both agents are connected to their own Ledgerly MCP server (26 October 2026): they can list groups, read balances and record expenses. OpenClaw asks the owner for approval on Telegram before it records an expense; reads need no approval. Each MCP holds its agent's signer key, so `ledgerly_settle` exists in both servers but is hidden from OpenClaw, and no agent has paid yet. Results, operations and what is still open are in [AGENT-MCP-ROLLOUT.md](AGENT-MCP-ROLLOUT.md#status-of-the-rollout-26-october-2026).
 - The Phase 1a tests are HA-1, HA-3, HA-6 for Hermes and OC-1, OC-3, OC-6 for OpenClaw. Agent settlement (HA-4, OC-4) is the stretch goal (PRD section 7.3).

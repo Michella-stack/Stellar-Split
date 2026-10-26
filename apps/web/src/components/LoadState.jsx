@@ -2,15 +2,76 @@ import { useT } from '../hooks/useT.js';
 import { Button } from './Button.jsx';
 import { Card } from './Card.jsx';
 
-/** Placeholder shown while a screen loads. @param {{ label?: string }} props */
-export function Loading({ label }) {
+/** One grey block of a skeleton. Stays still for people who ask for less motion. */
+function Bone({ className = '' }) {
+  return <div aria-hidden="true" className={`animate-pulse rounded-card bg-surface motion-reduce:animate-none ${className}`} />;
+}
+
+/** A list row: round avatar, two lines of text and an amount, like ListRow. */
+function RowBone() {
+  return (
+    <div aria-hidden="true" className="flex min-h-16 items-center gap-3 py-2">
+      <Bone className="size-11 shrink-0 rounded-full" />
+      <div className="flex flex-1 flex-col gap-2">
+        <Bone className="h-4 w-2/5 rounded-full" />
+        <Bone className="h-3 w-3/5 rounded-full" />
+      </div>
+      <Bone className="h-4 w-14 rounded-full" />
+    </div>
+  );
+}
+
+const SHAPES = {
+  // The Groups screen: the totals card, then one card per group.
+  groups: () => (
+    <>
+      <Bone className="h-32" />
+      <Bone className="h-24" />
+      <Bone className="h-24" />
+      <Bone className="h-24" />
+    </>
+  ),
+  // The Group screen: members, the balance card, then the balances list.
+  group: () => (
+    <>
+      <div aria-hidden="true" className="flex gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex w-16 flex-col items-center gap-2">
+            <Bone className="size-12 rounded-full" />
+            <Bone className="h-3 w-10 rounded-full" />
+          </div>
+        ))}
+      </div>
+      <Bone className="h-36" />
+      {[0, 1, 2].map((i) => (
+        <RowBone key={i} />
+      ))}
+    </>
+  ),
+  // Any list of rows: expenses, activity.
+  rows: () => [0, 1, 2, 3, 4].map((i) => <RowBone key={i} />),
+};
+
+/**
+ * Placeholder shown while a screen loads. `shape` picks a skeleton that looks like the screen it stands in for, so the page
+ * does not jump when the data arrives. Without it, three plain blocks.
+ * @param {{ label?: string, shape?: keyof typeof SHAPES }} props
+ */
+export function Loading({ label, shape }) {
   const { t } = useT();
+  const Shape = shape ? SHAPES[shape] : null;
   return (
     <div role="status" className="flex flex-col gap-3 py-6">
       <span className="sr-only">{label ?? t('common.loading')}</span>
-      <div aria-hidden="true" className="h-28 animate-pulse rounded-card bg-surface" />
-      <div aria-hidden="true" className="h-16 animate-pulse rounded-card bg-surface" />
-      <div aria-hidden="true" className="h-16 animate-pulse rounded-card bg-surface" />
+      {Shape ? (
+        <Shape />
+      ) : (
+        <>
+          <Bone className="h-28" />
+          <Bone className="h-16" />
+          <Bone className="h-16" />
+        </>
+      )}
     </div>
   );
 }

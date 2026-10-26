@@ -30,6 +30,11 @@ export default function Groups() {
         {data && (
           <>
             {data.groups.length > 0 && <Summary totals={data.totals} homeCurrency={profile?.homeCurrency} />}
+            {data.groups.length > 0 && (
+              <Link to="/summary" className="inline-flex min-h-11 items-center self-start text-sm font-medium underline underline-offset-4">
+                {t('groups.spendingSummary')}
+              </Link>
+            )}
             {(data.otherTotals ?? []).map((other) => (
               <OtherSummary key={other.asset} totals={other} />
             ))}

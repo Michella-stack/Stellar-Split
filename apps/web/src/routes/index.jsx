@@ -30,6 +30,7 @@ export const routes = [
         children: [
           { path: 'wallet', lazy: screen(() => import('./Wallet.jsx')) },
           { path: 'groups', lazy: screen(() => import('./Groups.jsx')) },
+          { path: 'summary', lazy: screen(() => import('./OverallSummary.jsx')) },
           { path: 'groups/new', lazy: screen(() => import('./GroupNew.jsx')) },
           { path: 'groups/:id', lazy: screen(() => import('./Group.jsx')) },
           { path: 'groups/:id/settings', lazy: screen(() => import('./GroupSettings.jsx')) },

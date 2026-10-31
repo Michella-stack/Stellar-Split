@@ -1,0 +1,15 @@
+# OSV-Scanner exceptions for contracts/Cargo.lock. Review each one by its ignoreUntil date.
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0387"
+ignoreUntil = 2027-01-31
+reason = """crypto-bigint 0.5.5 timing issues. Pulled only by soroban-env-host (k256, p256, elliptic-curve 0.13), \
+which soroban-sdk uses on non-wasm targets for tests. It is not compiled into the contract wasm. \
+The fix is crypto-bigint 0.7.6, but elliptic-curve 0.13 requires ^0.5 and the latest soroban-env-host (30.0.0) \
+still depends on it. Remove when soroban-sdk moves to elliptic-curve 0.14."""
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0436"
+ignoreUntil = 2027-01-31
+reason = """paste 1.0.15 is unmaintained (informational, no known vulnerability). It is a compile-time proc macro \
+pulled by soroban-wasmi through soroban-sdk, and the SDK pins it. Remove when soroban-sdk drops it."""

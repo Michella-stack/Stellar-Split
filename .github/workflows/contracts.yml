@@ -39,5 +39,16 @@ jobs:
         working-directory: contracts
       - run: cargo test --locked
         working-directory: contracts
+      # Workaround: cargo-scout-audit 0.3.17 builds dylint_driver 4.1.2, which clones
+      # rust-clippy and checks out `master`; that branch was renamed `main`
+      # (trailofbits/dylint#2153, fixed in dylint 6.3.0, not yet used by Scout).
+      # Serve the clone from a local mirror that has `master`. Remove this step once
+      # cargo-scout-audit ships with dylint >= 6.3.0.
+      - name: Mirror rust-clippy with a master branch
+        run: |
+          git clone --bare --quiet https://github.com/rust-lang/rust-clippy "$RUNNER_TEMP/rust-clippy.git"
+          git -C "$RUNNER_TEMP/rust-clippy.git" branch master main
+          git -C "$RUNNER_TEMP/rust-clippy.git" symbolic-ref HEAD refs/heads/master
+          git config --global url."file://$RUNNER_TEMP/rust-clippy.git".insteadOf https://github.com/rust-lang/rust-clippy
       - run: cargo install --locked cargo-scout-audit --version "0.3.17" && cargo scout-audit
         working-directory: contracts

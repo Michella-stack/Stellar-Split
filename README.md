@@ -22,7 +22,7 @@ Built at HackMeridian (Lisbon, 25 to 26 October 2026). Track: Genesis, with Stel
 | The app (live, Testnet, built for your phone) | https://stellar-split-sooty.vercel.app |
 | Product website | https://stellar-split-site.vercel.app |
 | Developer docs: API, integrations, agents and MCP | https://stellar-split-docs.vercel.app |
-| Pitch and demo video | https://youtu.be/oLs9DGW4yNQ |
+| Pitch and demo video | https://youtu.be/65e6AzryBUE |
 | API health | https://stellar-split-sooty.vercel.app/v1/health |
 | Agent payments (to and from the agent) and EURC, with transactions | [Agent payments and EURC on Testnet](#agent-payments-and-eurc-on-testnet) |
 | Business model and planned pricing | [Business model](#business-model) |
@@ -169,7 +169,7 @@ Each part documents its own variables: [`apps/web`](apps/web/README.md#environme
 
 ## Demo
 
-**Pitch and demo video:** https://youtu.be/oLs9DGW4yNQ
+**Pitch and demo video:** https://youtu.be/65e6AzryBUE
 
 The web app and the API run as one Vercel project. How it is built and deployed is in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 

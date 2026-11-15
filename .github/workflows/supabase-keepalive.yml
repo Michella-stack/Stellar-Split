@@ -1,8 +1,9 @@
 name: Supabase keep-alive
-# Free-tier projects pause after 7 days without activity. A real query twice a week prevents it.
+# Free-tier projects pause after 7 days without enough activity. A read that RLS leaves empty did not count,
+# so this calls keepalive() (database/migrations/007_keepalive.sql), which writes one row.
 on:
   schedule:
-    - cron: "23 6 * * 1,4"
+    - cron: "23 6 * * *"
   workflow_dispatch:
 permissions: {}
 jobs:
@@ -16,7 +17,7 @@ jobs:
       - name: Query the database
         run: |
           test -n "$SUPABASE_URL" && test -n "$SUPABASE_ANON_KEY" || { echo "::error::Set repo secrets SUPABASE_URL and SUPABASE_ANON_KEY"; exit 1; }
-          # RLS returns [] for anon: still a real Postgres query, which counts as activity.
-          curl -sS --fail-with-body --retry 3 --retry-all-errors \
+          curl -sS --fail-with-body --retry 3 --retry-all-errors -X POST \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
-            "${SUPABASE_URL}/rest/v1/groups?select=id&limit=1"
+            -H "Content-Type: application/json" -d '{}' \
+            "${SUPABASE_URL}/rest/v1/rpc/keepalive"

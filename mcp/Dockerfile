@@ -1,7 +1,7 @@
 # Ledgerly MCP server for one agent. See docs/adr/0009-mcp-server-runs-next-to-each-agent.md.
 # Base pinned by digest. The tag is for people; the digest is what is pulled. Bump both together, and
 # only to an image that is at least 7 days old (the repo's dependency cooldown).
-FROM node:26.13.0-alpine3.24@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216
+FROM node:26.13.1-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
 
 ENV NODE_ENV=production \
     MCP_TRANSPORT=http \
